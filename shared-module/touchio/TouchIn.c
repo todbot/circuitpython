@@ -28,18 +28,19 @@
 static uint16_t get_raw_reading(touchio_touchin_obj_t *self) {
 
     uint16_t ticks = 0;
+    const bool pulldir = self->pulldir;
 
     for (uint16_t i = 0; i < N_SAMPLES; i++) {
-        // set pad to digital output high for 10us to charge it
+        // set pad to digital output "high" for 10us to charge it (dpending on pulldir)
 
-        common_hal_digitalio_digitalinout_switch_to_output(self->digitalinout, true, DRIVE_MODE_PUSH_PULL);
+        common_hal_digitalio_digitalinout_switch_to_output(self->digitalinout, !pulldir, DRIVE_MODE_PUSH_PULL);
         mp_hal_delay_us(10);
 
         // set pad back to an input and take some samples
 
         common_hal_digitalio_digitalinout_switch_to_input(self->digitalinout, PULL_NONE);
 
-        while (common_hal_digitalio_digitalinout_get_value(self->digitalinout)) {
+        while (common_hal_digitalio_digitalinout_get_value(self->digitalinout) != pulldir) {
             if (ticks >= TIMEOUT_TICKS) {
                 return TIMEOUT_TICKS;
             }
@@ -49,16 +50,21 @@ static uint16_t get_raw_reading(touchio_touchin_obj_t *self) {
     return ticks;
 }
 
-void common_hal_touchio_touchin_construct(touchio_touchin_obj_t *self, const mcu_pin_obj_t *pin) {
+void common_hal_touchio_touchin_construct(touchio_touchin_obj_t *self, const mcu_pin_obj_t *pin, const bool pulldir) {
     common_hal_mcu_pin_claim(pin);
     self->digitalinout = mp_obj_malloc(digitalio_digitalinout_obj_t, &digitalio_digitalinout_type);
+    self->pulldir = pulldir;
 
     common_hal_digitalio_digitalinout_construct(self->digitalinout, pin);
 
     uint16_t raw_reading = get_raw_reading(self);
     if (raw_reading == TIMEOUT_TICKS) {
         common_hal_touchio_touchin_deinit(self);
-        mp_raise_ValueError(MP_ERROR_TEXT("No pulldown on pin; 1Mohm recommended"));
+        if (self->pulldir) {
+            mp_raise_ValueError(MP_ERROR_TEXT("No pullup on pin; 1Mohm recommended"));
+        } else {
+            mp_raise_ValueError(MP_ERROR_TEXT("No pulldown on pin; 1Mohm recommended"));
+        }
     }
     self->threshold = raw_reading * 1.05 + 100;
 }
