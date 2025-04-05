@@ -31,22 +31,33 @@
 //|                print("touched!")"""
 //|
 
-//|     def __init__(self, pin: microcontroller.Pin) -> None:
+//|     def __init__(self, pin: microcontroller.Pin, pulldir: bool -> False) -> None:
 //|         """Use the TouchIn on the given pin.
 //|
 //|         :param ~microcontroller.Pin pin: the pin to read from"""
+//|         :param ~bool pulldir: kind of external pull resistor, false = pulldown, true = pullup
 //|         ...
 //|
-static mp_obj_t touchio_touchin_make_new(const mp_obj_type_t *type,
-    size_t n_args, size_t n_kw, const mp_obj_t *args) {
+//static mp_obj_t touchio_touchin_make_new(const mp_obj_type_t *type,
+//    size_t n_args, size_t n_kw, const mp_obj_t *args) {
     // check number of arguments
-    mp_arg_check_num(n_args, n_kw, 1, 1, false);
-
+    /// mp_arg_check_num(n_args, n_kw, 1, 1, false);
+static mp_obj_t touchio_touchin_make_new(const mp_obj_type_t *type,
+                                         size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
+    enum { ARG_pin, ARG_pulldir };
+    static const mp_arg_t allowed_args[] = {
+        { MP_QSTR_pin,     MP_ARG_OBJ | MP_ARG_REQUIRED },
+        { MP_QSTR_pulldir, MP_ARG_BOOL | MP_ARG_KW_ONLY, {.u_bool = false} },
+    };
+    mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
+    mp_arg_parse_all_kw_array(n_args, n_kw, all_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
+    
     // 1st argument is the pin
-    const mcu_pin_obj_t *pin = validate_obj_is_free_pin(args[0], MP_QSTR_pin);
+    const mcu_pin_obj_t *pin = validate_obj_is_free_pin(args[ARG_pin].u_obj, MP_QSTR_pin);
+    const bool pulldir = args[ARG_pulldir].u_bool;
 
     touchio_touchin_obj_t *self = mp_obj_malloc(touchio_touchin_obj_t, &touchio_touchin_type);
-    common_hal_touchio_touchin_construct(self, pin);
+    common_hal_touchio_touchin_construct(self, pin, pulldir);
 
     return (mp_obj_t)self;
 }

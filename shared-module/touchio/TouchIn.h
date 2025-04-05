@@ -16,6 +16,7 @@ typedef struct {
     mp_obj_base_t base;
     digitalio_digitalinout_obj_t *digitalinout;
     uint16_t threshold;
+    bool pulldir;
 } touchio_touchin_obj_t;
 
 void touchin_reset(void);
