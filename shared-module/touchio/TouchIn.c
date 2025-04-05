@@ -60,11 +60,7 @@ void common_hal_touchio_touchin_construct(touchio_touchin_obj_t *self, const mcu
     uint16_t raw_reading = get_raw_reading(self);
     if (raw_reading == TIMEOUT_TICKS) {
         common_hal_touchio_touchin_deinit(self);
-        if (self->pulldir) {
-            mp_raise_ValueError(MP_ERROR_TEXT("No pullup on pin; 1Mohm recommended"));
-        } else {
-            mp_raise_ValueError(MP_ERROR_TEXT("No pulldown on pin; 1Mohm recommended"));
-        }
+        mp_raise_ValueError(MP_ERROR_TEXT("No pull resistor on pin; 1Mohm recommended"));
     }
     self->threshold = raw_reading * 1.05 + 100;
 }
