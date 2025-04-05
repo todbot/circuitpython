@@ -28,7 +28,7 @@
 static uint16_t get_raw_reading(touchio_touchin_obj_t *self) {
 
     uint16_t ticks = 0;
-    const pulldir = self->pulldir;
+    const bool pulldir = self->pulldir;
     
     for (uint16_t i = 0; i < N_SAMPLES; i++) {
         // set pad to digital output "high" for 10us to charge it (dpending on pulldir)
