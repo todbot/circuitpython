@@ -9,6 +9,10 @@
 #include "mpconfigboard.h"
 #include "supervisor/shared/tick.h"
 
+#if CIRCUITPY_AUDIOBUSIO_I2SOUT
+#include "common-hal/audiobusio/I2SOut.h"
+#endif
+
 #include <zephyr/autoconf.h>
 #include <zephyr/kernel.h>
 #include <zephyr/sys/reboot.h>
@@ -147,6 +151,10 @@ void reset_cpu(void) {
 }
 
 void reset_port(void) {
+    #if CIRCUITPY_AUDIOBUSIO_I2SOUT
+    i2sout_reset();
+    #endif
+
     #if defined(CONFIG_ARCH_POSIX)
     native_sim_reset_port_count++;
     if (native_sim_vm_runs != INT32_MAX &&

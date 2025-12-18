@@ -318,7 +318,13 @@ def circuitpython(request, board, sim_id, native_sim_binary, native_sim_env, tmp
             # native_sim vm-runs includes the boot VM setup run.
             realtime_flag = "-rt" if use_realtime else "-no-rt"
             cmd.extend(
-                (realtime_flag, "-display_headless", "-wait_uart", f"--vm-runs={code_py_runs + 1}")
+                (
+                    realtime_flag,
+                    "-display_headless",
+                    "-i2s_earless",
+                    "-wait_uart",
+                    f"--vm-runs={code_py_runs + 1}",
+                )
             )
 
         if flash_erase_block_size is not None:
