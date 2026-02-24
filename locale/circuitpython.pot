@@ -976,6 +976,7 @@ msgstr ""
 
 #: ports/espressif/common-hal/busio/SPI.c
 #: ports/espressif/common-hal/canio/CAN.c
+#: ports/espressif/common-hal/qspibus/QSPIBus.c
 msgid "ESP-IDF memory allocation failed"
 msgstr ""
 
@@ -1061,10 +1062,6 @@ msgstr ""
 
 #: ports/espressif/common-hal/audioio/AudioOut.c
 msgid "Failed to create continuous channels: not found"
-msgstr ""
-
-#: ports/espressif/common-hal/qspibus/QSPIBus.c
-msgid "Failed to create semaphore"
 msgstr ""
 
 #: ports/espressif/common-hal/audioio/AudioOut.c
@@ -1530,7 +1527,8 @@ msgstr ""
 #: ports/stm/common-hal/busio/UART.c shared-bindings/fourwire/FourWire.c
 #: shared-bindings/i2cdisplaybus/I2CDisplayBus.c
 #: shared-bindings/paralleldisplaybus/ParallelBus.c
-#: shared-bindings/qspibus/QSPIBus.c shared-module/bitbangio/SPI.c
+#: shared-bindings/qspibus/QSPIBus.c
+#: shared-module/bitbangio/SPI.c
 msgid "No %q pin"
 msgstr ""
 

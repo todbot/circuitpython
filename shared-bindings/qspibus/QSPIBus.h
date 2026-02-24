@@ -31,11 +31,6 @@ void common_hal_qspibus_qspibus_construct(
 void common_hal_qspibus_qspibus_deinit(qspibus_qspibus_obj_t *self);
 bool common_hal_qspibus_qspibus_deinited(qspibus_qspibus_obj_t *self);
 
-void common_hal_qspibus_qspibus_send_command(
-    qspibus_qspibus_obj_t *self,
-    uint8_t command,
-    const uint8_t *data,
-    size_t len);
 void common_hal_qspibus_qspibus_write_command(
     qspibus_qspibus_obj_t *self,
     uint8_t command);

@@ -106,7 +106,7 @@ static mp_obj_t qspibus_qspibus_obj_reset(mp_obj_t self_in) {
 }
 static MP_DEFINE_CONST_FUN_OBJ_1(qspibus_qspibus_reset_obj, qspibus_qspibus_obj_reset);
 
-//|     def send(self, command: int, data: ReadableBuffer = b"") -> None:
+//|     def send(self, command: int, data: Optional[ReadableBuffer] = None) -> None:
 //|         """Send command with optional payload bytes.
 //|
 //|         This mirrors FourWire-style convenience API:
@@ -119,7 +119,7 @@ static mp_obj_t qspibus_qspibus_send(size_t n_args, const mp_obj_t *pos_args, mp
     enum { ARG_command, ARG_data };
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_command, MP_ARG_INT | MP_ARG_REQUIRED },
-        { MP_QSTR_data, MP_ARG_OBJ, {.u_obj = mp_const_empty_bytes} },
+        { MP_QSTR_data, MP_ARG_OBJ, {.u_obj = mp_const_none} },
     };
 
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];

@@ -287,7 +287,7 @@ void common_hal_qspibus_qspibus_construct(
 
     self->transfer_done_sem = xSemaphoreCreateCounting(QSPI_DMA_BUFFER_COUNT, 0);
     if (self->transfer_done_sem == NULL) {
-        mp_raise_msg(&mp_type_MemoryError, MP_ERROR_TEXT("Failed to create semaphore"));
+        mp_raise_msg(&mp_type_MemoryError, MP_ERROR_TEXT("ESP-IDF memory allocation failed"));
     }
 
     if (!qspibus_allocate_dma_buffers(self)) {
@@ -427,15 +427,6 @@ void common_hal_qspibus_qspibus_deinit(qspibus_qspibus_obj_t *self) {
 bool common_hal_qspibus_qspibus_deinited(qspibus_qspibus_obj_t *self) {
     return !self->bus_initialized;
 }
-
-void common_hal_qspibus_qspibus_send_command(
-    qspibus_qspibus_obj_t *self,
-    uint8_t command,
-    const uint8_t *data,
-    size_t len) {
-    qspibus_send_command_bytes(self, command, data, len);
-}
-
 
 void common_hal_qspibus_qspibus_write_command(
     qspibus_qspibus_obj_t *self,
