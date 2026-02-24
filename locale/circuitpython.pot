@@ -874,7 +874,8 @@ msgstr ""
 msgid "Coordinate arrays types have different sizes"
 msgstr ""
 
-#: ports/espressif/common-hal/qspibus/QSPIBus.c shared-module/usb/core/Device.c
+#: shared-module/usb/core/Device.c
+#: ports/espressif/common-hal/qspibus/QSPIBus.c
 msgid "Could not allocate DMA capable buffer"
 msgstr ""
 
