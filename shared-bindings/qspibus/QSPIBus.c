@@ -89,16 +89,22 @@ static mp_obj_t qspibus_qspibus_make_new(const mp_obj_type_t *type, size_t n_arg
     return MP_OBJ_FROM_PTR(self);
 }
 
-//|     def deinit(self) -> None:
-//|         """Release QSPI bus resources and claimed pins."""
+//|     def reset(self) -> None:
+//|         """Perform a hardware reset using the reset pin.
+//|
+//|         :raises RuntimeError: if no reset pin was provided at construction.
+//|         """
 //|         ...
 //|
-static mp_obj_t qspibus_qspibus_deinit(mp_obj_t self_in) {
+static mp_obj_t qspibus_qspibus_obj_reset(mp_obj_t self_in) {
     qspibus_qspibus_obj_t *self = MP_OBJ_TO_PTR(self_in);
-    common_hal_qspibus_qspibus_deinit(self);
+    check_for_deinit(self);
+    if (!common_hal_qspibus_qspibus_reset(MP_OBJ_FROM_PTR(self))) {
+        mp_raise_RuntimeError_varg(MP_ERROR_TEXT("No %q pin"), MP_QSTR_reset);
+    }
     return mp_const_none;
 }
-static MP_DEFINE_CONST_FUN_OBJ_1(qspibus_qspibus_deinit_obj, qspibus_qspibus_deinit);
+static MP_DEFINE_CONST_FUN_OBJ_1(qspibus_qspibus_reset_obj, qspibus_qspibus_obj_reset);
 
 //|     def send(self, command: int, data: ReadableBuffer = b"") -> None:
 //|         """Send command with optional payload bytes.
@@ -178,38 +184,11 @@ static mp_obj_t qspibus_qspibus_write_data(mp_obj_t self_in, mp_obj_t data_obj) 
 }
 MP_DEFINE_CONST_FUN_OBJ_2(qspibus_qspibus_write_data_obj, qspibus_qspibus_write_data);
 
-//|     def __enter__(self) -> QSPIBus:
-//|         """No-op context manager entry."""
-//|         ...
-//|
-static mp_obj_t qspibus_qspibus___enter__(mp_obj_t self_in) {
-    return self_in;
-}
-static MP_DEFINE_CONST_FUN_OBJ_1(qspibus_qspibus___enter___obj, qspibus_qspibus___enter__);
-
-//|     def __exit__(
-//|         self,
-//|         exc_type: type[BaseException] | None,
-//|         exc_value: BaseException | None,
-//|         traceback: TracebackType | None,
-//|     ) -> None:
-//|         """Deinitialize on context manager exit."""
-//|         ...
-//|
-static mp_obj_t qspibus_qspibus___exit__(size_t n_args, const mp_obj_t *args) {
-    (void)n_args;
-    common_hal_qspibus_qspibus_deinit(MP_OBJ_TO_PTR(args[0]));
-    return mp_const_none;
-}
-static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(qspibus_qspibus___exit___obj, 4, 4, qspibus_qspibus___exit__);
-
 static const mp_rom_map_elem_t qspibus_qspibus_locals_dict_table[] = {
-    { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&qspibus_qspibus_deinit_obj) },
+    { MP_ROM_QSTR(MP_QSTR_reset), MP_ROM_PTR(&qspibus_qspibus_reset_obj) },
     { MP_ROM_QSTR(MP_QSTR_send), MP_ROM_PTR(&qspibus_qspibus_send_obj) },
     { MP_ROM_QSTR(MP_QSTR_write_command), MP_ROM_PTR(&qspibus_qspibus_write_command_obj) },
     { MP_ROM_QSTR(MP_QSTR_write_data), MP_ROM_PTR(&qspibus_qspibus_write_data_obj) },
-    { MP_ROM_QSTR(MP_QSTR___enter__), MP_ROM_PTR(&qspibus_qspibus___enter___obj) },
-    { MP_ROM_QSTR(MP_QSTR___exit__), MP_ROM_PTR(&qspibus_qspibus___exit___obj) },
 };
 static MP_DEFINE_CONST_DICT(qspibus_qspibus_locals_dict, qspibus_qspibus_locals_dict_table);
 

@@ -147,7 +147,7 @@ static void qspibus_send_color_bytes(
         qspibus_send_command_bytes(self, command, NULL, 0);
         return;
     }
-    if (data == NULL || self->dma_buffer_size == 0) {
+    if (self->dma_buffer_size == 0) {
         mp_raise_OSError_msg(MP_ERROR_TEXT("Could not allocate DMA capable buffer"));
     }
 
@@ -473,9 +473,6 @@ void common_hal_qspibus_qspibus_write_data(
             self->has_pending_command = false;
         }
         return;
-    }
-    if (data == NULL) {
-        mp_raise_ValueError(MP_ERROR_TEXT("Buffer too small"));
     }
     if (!self->has_pending_command) {
         mp_raise_ValueError(MP_ERROR_TEXT("No pending command"));
