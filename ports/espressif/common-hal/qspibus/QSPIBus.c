@@ -1,5 +1,5 @@
+// This file is part of the CircuitPython project: https://circuitpython.org
 // SPDX-FileCopyrightText: Copyright (c) 2026 Przemyslaw Patrick Socha
-//
 // SPDX-License-Identifier: MIT
 
 #include "shared-bindings/qspibus/QSPIBus.h"
@@ -121,7 +121,7 @@ static void qspibus_send_command_bytes(
     if (self->inflight_transfers >= QSPI_DMA_BUFFER_COUNT) {
         if (!qspibus_wait_one_transfer_done(self, pdMS_TO_TICKS(QSPI_COLOR_TIMEOUT_MS))) {
             qspibus_reset_transfer_state(self);
-            mp_raise_OSError_msg(MP_ERROR_TEXT("QSPI command timeout"));
+            mp_raise_OSError_msg(MP_ERROR_TEXT("Operation timed out"));
         }
     }
 
@@ -129,7 +129,7 @@ static void qspibus_send_command_bytes(
     esp_err_t err = esp_lcd_panel_io_tx_param(self->io_handle, packed_cmd, data, len);
     if (err != ESP_OK) {
         qspibus_reset_transfer_state(self);
-        mp_raise_OSError_msg_varg(MP_ERROR_TEXT("QSPI send failed: %d"), err);
+        mp_raise_OSError_msg_varg(MP_ERROR_TEXT("%q failure: %d"), MP_QSTR_QSPI, (int)err);
     }
 }
 
@@ -148,7 +148,7 @@ static void qspibus_send_color_bytes(
         return;
     }
     if (data == NULL || self->dma_buffer_size == 0) {
-        mp_raise_OSError_msg(MP_ERROR_TEXT("QSPI DMA buffers unavailable"));
+        mp_raise_OSError_msg(MP_ERROR_TEXT("Could not allocate DMA capable buffer"));
     }
 
     // RAMWR must transition to RAMWRC for continued payload chunks.
@@ -157,10 +157,13 @@ static void qspibus_send_color_bytes(
     size_t remaining = len;
 
     while (remaining > 0) {
+        // inflight_transfers is only modified in task context (never from ISR),
+        // so no atomic/critical section is needed. The ISR only signals the
+        // counting semaphore; all counter bookkeeping happens task-side.
         if (self->inflight_transfers >= QSPI_DMA_BUFFER_COUNT) {
             if (!qspibus_wait_one_transfer_done(self, pdMS_TO_TICKS(QSPI_COLOR_TIMEOUT_MS))) {
                 qspibus_reset_transfer_state(self);
-                mp_raise_OSError_msg(MP_ERROR_TEXT("QSPI color timeout"));
+                mp_raise_OSError_msg(MP_ERROR_TEXT("Operation timed out"));
             }
         }
 
@@ -176,7 +179,7 @@ static void qspibus_send_color_bytes(
         esp_err_t err = esp_lcd_panel_io_tx_color(self->io_handle, packed_cmd, buffer, chunk);
         if (err != ESP_OK) {
             qspibus_reset_transfer_state(self);
-            mp_raise_OSError_msg_varg(MP_ERROR_TEXT("QSPI send color failed: %d"), err);
+            mp_raise_OSError_msg_varg(MP_ERROR_TEXT("%q failure: %d"), MP_QSTR_QSPI, (int)err);
         }
 
         self->inflight_transfers++;
@@ -195,7 +198,7 @@ static void qspibus_send_color_bytes(
     // after queued DMA chunks have completed.
     if (!qspibus_wait_all_transfers_done(self, pdMS_TO_TICKS(QSPI_COLOR_TIMEOUT_MS))) {
         qspibus_reset_transfer_state(self);
-        mp_raise_OSError_msg(MP_ERROR_TEXT("QSPI color timeout"));
+        mp_raise_OSError_msg(MP_ERROR_TEXT("Operation timed out"));
     }
 }
 
@@ -290,7 +293,7 @@ void common_hal_qspibus_qspibus_construct(
     if (!qspibus_allocate_dma_buffers(self)) {
         vSemaphoreDelete(self->transfer_done_sem);
         self->transfer_done_sem = NULL;
-        mp_raise_msg(&mp_type_MemoryError, MP_ERROR_TEXT("Failed to allocate DMA buffers"));
+        mp_raise_msg(&mp_type_MemoryError, MP_ERROR_TEXT("Could not allocate DMA capable buffer"));
     }
 
     const spi_bus_config_t bus_config = {
@@ -308,7 +311,7 @@ void common_hal_qspibus_qspibus_construct(
         qspibus_release_dma_buffers(self);
         vSemaphoreDelete(self->transfer_done_sem);
         self->transfer_done_sem = NULL;
-        mp_raise_OSError_msg_varg(MP_ERROR_TEXT("SPI bus init failed: %d"), err);
+        mp_raise_OSError_msg_varg(MP_ERROR_TEXT("%q failure: %d"), MP_QSTR_SPI, (int)err);
     }
 
     const esp_lcd_panel_io_spi_config_t io_config = {
@@ -332,7 +335,7 @@ void common_hal_qspibus_qspibus_construct(
         qspibus_release_dma_buffers(self);
         vSemaphoreDelete(self->transfer_done_sem);
         self->transfer_done_sem = NULL;
-        mp_raise_OSError_msg_varg(MP_ERROR_TEXT("Panel IO init failed: %d"), err);
+        mp_raise_OSError_msg_varg(MP_ERROR_TEXT("%q failure: %d"), MP_QSTR_QSPI, (int)err);
     }
 
     claim_pin(clock);
@@ -472,7 +475,7 @@ void common_hal_qspibus_qspibus_write_data(
         return;
     }
     if (data == NULL) {
-        mp_raise_ValueError(MP_ERROR_TEXT("Data buffer is null"));
+        mp_raise_ValueError(MP_ERROR_TEXT("Buffer too small"));
     }
     if (!self->has_pending_command) {
         mp_raise_ValueError(MP_ERROR_TEXT("No pending command"));

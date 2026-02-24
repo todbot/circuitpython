@@ -99,6 +99,7 @@ msgid "%q contains duplicate pins"
 msgstr ""
 
 #: ports/atmel-samd/common-hal/sdioio/SDCard.c
+#: ports/espressif/common-hal/qspibus/QSPIBus.c
 msgid "%q failure: %d"
 msgstr ""
 
@@ -710,6 +711,7 @@ msgid "Buffer too short by %d bytes"
 msgstr ""
 
 #: ports/cxd56/common-hal/camera/Camera.c
+#: ports/espressif/common-hal/qspibus/QSPIBus.c
 #: shared-bindings/busdisplay/BusDisplay.c
 #: shared-bindings/framebufferio/FramebufferDisplay.c
 #: shared-bindings/struct/__init__.c shared-module/struct/__init__.c
@@ -872,7 +874,7 @@ msgstr ""
 msgid "Coordinate arrays types have different sizes"
 msgstr ""
 
-#: shared-module/usb/core/Device.c
+#: ports/espressif/common-hal/qspibus/QSPIBus.c shared-module/usb/core/Device.c
 msgid "Could not allocate DMA capable buffer"
 msgstr ""
 
@@ -1027,10 +1029,6 @@ msgstr ""
 
 #: ports/analog/common-hal/busio/UART.c shared-module/rgbmatrix/RGBMatrix.c
 msgid "Failed to allocate %q buffer"
-msgstr ""
-
-#: ports/espressif/common-hal/qspibus/QSPIBus.c
-msgid "Failed to allocate DMA buffers"
 msgstr ""
 
 #: ports/espressif/common-hal/wifi/__init__.c
@@ -1770,6 +1768,7 @@ msgid "Operation or feature not supported"
 msgstr ""
 
 #: ports/espressif/common-hal/espidf/__init__.c
+#: ports/espressif/common-hal/qspibus/QSPIBus.c
 msgid "Operation timed out"
 msgstr ""
 
@@ -1805,11 +1804,6 @@ msgstr ""
 
 #: shared-bindings/spitarget/SPITarget.c
 msgid "Packet buffers for an SPI transfer must have the same length."
-msgstr ""
-
-#: ports/espressif/common-hal/qspibus/QSPIBus.c
-#, c-format
-msgid "Panel IO init failed: %d"
 msgstr ""
 
 #: shared-module/jpegio/JpegDecoder.c
@@ -1916,28 +1910,6 @@ msgstr ""
 #: shared-bindings/digitalio/DigitalInOut.c
 #: shared-bindings/i2cioexpander/IOPin.c
 msgid "Pull not used when direction is output."
-msgstr ""
-
-#: ports/espressif/common-hal/qspibus/QSPIBus.c
-msgid "QSPI DMA buffers unavailable"
-msgstr ""
-
-#: ports/espressif/common-hal/qspibus/QSPIBus.c
-msgid "QSPI color timeout"
-msgstr ""
-
-#: ports/espressif/common-hal/qspibus/QSPIBus.c
-msgid "QSPI command timeout"
-msgstr ""
-
-#: ports/espressif/common-hal/qspibus/QSPIBus.c
-#, c-format
-msgid "QSPI send color failed: %d"
-msgstr ""
-
-#: ports/espressif/common-hal/qspibus/QSPIBus.c
-#, c-format
-msgid "QSPI send failed: %d"
 msgstr ""
 
 #: ports/raspberrypi/common-hal/countio/Counter.c
@@ -2059,11 +2031,6 @@ msgstr ""
 #: ports/stm/common-hal/sdioio/SDCard.c
 #, c-format
 msgid "SDIO Init Error %x"
-msgstr ""
-
-#: ports/espressif/common-hal/qspibus/QSPIBus.c
-#, c-format
-msgid "SPI bus init failed: %d"
 msgstr ""
 
 #: ports/espressif/common-hal/busio/SPI.c

@@ -261,6 +261,10 @@ static bool _refresh_area(busdisplay_busdisplay_obj_t *self, const displayio_are
     // QSPI panels benefit from larger sub-rectangle buffers because each chunk
     // has non-trivial command/window overhead. Keep this path qspibus-specific
     // to avoid increasing stack usage on other display buses.
+    // Guard: buffer is a VLA on stack; 2048 uint32_t words = 8KB is the safe
+    // upper bound for ESP32-S3's 24KB main task stack.
+    _Static_assert(CIRCUITPY_QSPI_DISPLAY_AREA_BUFFER_SIZE <= 2048,
+        "CIRCUITPY_QSPI_DISPLAY_AREA_BUFFER_SIZE exceeds safe stack limit (8KB)");
     if (mp_obj_is_type(self->bus.bus, &qspibus_qspibus_type) &&
         self->core.colorspace.depth == 16 &&
         !self->bus.data_as_commands &&
