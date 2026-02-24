@@ -11,9 +11,10 @@
 
 #include <zephyr/bluetooth/addr.h>
 #include <zephyr/bluetooth/bluetooth.h>
+#include <zephyr/bluetooth/conn.h>
 #include <zephyr/bluetooth/hci.h>
-#include <zephyr/kernel.h>
 
+#include "py/gc.h"
 #include "py/runtime.h"
 #include "bindings/zephyr_kernel/__init__.h"
 #include "shared-bindings/_bleio/__init__.h"
@@ -61,6 +62,104 @@ static uint8_t bleio_address_type_from_zephyr(const bt_addr_le_t *addr) {
             return BLEIO_ADDRESS_TYPE_PUBLIC;
     }
 }
+
+static uint8_t bleio_address_type_to_zephyr(uint8_t type) {
+    switch (type) {
+        case BLEIO_ADDRESS_TYPE_PUBLIC:
+            return BT_ADDR_LE_PUBLIC;
+        case BLEIO_ADDRESS_TYPE_RANDOM_STATIC:
+        case BLEIO_ADDRESS_TYPE_RANDOM_PRIVATE_RESOLVABLE:
+        case BLEIO_ADDRESS_TYPE_RANDOM_PRIVATE_NON_RESOLVABLE:
+            return BT_ADDR_LE_RANDOM;
+        default:
+            return BT_ADDR_LE_PUBLIC;
+    }
+}
+
+static bleio_connection_internal_t *bleio_connection_find_by_conn(const struct bt_conn *conn) {
+    for (size_t i = 0; i < BLEIO_TOTAL_CONNECTION_COUNT; i++) {
+        bleio_connection_internal_t *connection = &bleio_connections[i];
+        if (connection->conn == conn) {
+            return connection;
+        }
+    }
+
+    return NULL;
+}
+
+static bleio_connection_internal_t *bleio_connection_track(struct bt_conn *conn) {
+    bleio_connection_internal_t *connection = bleio_connection_find_by_conn(conn);
+    if (connection == NULL) {
+        for (size_t i = 0; i < BLEIO_TOTAL_CONNECTION_COUNT; i++) {
+            bleio_connection_internal_t *candidate = &bleio_connections[i];
+            if (candidate->conn == NULL) {
+                connection = candidate;
+                break;
+            }
+        }
+    }
+
+    if (connection == NULL) {
+        return NULL;
+    }
+
+    if (connection->conn == NULL) {
+        connection->conn = bt_conn_ref(conn);
+    }
+
+    return connection;
+}
+
+static void bleio_connection_clear(bleio_connection_internal_t *self) {
+    if (self == NULL) {
+        return;
+    }
+
+    if (self->conn != NULL) {
+        bt_conn_unref(self->conn);
+        self->conn = NULL;
+    }
+
+    self->connection_obj = mp_const_none;
+}
+
+static void bleio_connection_release(bleio_connection_internal_t *connection, uint8_t reason) {
+    if (connection == NULL) {
+        return;
+    }
+
+    if (connection->connection_obj != mp_const_none) {
+        bleio_connection_obj_t *connection_obj = MP_OBJ_TO_PTR(connection->connection_obj);
+        connection_obj->connection = NULL;
+        connection_obj->disconnect_reason = reason;
+    }
+
+    bleio_connection_clear(connection);
+    common_hal_bleio_adapter_obj.connection_objs = NULL;
+}
+
+static void bleio_connected_cb(struct bt_conn *conn, uint8_t err) {
+    if (err != 0) {
+        return;
+    }
+
+    if (bleio_connection_track(conn) == NULL) {
+        bt_conn_disconnect(conn, BT_HCI_ERR_CONN_LIMIT_EXCEEDED);
+        return;
+    }
+
+    common_hal_bleio_adapter_obj.connection_objs = NULL;
+}
+
+static void bleio_disconnected_cb(struct bt_conn *conn, uint8_t reason) {
+    printk("disconnected %p\n", conn);
+    bleio_connection_release(bleio_connection_find_by_conn(conn), reason);
+}
+
+BT_CONN_CB_DEFINE(bleio_connection_callbacks) = {
+    .connected = bleio_connected_cb,
+    .disconnected = bleio_disconnected_cb,
+};
 
 static void scan_recv_cb(const struct bt_le_scan_recv_info *info, struct net_buf_simple *buf) {
     if (active_scan_results == NULL || info == NULL || buf == NULL) {
@@ -129,8 +228,27 @@ static size_t bleio_parse_adv_data(const uint8_t *raw, size_t raw_len, struct bt
     return count;
 }
 
+static uint16_t bleio_validate_and_convert_timeout(mp_float_t timeout) {
+    mp_arg_validate_float_range(timeout, 0, UINT16_MAX, MP_QSTR_timeout);
+
+    if (timeout <= 0.0f) {
+        return 0;
+    }
+
+    const mp_int_t timeout_units =
+        mp_arg_validate_int_range((mp_int_t)(timeout * 100.0f + 0.5f), 1, UINT16_MAX, MP_QSTR_timeout);
+
+    return (uint16_t)timeout_units;
+}
+
 void common_hal_bleio_adapter_set_enabled(bleio_adapter_obj_t *self, bool enabled) {
+    if (enabled == ble_adapter_enabled) {
+        return;
+    }
     if (enabled) {
+        for (size_t i = 0; i < BLEIO_TOTAL_CONNECTION_COUNT; i++) {
+            bleio_connection_clear(&bleio_connections[i]);
+        }
         if (!bt_is_ready()) {
             int err = bt_enable(NULL);
             if (err != 0) {
@@ -320,17 +438,7 @@ mp_obj_t common_hal_bleio_adapter_start_scan(bleio_adapter_obj_t *self, uint8_t 
 
     uint16_t interval_units = (uint16_t)((interval / 0.000625f) + 0.5f);
     uint16_t window_units = (uint16_t)((window / 0.000625f) + 0.5f);
-    uint32_t timeout_units = 0;
-
-    if (timeout > 0.0f) {
-        timeout_units = (uint32_t)(timeout * 100.0f + 0.5f);
-        if (timeout_units > UINT16_MAX) {
-            mp_raise_ValueError(MP_ERROR_TEXT("timeout must be < 655.35 secs"));
-        }
-        if (timeout_units == 0) {
-            mp_raise_ValueError(MP_ERROR_TEXT("non-zero timeout must be > 0.01"));
-        }
-    }
+    uint16_t timeout_units = bleio_validate_and_convert_timeout(timeout);
 
     struct bt_le_scan_param scan_params = {
         .type = active ? BT_LE_SCAN_TYPE_ACTIVE : BT_LE_SCAN_TYPE_PASSIVE,
@@ -363,15 +471,110 @@ void common_hal_bleio_adapter_stop_scan(bleio_adapter_obj_t *self) {
 }
 
 bool common_hal_bleio_adapter_get_connected(bleio_adapter_obj_t *self) {
+    if (!ble_adapter_enabled) {
+        return false;
+    }
+
+    for (size_t i = 0; i < BLEIO_TOTAL_CONNECTION_COUNT; i++) {
+        if (bleio_connections[i].conn != NULL) {
+            return true;
+        }
+    }
+
     return false;
 }
 
 mp_obj_t common_hal_bleio_adapter_get_connections(bleio_adapter_obj_t *self) {
-    mp_raise_NotImplementedError(NULL);
+    if (!ble_adapter_enabled) {
+        self->connection_objs = NULL;
+        return mp_const_empty_tuple;
+    }
+
+    if (self->connection_objs != NULL) {
+        return self->connection_objs;
+    }
+
+    size_t total_connected = 0;
+    mp_obj_t items[BLEIO_TOTAL_CONNECTION_COUNT];
+    for (size_t i = 0; i < BLEIO_TOTAL_CONNECTION_COUNT; i++) {
+        bleio_connection_internal_t *connection = &bleio_connections[i];
+        if (connection->conn == NULL) {
+            continue;
+        }
+
+        if (connection->connection_obj == mp_const_none) {
+            connection->connection_obj = bleio_connection_new_from_internal(connection);
+        }
+
+        items[total_connected] = connection->connection_obj;
+        total_connected++;
+    }
+
+    self->connection_objs = mp_obj_new_tuple(total_connected, items);
+    return self->connection_objs;
 }
 
 mp_obj_t common_hal_bleio_adapter_connect(bleio_adapter_obj_t *self, bleio_address_obj_t *address, mp_float_t timeout) {
-    mp_raise_NotImplementedError(NULL);
+    common_hal_bleio_adapter_stop_scan(self);
+
+    const uint16_t timeout_units = bleio_validate_and_convert_timeout(timeout);
+
+    mp_buffer_info_t address_bufinfo;
+    mp_get_buffer_raise(address->bytes, &address_bufinfo, MP_BUFFER_READ);
+
+    bt_addr_le_t peer = {
+        .type = bleio_address_type_to_zephyr(address->type),
+    };
+    memcpy(peer.a.val, address_bufinfo.buf, NUM_BLEIO_ADDRESS_BYTES);
+
+    struct bt_conn_le_create_param create_params = BT_CONN_LE_CREATE_PARAM_INIT(
+        BT_CONN_LE_OPT_NONE,
+        BT_GAP_SCAN_FAST_INTERVAL,
+        BT_GAP_SCAN_FAST_INTERVAL);
+    create_params.timeout = timeout_units;
+
+    struct bt_conn *conn = NULL;
+    int err = bt_conn_le_create(&peer, &create_params, BT_LE_CONN_PARAM_DEFAULT, &conn);
+    if (err != 0) {
+        raise_zephyr_error(err);
+    }
+
+    while (true) {
+        struct bt_conn_info info;
+        err = bt_conn_get_info(conn, &info);
+        if (err == 0) {
+            if (info.state == BT_CONN_STATE_CONNECTED) {
+                break;
+            }
+
+            if (info.state == BT_CONN_STATE_DISCONNECTED) {
+                bt_conn_unref(conn);
+                mp_raise_bleio_BluetoothError(MP_ERROR_TEXT("Failed to connect"));
+            }
+        } else if (err != -ENOTCONN) {
+            bt_conn_unref(conn);
+            raise_zephyr_error(err);
+        }
+
+        RUN_BACKGROUND_TASKS;
+    }
+
+    bleio_connection_internal_t *connection = bleio_connection_find_by_conn(conn);
+    if (connection == NULL) {
+        connection = bleio_connection_track(conn);
+    }
+
+    if (connection == NULL) {
+        bt_conn_unref(conn);
+        mp_raise_bleio_BluetoothError(MP_ERROR_TEXT("Failed to connect: internal error"));
+    }
+
+    // bt_conn_le_create() gave us a ref in `conn`; `connection` keeps its own
+    // ref via bleio_connection_track(). Drop the create ref now.
+    bt_conn_unref(conn);
+
+    self->connection_objs = NULL;
+    return bleio_connection_new_from_internal(connection);
 }
 
 void common_hal_bleio_adapter_erase_bonding(bleio_adapter_obj_t *self) {
@@ -383,13 +586,32 @@ bool common_hal_bleio_adapter_is_bonded_to_central(bleio_adapter_obj_t *self) {
 }
 
 void bleio_adapter_gc_collect(bleio_adapter_obj_t *adapter) {
-    // Nothing to do for now.
+    gc_collect_root((void **)adapter, sizeof(bleio_adapter_obj_t) / sizeof(size_t));
+    gc_collect_root((void **)bleio_connections, sizeof(bleio_connections) / sizeof(size_t));
 }
 
 void bleio_adapter_reset(bleio_adapter_obj_t *adapter) {
     if (adapter == NULL) {
         return;
     }
+
+    common_hal_bleio_adapter_stop_scan(adapter);
+    common_hal_bleio_adapter_stop_advertising(adapter);
+
+    for (size_t i = 0; i < BLEIO_TOTAL_CONNECTION_COUNT; i++) {
+        bleio_connection_internal_t *connection = &bleio_connections[i];
+        if (connection->conn != NULL) {
+            bt_conn_disconnect(connection->conn, BT_HCI_ERR_REMOTE_USER_TERM_CONN);
+        }
+        if (connection->connection_obj != MP_OBJ_NULL &&
+            connection->connection_obj != mp_const_none) {
+            bleio_connection_obj_t *connection_obj = MP_OBJ_TO_PTR(connection->connection_obj);
+            connection_obj->connection = NULL;
+            connection_obj->disconnect_reason = BT_HCI_ERR_REMOTE_USER_TERM_CONN;
+        }
+        bleio_connection_clear(connection);
+    }
+
     adapter->scan_results = NULL;
     adapter->connection_objs = NULL;
     active_scan_results = NULL;

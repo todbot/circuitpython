@@ -9,10 +9,6 @@
 #include "mpconfigboard.h"
 #include "supervisor/shared/tick.h"
 
-#if CIRCUITPY_BLEIO
-#include "shared-bindings/_bleio/__init__.h"
-#endif
-
 #include <zephyr/autoconf.h>
 #include <zephyr/kernel.h>
 #include <zephyr/sys/reboot.h>
@@ -93,10 +89,6 @@ void reset_cpu(void) {
 }
 
 void reset_port(void) {
-    #if CIRCUITPY_BLEIO
-    bleio_reset();
-    #endif
-
     #if defined(CONFIG_ARCH_POSIX)
     native_sim_reset_port_count++;
     if (native_sim_vm_runs != INT32_MAX &&
