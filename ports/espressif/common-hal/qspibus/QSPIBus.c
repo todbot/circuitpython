@@ -506,12 +506,10 @@ bool common_hal_qspibus_qspibus_bus_free(mp_obj_t obj) {
 
 bool common_hal_qspibus_qspibus_begin_transaction(mp_obj_t obj) {
     qspibus_qspibus_obj_t *self = MP_OBJ_TO_PTR(obj);
-    if (!self->bus_initialized || self->in_transaction) {
+    if (!common_hal_qspibus_qspibus_bus_free(obj)) {
         return false;
     }
     self->in_transaction = true;
-    self->has_pending_command = false;
-    self->pending_command = 0;
     return true;
 }
 

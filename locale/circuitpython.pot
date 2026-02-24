@@ -711,7 +711,6 @@ msgid "Buffer too short by %d bytes"
 msgstr ""
 
 #: ports/cxd56/common-hal/camera/Camera.c
-#: ports/espressif/common-hal/qspibus/QSPIBus.c
 #: shared-bindings/busdisplay/BusDisplay.c
 #: shared-bindings/framebufferio/FramebufferDisplay.c
 #: shared-bindings/struct/__init__.c shared-module/struct/__init__.c
@@ -874,8 +873,7 @@ msgstr ""
 msgid "Coordinate arrays types have different sizes"
 msgstr ""
 
-#: shared-module/usb/core/Device.c
-#: ports/espressif/common-hal/qspibus/QSPIBus.c
+#: ports/espressif/common-hal/qspibus/QSPIBus.c shared-module/usb/core/Device.c
 msgid "Could not allocate DMA capable buffer"
 msgstr ""
 
@@ -915,10 +913,6 @@ msgstr ""
 #: ports/atmel-samd/common-hal/paralleldisplaybus/ParallelBus.c
 #: ports/nordic/common-hal/paralleldisplaybus/ParallelBus.c
 msgid "Data 0 pin must be byte aligned"
-msgstr ""
-
-#: ports/espressif/common-hal/qspibus/QSPIBus.c
-msgid "Data buffer is null"
 msgstr ""
 
 #: shared-module/jpegio/JpegDecoder.c
@@ -1536,7 +1530,7 @@ msgstr ""
 #: ports/stm/common-hal/busio/UART.c shared-bindings/fourwire/FourWire.c
 #: shared-bindings/i2cdisplaybus/I2CDisplayBus.c
 #: shared-bindings/paralleldisplaybus/ParallelBus.c
-#: shared-module/bitbangio/SPI.c
+#: shared-bindings/qspibus/QSPIBus.c shared-module/bitbangio/SPI.c
 msgid "No %q pin"
 msgstr ""
 
