@@ -7,7 +7,7 @@
 // This implementation largely follows the structure of adafruit_sdcard.py
 
 #include "extmod/vfs.h"
-
+#include "esp_log.h"
 #include "shared-bindings/busio/SPI.h"
 #include "shared-bindings/digitalio/DigitalInOut.h"
 #include "shared-bindings/sdcardio/SDCard.h"
@@ -23,7 +23,12 @@
 #define DEBUG_PRINT(...) ((void)0)
 #endif
 
-#define CMD_TIMEOUT (200)
+// https://www.taterli.com/wp-content/uploads/2017/05/Physical-Layer-Simplified-SpecificationV6.0.pdf
+// specifies timeouts for read (100 ms), write (250 ms), erase (depends on size), and other operations.
+// But the document also suggests allowing 500 ms even if a shorter timeout is specified.
+// So let's allow a nice long time, but don't wait in a tight loop: allow background tasks to run.
+#define CMD_TIMEOUT_MS (500)
+#define TIMEOUT_MS (500)
 
 #define R1_IDLE_STATE (1 << 0)
 #define R1_ILLEGAL_COMMAND (1 << 2)
@@ -106,21 +111,38 @@ static uint8_t CRC7(const uint8_t *data, uint8_t n) {
     return (crc << 1) | 1;
 }
 
-#define READY_TIMEOUT_NS (300 * 1000 * 1000) // 300ms
-static int wait_for_ready(sdcardio_sdcard_obj_t *self) {
-    uint64_t deadline = common_hal_time_monotonic_ns() + READY_TIMEOUT_NS;
-    while (common_hal_time_monotonic_ns() < deadline) {
+// Assumes that the spi lock has been acquired.
+//
+// Mask the incoming value with mask. Use 0xff to not mask.
+// if not_match is true, wait for something NOT matching the value.
+// Return the response as an int32_t (which is always >= 0), or -1 if timed out.
+static int32_t wait_for_masked_response(sdcardio_sdcard_obj_t *self, uint8_t mask, uint8_t response, bool not_match, uint32_t timeout_ms) {
+    uint64_t deadline = supervisor_ticks_ms64() + timeout_ms;
+    while (supervisor_ticks_ms64() < deadline) {
         uint8_t b;
         common_hal_busio_spi_read(self->bus, &b, 1, 0xff);
-        if (b == 0xff) {
-            return 0;
+        if (((b & mask) == response) ^ not_match) {
+            return b;
         }
+        RUN_BACKGROUND_TASKS;
     }
-    return -ETIMEDOUT;
+    return -1;
+}
+
+// Wait for the given response byte.
+static bool wait_for_response(sdcardio_sdcard_obj_t *self, uint8_t response) {
+    return wait_for_masked_response(self, 0xff, response, false, TIMEOUT_MS) != -1;
+}
+
+#define READY_TIMEOUT_MS (300)
+
+// Wait for 0xff, with a shorter timeout.
+static bool wait_for_ready(sdcardio_sdcard_obj_t *self) {
+    return wait_for_masked_response(self, 0xff, 0xff, false, READY_TIMEOUT_MS) != -1;
 }
 
 // Note: this is never called while "in cmd25" (in fact, it's only used by `exit_cmd25`)
-static int cmd_nodata(sdcardio_sdcard_obj_t *self, int cmd, int response) {
+static mp_negative_errno_t cmd_nodata(sdcardio_sdcard_obj_t *self, int cmd, int response) {
     uint8_t cmdbuf[2] = {cmd, 0xff};
 
     assert(!self->in_cmd25);
@@ -128,17 +150,14 @@ static int cmd_nodata(sdcardio_sdcard_obj_t *self, int cmd, int response) {
     common_hal_busio_spi_write(self->bus, cmdbuf, sizeof(cmdbuf));
 
     // Wait for the response (response[7] == response)
-    for (int i = 0; i < CMD_TIMEOUT; i++) {
-        common_hal_busio_spi_read(self->bus, cmdbuf, 1, 0xff);
-        if (cmdbuf[0] == response) {
-            return 0;
-        }
+    if (wait_for_response(self, response)) {
+        return 0;
     }
     return -MP_EIO;
 }
 
 
-static int exit_cmd25(sdcardio_sdcard_obj_t *self) {
+static mp_negative_errno_t exit_cmd25(sdcardio_sdcard_obj_t *self) {
     if (self->in_cmd25) {
         DEBUG_PRINT("exit cmd25\n");
         self->in_cmd25 = false;
@@ -149,7 +168,7 @@ static int exit_cmd25(sdcardio_sdcard_obj_t *self) {
 
 // In Python API, defaults are response=None, data_block=True, wait=True
 static int cmd(sdcardio_sdcard_obj_t *self, int cmd, int arg, void *response_buf, size_t response_len, bool data_block, bool wait) {
-    int r = exit_cmd25(self);
+    mp_negative_errno_t r = exit_cmd25(self);
     if (r < 0) {
         return r;
     }
@@ -164,25 +183,17 @@ static int cmd(sdcardio_sdcard_obj_t *self, int cmd, int arg, void *response_buf
     cmdbuf[5] = CRC7(cmdbuf, 5);
 
     if (wait) {
-        r = wait_for_ready(self);
-        if (r < 0) {
-            return r;
+        if (!wait_for_ready(self)) {
+            return -MP_ETIMEDOUT;
         }
     }
 
     common_hal_busio_spi_write(self->bus, cmdbuf, sizeof(cmdbuf));
 
     // Wait for the response (response[7] == 0)
-    bool response_received = false;
-    for (int i = 0; i < CMD_TIMEOUT; i++) {
-        common_hal_busio_spi_read(self->bus, cmdbuf, 1, 0xff);
-        if ((cmdbuf[0] & 0x80) == 0) {
-            response_received = true;
-            break;
-        }
-    }
-
-    if (!response_received) {
+    // Now wait for cmd response, which is the high bit being 0.
+    int32_t response = wait_for_masked_response(self, 0x80, 0, false, CMD_TIMEOUT_MS);
+    if (response == -1) {
         return -MP_EIO;
     }
 
@@ -190,22 +201,25 @@ static int cmd(sdcardio_sdcard_obj_t *self, int cmd, int arg, void *response_buf
 
         if (data_block) {
             cmdbuf[1] = 0xff;
-            do {
-                // Wait for the start block byte
-                common_hal_busio_spi_read(self->bus, cmdbuf + 1, 1, 0xff);
-            } while (cmdbuf[1] != 0xfe);
+            if (!wait_for_response(self, 0xfe)) {
+                return -MP_EIO;
+            }
         }
 
-        common_hal_busio_spi_read(self->bus, response_buf, response_len, 0xff);
+        if (!common_hal_busio_spi_read(self->bus, response_buf, response_len, 0xff)) {
+            return -MP_EIO;
+        }
 
         if (data_block) {
             // Read and discard the CRC-CCITT checksum
-            common_hal_busio_spi_read(self->bus, cmdbuf + 1, 2, 0xff);
+            if (!common_hal_busio_spi_read(self->bus, cmdbuf + 1, 2, 0xff)) {
+                return -MP_EIO;
+            }
         }
 
     }
 
-    return cmdbuf[0];
+    return response;
 }
 
 static int block_cmd(sdcardio_sdcard_obj_t *self, int cmd_, int block, void *response_buf, size_t response_len, bool data_block, bool wait) {
@@ -213,16 +227,19 @@ static int block_cmd(sdcardio_sdcard_obj_t *self, int cmd_, int block, void *res
 }
 
 static mp_rom_error_text_t init_card_v1(sdcardio_sdcard_obj_t *self) {
-    for (int i = 0; i < CMD_TIMEOUT; i++) {
+    uint64_t deadline = supervisor_ticks_ms64() + CMD_TIMEOUT_MS;
+    while (supervisor_ticks_ms64() < deadline) {
         if (cmd(self, 41, 0, NULL, 0, true, true) == 0) {
             return NULL;
         }
+        RUN_BACKGROUND_TASKS;
     }
     return MP_ERROR_TEXT("timeout waiting for v1 card");
 }
 
 static mp_rom_error_text_t init_card_v2(sdcardio_sdcard_obj_t *self) {
-    for (int i = 0; i < CMD_TIMEOUT; i++) {
+    uint64_t deadline = supervisor_ticks_ms64() + CMD_TIMEOUT_MS;
+    while (supervisor_ticks_ms64() < deadline) {
         uint8_t ocr[4];
         common_hal_time_delay_ms(50);
         cmd(self, 58, 0, ocr, sizeof(ocr), false, true);
@@ -234,6 +251,7 @@ static mp_rom_error_text_t init_card_v2(sdcardio_sdcard_obj_t *self) {
             }
             return NULL;
         }
+        RUN_BACKGROUND_TASKS;
     }
     return MP_ERROR_TEXT("timeout waiting for v2 card");
 }
@@ -250,6 +268,7 @@ static mp_rom_error_text_t init_card(sdcardio_sdcard_obj_t *self) {
     {
         bool reached_idle_state = false;
         for (int i = 0; i < 5; i++) {
+            ESP_LOGW("init_card", "loop: %d", i);
             // do not call cmd with wait=true, because that will return
             // prematurely if the idle state is not reached. we can't depend on
             // this when the card is not yet in SPI mode
@@ -366,23 +385,25 @@ int common_hal_sdcardio_sdcard_get_blockcount(sdcardio_sdcard_obj_t *self) {
 }
 
 static int readinto(sdcardio_sdcard_obj_t *self, void *buf, size_t size) {
-    uint8_t aux[2] = {0, 0};
-    while (aux[0] != 0xfe) {
-        common_hal_busio_spi_read(self->bus, aux, 1, 0xff);
+
+    if (!wait_for_response(self, 0xfe)) {
+        return -MP_EIO;
     }
 
     common_hal_busio_spi_read(self->bus, buf, size, 0xff);
 
     // Read checksum and throw it away
-    common_hal_busio_spi_read(self->bus, aux, sizeof(aux), 0xff);
+    uint8_t checksum[2];
+    common_hal_busio_spi_read(self->bus, checksum, sizeof(checksum), 0xff);
     return 0;
 }
 
+// The mp_uint_t is misleading; negative errors can be returned.
 mp_uint_t sdcardio_sdcard_readblocks(mp_obj_t self_in, uint8_t *buf, uint32_t start_block, uint32_t nblocks) {
     // deinit check is in lock_and_configure_bus()
     sdcardio_sdcard_obj_t *self = MP_OBJ_TO_PTR(self_in);
     if (!lock_and_configure_bus(self)) {
-        return MP_EAGAIN;
+        return -MP_EAGAIN;
     }
     int r = 0;
     size_t buflen = 512 * nblocks;
@@ -415,6 +436,7 @@ mp_uint_t sdcardio_sdcard_readblocks(mp_obj_t self_in, uint8_t *buf, uint32_t st
         }
     }
     extraclock_and_unlock_bus(self);
+    // No caller actually uses this value.
     return r;
 }
 
@@ -427,7 +449,9 @@ int common_hal_sdcardio_sdcard_readblocks(sdcardio_sdcard_obj_t *self, uint32_t 
 }
 
 static int _write(sdcardio_sdcard_obj_t *self, uint8_t token, void *buf, size_t size) {
-    wait_for_ready(self);
+    if (!wait_for_ready(self)) {
+        return -MP_ETIMEDOUT;
+    }
 
     uint8_t cmd[2];
     cmd[0] = token;
@@ -450,7 +474,8 @@ static int _write(sdcardio_sdcard_obj_t *self, uint8_t token, void *buf, size_t 
     // with STATUS 010 indicating "data accepted", and other status bit
     // combinations indicating failure.
     // In practice, I was seeing cmd[0] as 0xe5, indicating success
-    for (int i = 0; i < CMD_TIMEOUT; i++) {
+    uint64_t deadline = supervisor_ticks_ms64() + CMD_TIMEOUT_MS;
+    while (supervisor_ticks_ms64() < deadline) {
         common_hal_busio_spi_read(self->bus, cmd, 1, 0xff);
         DEBUG_PRINT("i=%02d cmd[0] = 0x%02x\n", i, cmd[0]);
         if ((cmd[0] & 0b00010001) == 0b00000001) {
@@ -460,12 +485,15 @@ static int _write(sdcardio_sdcard_obj_t *self, uint8_t token, void *buf, size_t 
                 break;
             }
         }
+        RUN_BACKGROUND_TASKS;
     }
 
     // Wait for the write to finish
-    do {
-        common_hal_busio_spi_read(self->bus, cmd, 1, 0xff);
-    } while (cmd[0] == 0);
+
+    // Wait for a non-zero value.
+    if (wait_for_masked_response(self, 0xff /*mask*/, 0, true /*not_match*/, TIMEOUT_MS) == -1) {
+        return -MP_EIO;
+    }
 
     // Success
     return 0;
@@ -475,7 +503,7 @@ mp_uint_t sdcardio_sdcard_writeblocks(mp_obj_t self_in, uint8_t *buf, uint32_t s
     // deinit check is in lock_and_configure_bus()
     sdcardio_sdcard_obj_t *self = MP_OBJ_TO_PTR(self_in);
     if (!lock_and_configure_bus(self)) {
-        return MP_EAGAIN;
+        return -MP_EAGAIN;
     }
 
     if (!self->in_cmd25 || start_block != self->next_block) {
@@ -507,15 +535,17 @@ mp_uint_t sdcardio_sdcard_writeblocks(mp_obj_t self_in, uint8_t *buf, uint32_t s
     return 0;
 }
 
-int common_hal_sdcardio_sdcard_sync(sdcardio_sdcard_obj_t *self) {
+mp_negative_errno_t common_hal_sdcardio_sdcard_sync(sdcardio_sdcard_obj_t *self) {
     // deinit check is in lock_and_configure_bus()
-    lock_and_configure_bus(self);
+    if (!lock_and_configure_bus(self)) {
+        return -MP_EAGAIN;
+    }
     int r = exit_cmd25(self);
     extraclock_and_unlock_bus(self);
     return r;
 }
 
-int common_hal_sdcardio_sdcard_writeblocks(sdcardio_sdcard_obj_t *self, uint32_t start_block, mp_buffer_info_t *buf) {
+mp_negative_errno_t common_hal_sdcardio_sdcard_writeblocks(sdcardio_sdcard_obj_t *self, uint32_t start_block, mp_buffer_info_t *buf) {
     if (buf->len % 512 != 0) {
         mp_raise_ValueError_varg(MP_ERROR_TEXT("Buffer must be a multiple of %d bytes"), 512);
     }
