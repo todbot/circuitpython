@@ -5,9 +5,8 @@
 CIRCUITPY_CREATOR_ID  = 0x57415645  # 'WAVE' (Waveshare)
 CIRCUITPY_CREATION_ID = 0x41323431  # 'A241' (AMOLED 2.41)
 
-# USB identifiers - from Arduino pins_arduino.h
 USB_VID = 0x303A
-USB_PID = 0x82CE
+USB_PID = 0x8278
 USB_MANUFACTURER = "Waveshare"
 USB_PRODUCT = "ESP32-S3-Touch-AMOLED-2.41"
 
