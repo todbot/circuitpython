@@ -464,7 +464,7 @@ void common_hal_qspibus_qspibus_write_data(
         }
         return;
     }
-   if (!self->has_pending_command) {
+    if (!self->has_pending_command) {
         mp_raise_ValueError(MP_ERROR_TEXT("No pending command"));
     }
 

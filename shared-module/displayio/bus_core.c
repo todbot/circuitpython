@@ -114,7 +114,7 @@ void displayio_display_bus_end_transaction(displayio_display_bus_t *self) {
     self->end_transaction(self->bus);
 }
 
-void displayio_display_bus_set_region_to_update(displayio_display_bus_t *self, displayio_display_core_t *display, displayio_area_t *area) {
+static void _displayio_display_bus_send_region_commands(displayio_display_bus_t *self, displayio_display_core_t *display, displayio_area_t *area, bool manage_transactions) {
     uint16_t x1 = area->x1 + self->colstart;
     uint16_t x2 = area->x2 + self->colstart;
     uint16_t y1 = area->y1 + self->rowstart;
@@ -141,7 +141,9 @@ void displayio_display_bus_set_region_to_update(displayio_display_bus_t *self, d
     }
 
     // Set column.
-    displayio_display_bus_begin_transaction(self);
+    if (manage_transactions) {
+        displayio_display_bus_begin_transaction(self);
+    }
     uint8_t data[5];
     data[0] = self->column_command;
     uint8_t data_length = 1;
@@ -176,20 +178,28 @@ void displayio_display_bus_set_region_to_update(displayio_display_bus_t *self, d
     }
 
     self->send(self->bus, data_type, chip_select, data, data_length);
-    displayio_display_bus_end_transaction(self);
+    if (manage_transactions) {
+        displayio_display_bus_end_transaction(self);
+    }
 
     if (self->set_current_column_command != NO_COMMAND) {
         uint8_t command = self->set_current_column_command;
-        displayio_display_bus_begin_transaction(self);
+        if (manage_transactions) {
+            displayio_display_bus_begin_transaction(self);
+        }
         self->send(self->bus, DISPLAY_COMMAND, chip_select, &command, 1);
         // Only send the first half of data because it is the first coordinate.
         self->send(self->bus, DISPLAY_DATA, chip_select, data, data_length / 2);
-        displayio_display_bus_end_transaction(self);
+        if (manage_transactions) {
+            displayio_display_bus_end_transaction(self);
+        }
     }
 
 
     // Set row.
-    displayio_display_bus_begin_transaction(self);
+    if (manage_transactions) {
+        displayio_display_bus_begin_transaction(self);
+    }
     data[0] = self->row_command;
     data_length = 1;
     if (!self->data_as_commands) {
@@ -220,17 +230,33 @@ void displayio_display_bus_set_region_to_update(displayio_display_bus_t *self, d
     }
 
     self->send(self->bus, data_type, chip_select, data, data_length);
-    displayio_display_bus_end_transaction(self);
+    if (manage_transactions) {
+        displayio_display_bus_end_transaction(self);
+    }
 
     if (self->set_current_row_command != NO_COMMAND) {
         uint8_t command = self->set_current_row_command;
-        displayio_display_bus_begin_transaction(self);
+        if (manage_transactions) {
+            displayio_display_bus_begin_transaction(self);
+        }
         self->send(self->bus, DISPLAY_COMMAND, chip_select, &command, 1);
         // Only send the first half of data because it is the first coordinate.
         self->send(self->bus, DISPLAY_DATA, chip_select, data, data_length / 2);
-        displayio_display_bus_end_transaction(self);
+        if (manage_transactions) {
+            displayio_display_bus_end_transaction(self);
+        }
     }
 }
+
+void displayio_display_bus_set_region_to_update(displayio_display_bus_t *self, displayio_display_core_t *display, displayio_area_t *area) {
+    _displayio_display_bus_send_region_commands(self, display, area, true);
+}
+
+#if CIRCUITPY_QSPIBUS
+void displayio_display_bus_send_region_commands(displayio_display_bus_t *self, displayio_display_core_t *display, displayio_area_t *area) {
+    _displayio_display_bus_send_region_commands(self, display, area, false);
+}
+#endif
 
 void displayio_display_bus_collect_ptrs(displayio_display_bus_t *self) {
     self->collect_ptrs(self->bus);
