@@ -194,12 +194,11 @@ static void qspibus_send_color_bytes(
         remaining -= chunk;
     }
 
-    // Keep Python/API semantics predictable: color transfer call returns only
-    // after queued DMA chunks have completed.
-    if (!qspibus_wait_all_transfers_done(self, pdMS_TO_TICKS(QSPI_COLOR_TIMEOUT_MS))) {
-        qspibus_reset_transfer_state(self);
-        mp_raise_OSError_msg(MP_ERROR_TEXT("Operation timed out"));
-    }
+    // Let DMA complete asynchronously. The next begin_transaction() will
+    // wait for all in-flight transfers, allowing fill_area() computation
+    // to overlap with DMA.  The explicit wait is only needed for the
+    // Python write_data() API path where callers expect the transfer to
+    // be finished on return.
 }
 
 static bool qspibus_is_color_payload_command(uint8_t command) {
@@ -465,12 +464,19 @@ void common_hal_qspibus_qspibus_write_data(
         }
         return;
     }
-    if (!self->has_pending_command) {
+   if (!self->has_pending_command) {
         mp_raise_ValueError(MP_ERROR_TEXT("No pending command"));
     }
 
     if (qspibus_is_color_payload_command(self->pending_command)) {
         qspibus_send_color_bytes(self, self->pending_command, data, len);
+        // Python API: wait for DMA to finish so callers see the transfer as
+        // complete on return. The internal displayio path skips this wait
+        // to allow fill_area/DMA overlap.
+        if (!qspibus_wait_all_transfers_done(self, pdMS_TO_TICKS(QSPI_COLOR_TIMEOUT_MS))) {
+            qspibus_reset_transfer_state(self);
+            mp_raise_OSError_msg(MP_ERROR_TEXT("Operation timed out"));
+        }
     } else {
         qspibus_send_command_bytes(self, self->pending_command, data, len);
     }
@@ -497,8 +503,19 @@ bool common_hal_qspibus_qspibus_bus_free(mp_obj_t obj) {
 
 bool common_hal_qspibus_qspibus_begin_transaction(mp_obj_t obj) {
     qspibus_qspibus_obj_t *self = MP_OBJ_TO_PTR(obj);
-    if (!common_hal_qspibus_qspibus_bus_free(obj)) {
+    if (!self->bus_initialized || self->in_transaction || self->has_pending_command) {
         return false;
+    }
+    // Wait for any in-flight DMA to complete before starting a new
+    // transaction. This replaces the old non-blocking bus_free() check
+    // and enables fill_area()/DMA overlap: the CPU fills the next
+    // subrectangle while the previous DMA runs, and this wait only
+    // blocks when we actually need the bus for the next send.
+    if (self->transfer_in_progress) {
+        if (!qspibus_wait_all_transfers_done(self, pdMS_TO_TICKS(QSPI_COLOR_TIMEOUT_MS))) {
+            qspibus_reset_transfer_state(self);
+            return false;
+        }
     }
     self->in_transaction = true;
     return true;
