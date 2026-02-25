@@ -9,7 +9,7 @@
 
 // USB identifiers
 #define USB_VID 0x303A
-#define USB_PID 0x82CE
+#define USB_PID 0x8278
 #define USB_MANUFACTURER "Waveshare"
 #define USB_PRODUCT "ESP32-S3-Touch-AMOLED-2.41"
 
