@@ -21,8 +21,8 @@
 // ESP32-S3 main task stack is 24KB; verified safe with this board.
 #define CIRCUITPY_QSPI_DISPLAY_AREA_BUFFER_SIZE (2048)
 
-// AMOLED Display (displayio + qspibus path)
-#define CIRCUITPY_BOARD_DISPLAY      (0)
+// AMOLED Display (displayio + qspibus path) - initialized in board_init()
+#define CIRCUITPY_BOARD_DISPLAY      (1)
 #define CIRCUITPY_LCD_CS             (&pin_GPIO9)
 #define CIRCUITPY_LCD_CLK            (&pin_GPIO10)
 #define CIRCUITPY_LCD_D0             (&pin_GPIO11)
