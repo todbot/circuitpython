@@ -14,7 +14,8 @@
 // RM690B0 AMOLED initialization sequence.
 // Format: command byte, length | 0x80 (if delay), data bytes..., [delay ms]
 // Based on vendor recommendations, tested with Waveshare 2.41" AMOLED panel.
-static const uint8_t display_init_sequence[] = {
+// Non-const to match upstream common_hal_busdisplay_busdisplay_construct signature.
+static uint8_t display_init_sequence[] = {
     // Page select and configuration
     0xFE, 0x01, 0x20,             // Enter user command mode
     0x26, 0x01, 0x0A,             // Bias setting
@@ -78,7 +79,7 @@ void board_init(void) {
         MIPI_COMMAND_SET_COLUMN_ADDRESS,    // set_column_command
         MIPI_COMMAND_SET_PAGE_ADDRESS,      // set_row_command
         MIPI_COMMAND_WRITE_MEMORY_START,    // write_ram_command
-        (uint8_t *)display_init_sequence,
+        display_init_sequence,
         sizeof(display_init_sequence),
         NULL,         // backlight_pin (AMOLED — no backlight GPIO)
         0x51,         // brightness_command
