@@ -139,8 +139,14 @@ static mp_obj_t qspibus_qspibus_send(size_t n_args, const mp_obj_t *pos_args, mp
         len = data_bufinfo.len;
     }
 
+    // Flush any pending command from a prior write_command() call.
+    // begin_transaction() returns false while has_pending_command is set,
+    // so entering the wait loop without flushing would spin forever.
+    if (self->has_pending_command) {
+        common_hal_qspibus_qspibus_write_data(self, NULL, 0);
+    }
+
     // Wait for display bus to be available, then acquire transaction.
-    // Mirrors FourWire.send() pattern: begin_transaction → send → end_transaction.
     while (!common_hal_qspibus_qspibus_begin_transaction(MP_OBJ_FROM_PTR(self))) {
         RUN_BACKGROUND_TASKS;
     }
