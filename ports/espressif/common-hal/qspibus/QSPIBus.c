@@ -352,6 +352,9 @@ void common_hal_qspibus_qspibus_construct(
     #ifdef CIRCUITPY_QSPIBUS_PANEL_POWER_PIN
     const mcu_pin_obj_t *power = CIRCUITPY_QSPIBUS_PANEL_POWER_PIN;
     if (power != NULL) {
+        if (!common_hal_mcu_pin_is_free(power)) {
+            mp_raise_ValueError_varg(MP_ERROR_TEXT("%q in use"), MP_QSTR_power);
+        }
         self->power_pin = power->number;
         claim_pin(power);
         gpio_set_direction((gpio_num_t)self->power_pin, GPIO_MODE_OUTPUT);

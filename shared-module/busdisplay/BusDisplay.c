@@ -329,10 +329,12 @@ static bool _refresh_area(busdisplay_busdisplay_obj_t *self, const displayio_are
         remaining_rows -= rows_per_buffer;
 
         #if CIRCUITPY_QSPIBUS
-        if (is_qspi_bus) {
+        if (is_qspi_bus &&
+            self->core.colorspace.depth >= 8 &&
+            !self->bus.data_as_commands &&
+            !self->bus.SH1107_addressing) {
             // QSPI path: fill_area first (overlaps with previous DMA),
             // then single-transaction set_region + RAMWR + pixels.
-            // depth is always 16 here (guarded by is_qspi_bus check above).
             uint32_t subrectangle_size_bytes = (uint32_t)displayio_area_size(&subrectangle) * (self->core.colorspace.depth / 8);
 
             memset(mask, 0, mask_length * sizeof(mask[0]));
