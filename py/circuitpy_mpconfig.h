@@ -406,6 +406,13 @@ typedef long mp_off_t;
 #define CIRCUITPY_QSPI_DISPLAY_AREA_BUFFER_SIZE (512)
 #endif
 
+// Port-level upper bound for the QSPI display buffer (uint32_t words).
+// The _Static_assert in BusDisplay.c enforces this at compile time.
+// Ports with larger stacks can raise this in mpconfigport.h.
+#ifndef CIRCUITPY_QSPI_DISPLAY_AREA_BUFFER_SIZE_MAX
+#define CIRCUITPY_QSPI_DISPLAY_AREA_BUFFER_SIZE_MAX (2048)
+#endif
+
 #else
 #define CIRCUITPY_DISPLAY_LIMIT (0)
 #define CIRCUITPY_DISPLAY_AREA_BUFFER_SIZE (0)
