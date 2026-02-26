@@ -29,5 +29,18 @@ CONFIG_LWIP_LOCAL_HOSTNAME="waveshare-esp32-s3-amoled"
 # Disable USB-Serial/JTAG console - CircuitPython uses TinyUSB (USB OTG) for REPL
 CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG=n
 
+# === TEMPORARY DEBUG: route console to UART0 (TX=GPIO43, RX=GPIO44) ===
+# CONFIG_ESP_CONSOLE_UART_DEFAULT=y
+# CONFIG_BOOTLOADER_LOG_LEVEL_INFO=y
+# CONFIG_LOG_DEFAULT_LEVEL_INFO=y
+# CONFIG_ESP_SYSTEM_PANIC_PRINT_HALT=y
+# === END TEMPORARY DEBUG ===
+
+# Workaround: NimBLE BLE_STATIC_TO_DYNAMIC=y (default in IDF 5.5.3) causes
+# ble_gap_vars to be a dynamically allocated pointer (NULL before ble_gap_init).
+# CircuitPython calls ble_gap_adv_active() before NimBLE init → NULL deref → bootloop.
+# Reverting to static allocation avoids the crash.
+CONFIG_BT_NIMBLE_STATIC_TO_DYNAMIC=n
+
 # Enable .app_desc structure
 CONFIG_APP_RETRIEVE_LEN_ELF_SHA=16
