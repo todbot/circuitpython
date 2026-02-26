@@ -156,6 +156,15 @@ static void qspibus_send_color_bytes(
     const uint8_t *cursor = data;
     size_t remaining = len;
 
+    // Drain stale semaphore tokens that late ISR completions may have
+    // posted after a previous qspibus_reset_transfer_state(). Without
+    // this, a stale token could satisfy a future wait, causing the next
+    // transfer to skip its real DMA-done wait.
+    if (self->inflight_transfers == 0 && self->transfer_done_sem != NULL) {
+        while (xSemaphoreTake(self->transfer_done_sem, 0) == pdTRUE) {
+        }
+    }
+
     while (remaining > 0) {
         // inflight_transfers is only modified in task context (never from ISR),
         // so no atomic/critical section is needed. The ISR only signals the
