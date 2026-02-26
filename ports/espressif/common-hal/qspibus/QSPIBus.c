@@ -353,7 +353,7 @@ void common_hal_qspibus_qspibus_construct(
     const mcu_pin_obj_t *power = CIRCUITPY_QSPIBUS_PANEL_POWER_PIN;
     if (power != NULL) {
         if (!common_hal_mcu_pin_is_free(power)) {
-            mp_raise_ValueError_varg(MP_ERROR_TEXT("%q in use"), MP_QSTR_power);
+            mp_raise_ValueError_varg(MP_ERROR_TEXT("%q in use"), MP_QSTR_LCD_POWER);
         }
         self->power_pin = power->number;
         claim_pin(power);
