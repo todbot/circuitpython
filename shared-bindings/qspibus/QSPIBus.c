@@ -106,20 +106,18 @@ static mp_obj_t qspibus_qspibus_obj_reset(mp_obj_t self_in) {
 }
 static MP_DEFINE_CONST_FUN_OBJ_1(qspibus_qspibus_reset_obj, qspibus_qspibus_obj_reset);
 
-//|     def send(self, command: int, data: Optional[ReadableBuffer] = None) -> None:
-//|         """Send command with optional payload bytes.
-//|
-//|         This mirrors FourWire-style convenience API:
-//|         - command byte is sent first
-//|         - optional payload bytes follow
-//|         """
+//|     def send(
+//|         self, command: int, data: ReadableBuffer, *, toggle_every_byte: bool = False
+//|     ) -> None:
+//|         """Sends the given command value followed by the full set of data. Display state, such as
+//|         vertical scroll, set via ``send`` may or may not be reset once the code is done."""
 //|         ...
 //|
 static mp_obj_t qspibus_qspibus_send(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum { ARG_command, ARG_data };
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_command, MP_ARG_INT | MP_ARG_REQUIRED },
-        { MP_QSTR_data, MP_ARG_OBJ, {.u_obj = mp_const_none} },
+        { MP_QSTR_data, MP_ARG_OBJ | MP_ARG_REQUIRED },
     };
 
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
@@ -130,14 +128,8 @@ static mp_obj_t qspibus_qspibus_send(size_t n_args, const mp_obj_t *pos_args, mp
 
     uint8_t command = (uint8_t)mp_arg_validate_int_range(args[ARG_command].u_int, 0, 255, MP_QSTR_command);
 
-    const uint8_t *data = NULL;
-    size_t len = 0;
-    mp_buffer_info_t data_bufinfo;
-    if (args[ARG_data].u_obj != mp_const_none) {
-        mp_get_buffer_raise(args[ARG_data].u_obj, &data_bufinfo, MP_BUFFER_READ);
-        data = (const uint8_t *)data_bufinfo.buf;
-        len = data_bufinfo.len;
-    }
+    mp_buffer_info_t bufinfo;
+    mp_get_buffer_raise(args[ARG_data].u_obj, &bufinfo, MP_BUFFER_READ);
 
     // Flush any pending command from a prior write_command() call.
     // begin_transaction() returns false while has_pending_command is set,
@@ -151,7 +143,7 @@ static mp_obj_t qspibus_qspibus_send(size_t n_args, const mp_obj_t *pos_args, mp
         RUN_BACKGROUND_TASKS;
     }
     common_hal_qspibus_qspibus_send(MP_OBJ_FROM_PTR(self), DISPLAY_COMMAND, CHIP_SELECT_UNTOUCHED, &command, 1);
-    common_hal_qspibus_qspibus_send(MP_OBJ_FROM_PTR(self), DISPLAY_DATA, CHIP_SELECT_UNTOUCHED, data, len);
+    common_hal_qspibus_qspibus_send(MP_OBJ_FROM_PTR(self), DISPLAY_DATA, CHIP_SELECT_UNTOUCHED, ((uint8_t *)bufinfo.buf), bufinfo.len);
     common_hal_qspibus_qspibus_end_transaction(MP_OBJ_FROM_PTR(self));
     return mp_const_none;
 }
