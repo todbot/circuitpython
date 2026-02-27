@@ -4,10 +4,10 @@ manifest:
   projects:
     - name: nrf_hw_models
       url: https://github.com/tannewt/ext_nRF_hw_models
-      revision: bb351cef9e5ab4d175fe3cb7c4d6761d837bac20
+      revision: c2927847bdf2ee0af9c5459f4155c67f39f6837a
       path: modules/bsim_hw_models/nrf_hw_models
     - name: zephyr
       url: https://github.com/adafruit/zephyr
-      revision: 8801b409ec554cfd217c159c00f91280ea1331db
+      revision: 5351284ac926b1352ab98f5ae692a21f38068beb
       clone-depth: 100
       import: true
