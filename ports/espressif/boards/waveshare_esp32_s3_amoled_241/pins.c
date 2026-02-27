@@ -32,9 +32,14 @@ static const mp_rom_map_elem_t board_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_SCL),     MP_ROM_PTR(&pin_GPIO48) },
 
     // Touch Panel (FT6336U on I2C)
-    { MP_ROM_QSTR(MP_QSTR_TP_SDA),    MP_ROM_PTR(&pin_GPIO47) },
-    { MP_ROM_QSTR(MP_QSTR_TP_SCL),    MP_ROM_PTR(&pin_GPIO48) },
-    { MP_ROM_QSTR(MP_QSTR_TP_RESET),  MP_ROM_PTR(&pin_GPIO3) },
+    // NOTE: TP_INT is routed through the TCA9554 IO expander (EXIO2),
+    // not a direct ESP32-S3 GPIO — no TOUCH_INT alias is possible here.
+    { MP_ROM_QSTR(MP_QSTR_TP_SDA),      MP_ROM_PTR(&pin_GPIO47) },
+    { MP_ROM_QSTR(MP_QSTR_TP_SCL),      MP_ROM_PTR(&pin_GPIO48) },
+    { MP_ROM_QSTR(MP_QSTR_TP_RESET),    MP_ROM_PTR(&pin_GPIO3) },
+    { MP_ROM_QSTR(MP_QSTR_TOUCH_SDA),   MP_ROM_PTR(&pin_GPIO47) },
+    { MP_ROM_QSTR(MP_QSTR_TOUCH_SCL),   MP_ROM_PTR(&pin_GPIO48) },
+    { MP_ROM_QSTR(MP_QSTR_TOUCH_RST),   MP_ROM_PTR(&pin_GPIO3) },
 
     // RTC (PCF85063 on I2C)
     { MP_ROM_QSTR(MP_QSTR_RTC_SDA), MP_ROM_PTR(&pin_GPIO47) },
