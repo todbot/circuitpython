@@ -251,12 +251,12 @@ safe_mode_t port_init(void) {
     #define pin_GPIOn(n) pin_GPIO##n
     #define pin_GPIOn_EXPAND(x) pin_GPIOn(x)
 
-    #ifdef CONFIG_CONSOLE_UART_TX_GPIO
-    common_hal_never_reset_pin(&pin_GPIOn_EXPAND(CONFIG_CONSOLE_UART_TX_GPIO));
+    #ifdef CONFIG_ESP_CONSOLE_UART_TX_GPIO
+    common_hal_never_reset_pin(&pin_GPIOn_EXPAND(CONFIG_ESP_CONSOLE_UART_TX_GPIO));
     #endif
 
-    #ifdef CONFIG_CONSOLE_UART_RX_GPIO
-    common_hal_never_reset_pin(&pin_GPIOn_EXPAND(CONFIG_CONSOLE_UART_RX_GPIO));
+    #ifdef CONFIG_ESP_CONSOLE_UART_RX_GPIO
+    common_hal_never_reset_pin(&pin_GPIOn_EXPAND(CONFIG_ESP_CONSOLE_UART_RX_GPIO));
     #endif
 
     #ifndef ENABLE_JTAG
