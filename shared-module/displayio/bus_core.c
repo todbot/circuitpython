@@ -85,11 +85,16 @@ void displayio_display_bus_construct(displayio_display_bus_t *self,
     self->bus = bus;
 }
 
+// This is just a hint, and is not a reliable result, since the bus could be grabbed in between this called
+// and the attempt to use the bus. Use displayio_display_bus_begin_transaction(), which is atomic.
 bool displayio_display_bus_is_free(displayio_display_bus_t *self) {
     return !self->bus || self->bus_free(self->bus);
 }
 
-bool displayio_display_bus_begin_transaction(displayio_display_bus_t *self) {
+MP_WARN_UNUSED_RESULT bool displayio_display_bus_begin_transaction(displayio_display_bus_t *self) {
+    if (!self->bus) {
+        return false;
+    }
     mp_obj_base_t *bus_base = MP_OBJ_TO_PTR(self->bus);
     if (bus_base->type == &mp_type_NoneType) {
         return false;
@@ -128,7 +133,9 @@ void displayio_display_bus_set_region_to_update(displayio_display_bus_t *self, d
     }
 
     // Set column.
-    displayio_display_bus_begin_transaction(self);
+    if (!displayio_display_bus_begin_transaction(self)) {
+        return;
+    }
     uint8_t data[5];
     data[0] = self->column_command;
     uint8_t data_length = 1;
@@ -167,7 +174,9 @@ void displayio_display_bus_set_region_to_update(displayio_display_bus_t *self, d
 
     if (self->set_current_column_command != NO_COMMAND) {
         uint8_t command = self->set_current_column_command;
-        displayio_display_bus_begin_transaction(self);
+        if (!displayio_display_bus_begin_transaction(self)) {
+            return;
+        }
         self->send(self->bus, DISPLAY_COMMAND, chip_select, &command, 1);
         // Only send the first half of data because it is the first coordinate.
         self->send(self->bus, DISPLAY_DATA, chip_select, data, data_length / 2);
@@ -176,7 +185,9 @@ void displayio_display_bus_set_region_to_update(displayio_display_bus_t *self, d
 
 
     // Set row.
-    displayio_display_bus_begin_transaction(self);
+    if (!displayio_display_bus_begin_transaction(self)) {
+        return;
+    }
     data[0] = self->row_command;
     data_length = 1;
     if (!self->data_as_commands) {
@@ -211,7 +222,9 @@ void displayio_display_bus_set_region_to_update(displayio_display_bus_t *self, d
 
     if (self->set_current_row_command != NO_COMMAND) {
         uint8_t command = self->set_current_row_command;
-        displayio_display_bus_begin_transaction(self);
+        if (!displayio_display_bus_begin_transaction(self)) {
+            return;
+        }
         self->send(self->bus, DISPLAY_COMMAND, chip_select, &command, 1);
         // Only send the first half of data because it is the first coordinate.
         self->send(self->bus, DISPLAY_DATA, chip_select, data, data_length / 2);
