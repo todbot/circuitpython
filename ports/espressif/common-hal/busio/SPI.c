@@ -72,11 +72,6 @@ void common_hal_busio_spi_construct(busio_spi_obj_t *self,
         mp_raise_ValueError(MP_ERROR_TEXT("All SPI peripherals are in use"));
     }
 
-    self->mutex = xSemaphoreCreateMutex();
-    if (self->mutex == NULL) {
-        mp_raise_RuntimeError(MP_ERROR_TEXT("Unable to create lock"));
-    }
-
     esp_err_t result = spi_bus_initialize(self->host_id, &bus_config, SPI_DMA_CH_AUTO);
     if (result == ESP_ERR_NO_MEM) {
         mp_raise_msg(&mp_type_MemoryError, MP_ERROR_TEXT("ESP-IDF memory allocation failed"));
@@ -166,7 +161,7 @@ bool common_hal_busio_spi_try_lock(busio_spi_obj_t *self) {
     if (common_hal_busio_spi_deinited(self)) {
         return false;
     }
-    return xSemaphoreTake(self->mutex, 1) == pdTRUE;
+    return xSemaphoreTake(self->mutex, 0) == pdTRUE;
 }
 
 bool common_hal_busio_spi_has_lock(busio_spi_obj_t *self) {
