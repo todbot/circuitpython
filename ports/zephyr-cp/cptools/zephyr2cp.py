@@ -96,6 +96,19 @@ CONNECTORS = {
         "D12",
         "D13",
     ],
+    "nordic,expansion-board-header": [
+        "P1_04",
+        "P1_05",
+        "P1_06",
+        "P1_07",
+        "P1_08",
+        "P1_09",
+        "P1_10",
+        "P1_11",
+        "P1_12",
+        "P1_13",
+        "P1_14",
+    ],
     "arducam,dvp-20pin-connector": [
         "SCL",
         "SDA",
@@ -544,16 +557,26 @@ def zephyr_dts_to_cp_board(board_id, portdir, builddir, zephyrbuilddir):  # noqa
             all_ioports.append(node.labels[0])
             if status == "okay":
                 ioports[node.labels[0]] = set(range(0, ngpios))
-        if gpio_map and compatible[0] != "gpio-nexus":
-            i = 0
-            for offset, t, label in gpio_map._markers:
-                if not label:
-                    continue
-                num = int.from_bytes(gpio_map.value[offset + 4 : offset + 8], "big")
-                if (label, num) not in board_names:
-                    board_names[(label, num)] = []
-                board_names[(label, num)].append(CONNECTORS[compatible[0]][i])
-                i += 1
+        if gpio_map and compatible and compatible[0] != "gpio-nexus":
+            connector_pins = CONNECTORS.get(compatible[0], None)
+            if connector_pins is None:
+                logger.warning(f"Unsupported connector mapping compatible: {compatible[0]}")
+            else:
+                i = 0
+                for offset, t, label in gpio_map._markers:
+                    if not label:
+                        continue
+                    if i >= len(connector_pins):
+                        logger.warning(
+                            f"Connector mapping for {compatible[0]} has more pins than names; "
+                            f"stopping at {len(connector_pins)}"
+                        )
+                        break
+                    num = int.from_bytes(gpio_map.value[offset + 4 : offset + 8], "big")
+                    if (label, num) not in board_names:
+                        board_names[(label, num)] = []
+                    board_names[(label, num)].append(connector_pins[i])
+                    i += 1
         if "gpio-leds" in compatible:
             for led in node.nodes:
                 led = node.nodes[led]
