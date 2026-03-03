@@ -41,4 +41,5 @@ setuptools
 # For zephyr port
 tomlkit
 pytest
+pytest-rerunfailures
 perfetto
