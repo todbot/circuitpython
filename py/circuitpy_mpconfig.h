@@ -394,23 +394,11 @@ typedef long mp_off_t;
 #define CIRCUITPY_DISPLAY_LIMIT (1)
 #endif
 
-// Framebuffer area size in bytes. Rounded down to power of four for alignment.
+// Display area buffer size in uint32_t words for _refresh_area() VLA.
+// Allocated on stack; boards with larger displays can override per-board.
+// Default 128 words = 512 bytes.
 #ifndef CIRCUITPY_DISPLAY_AREA_BUFFER_SIZE
 #define CIRCUITPY_DISPLAY_AREA_BUFFER_SIZE (128)
-#endif
-
-// QSPI display buffer size in uint32_t words for _refresh_area() VLA.
-// Allocated on stack; boards should verify sufficient stack headroom.
-// Default 512 words = 2KB. Override per-board for larger buffers.
-#ifndef CIRCUITPY_QSPI_DISPLAY_AREA_BUFFER_SIZE
-#define CIRCUITPY_QSPI_DISPLAY_AREA_BUFFER_SIZE (512)
-#endif
-
-// Port-level upper bound for the QSPI display buffer (uint32_t words).
-// The _Static_assert in BusDisplay.c enforces this at compile time.
-// Ports with larger stacks can raise this in mpconfigport.h.
-#ifndef CIRCUITPY_QSPI_DISPLAY_AREA_BUFFER_SIZE_MAX
-#define CIRCUITPY_QSPI_DISPLAY_AREA_BUFFER_SIZE_MAX (2048)
 #endif
 
 #else

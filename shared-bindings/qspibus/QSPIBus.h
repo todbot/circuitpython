@@ -49,4 +49,5 @@ void common_hal_qspibus_qspibus_send(
     const uint8_t *data,
     uint32_t data_length);
 void common_hal_qspibus_qspibus_end_transaction(mp_obj_t obj);
+void common_hal_qspibus_qspibus_flush(mp_obj_t obj);
 void common_hal_qspibus_qspibus_collect_ptrs(mp_obj_t obj);

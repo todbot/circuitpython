@@ -647,10 +647,6 @@ msgstr ""
 msgid "Baudrate not supported by peripheral"
 msgstr ""
 
-#: ports/espressif/common-hal/qspibus/QSPIBus.c
-msgid "Begin transaction first"
-msgstr ""
-
 #: shared-module/busdisplay/BusDisplay.c
 #: shared-module/framebufferio/FramebufferDisplay.c
 msgid "Below minimum frame rate"
@@ -715,10 +711,6 @@ msgstr ""
 #: shared-bindings/framebufferio/FramebufferDisplay.c
 #: shared-bindings/struct/__init__.c shared-module/struct/__init__.c
 msgid "Buffer too small"
-msgstr ""
-
-#: ports/espressif/common-hal/qspibus/QSPIBus.c
-msgid "Bus in display transaction"
 msgstr ""
 
 #: ports/atmel-samd/common-hal/paralleldisplaybus/ParallelBus.c
@@ -1253,6 +1245,7 @@ msgstr ""
 msgid "Internal define error"
 msgstr ""
 
+#: ports/espressif/common-hal/qspibus/QSPIBus.c
 #: shared-bindings/pwmio/PWMOut.c supervisor/shared/settings.c
 msgid "Internal error"
 msgstr ""
@@ -1609,10 +1602,6 @@ msgstr ""
 
 #: ports/raspberrypi/common-hal/rp2pio/StateMachine.c
 msgid "No out in program"
-msgstr ""
-
-#: ports/espressif/common-hal/qspibus/QSPIBus.c
-msgid "No pending command"
 msgstr ""
 
 #: ports/atmel-samd/common-hal/busio/I2C.c

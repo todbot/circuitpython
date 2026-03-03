@@ -52,6 +52,8 @@ void displayio_display_bus_construct(displayio_display_bus_t *self,
     self->SH1107_addressing = SH1107_addressing;
     self->address_little_endian = address_little_endian;
 
+    self->flush = NULL;
+
     #if CIRCUITPY_PARALLELDISPLAYBUS
     if (mp_obj_is_type(bus, &paralleldisplaybus_parallelbus_type)) {
         self->bus_reset = common_hal_paralleldisplaybus_parallelbus_reset;
@@ -89,6 +91,7 @@ void displayio_display_bus_construct(displayio_display_bus_t *self,
         self->begin_transaction = common_hal_qspibus_qspibus_begin_transaction;
         self->send = common_hal_qspibus_qspibus_send;
         self->end_transaction = common_hal_qspibus_qspibus_end_transaction;
+        self->flush = common_hal_qspibus_qspibus_flush;
         self->collect_ptrs = common_hal_qspibus_qspibus_collect_ptrs;
     } else
     #endif
@@ -252,11 +255,15 @@ void displayio_display_bus_set_region_to_update(displayio_display_bus_t *self, d
     _displayio_display_bus_send_region_commands(self, display, area, true);
 }
 
-#if CIRCUITPY_QSPIBUS
 void displayio_display_bus_send_region_commands(displayio_display_bus_t *self, displayio_display_core_t *display, displayio_area_t *area) {
     _displayio_display_bus_send_region_commands(self, display, area, false);
 }
-#endif
+
+void displayio_display_bus_flush(displayio_display_bus_t *self) {
+    if (self->flush != NULL) {
+        self->flush(self->bus);
+    }
+}
 
 void displayio_display_bus_collect_ptrs(displayio_display_bus_t *self) {
     self->collect_ptrs(self->bus);

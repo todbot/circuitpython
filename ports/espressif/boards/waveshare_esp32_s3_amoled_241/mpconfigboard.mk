@@ -2,9 +2,6 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 Przemyslaw Patrick Socha
 # SPDX-License-Identifier: MIT
 
-CIRCUITPY_CREATOR_ID  = 0x57415645  # 'WAVE' (Waveshare)
-CIRCUITPY_CREATION_ID = 0x41323431  # 'A241' (AMOLED 2.41)
-
 USB_VID = 0x303A
 USB_PID = 0x8278
 USB_MANUFACTURER = "Waveshare"

@@ -33,7 +33,6 @@ typedef struct {
     int8_t cs_pin;
     int8_t dcx_pin;   // -1 when optional DCX line is not provided.
     int8_t reset_pin; // -1 when reset line is not provided.
-    int8_t power_pin; // -1 when board has no explicit display power pin.
 
     uint32_t frequency;
     bool bus_initialized;

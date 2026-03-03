@@ -5,6 +5,7 @@
 #include "supervisor/board.h"
 #include "mpconfigboard.h"
 #include "shared-bindings/microcontroller/Pin.h"
+#include "shared-bindings/digitalio/DigitalInOut.h"
 
 #include "shared-bindings/qspibus/QSPIBus.h"
 #include "shared-bindings/busdisplay/BusDisplay.h"
@@ -42,6 +43,15 @@ static uint8_t display_init_sequence[] = {
 };
 
 void board_init(void) {
+    // 0. Enable display power before any bus/display init.
+    digitalio_digitalinout_obj_t power_pin;
+    power_pin.base.type = &digitalio_digitalinout_type;
+    common_hal_digitalio_digitalinout_construct(&power_pin, CIRCUITPY_LCD_POWER);
+    common_hal_digitalio_digitalinout_set_value(&power_pin, true);
+    common_hal_digitalio_digitalinout_never_reset(&power_pin);
+    // Allow power rail to settle before reset/init.
+    mp_hal_delay_ms(200);
+
     // 1. Allocate and construct QSPI bus
     qspibus_qspibus_obj_t *bus = &allocate_display_bus_or_raise()->qspi_bus;
     bus->base.type = &qspibus_qspibus_type;

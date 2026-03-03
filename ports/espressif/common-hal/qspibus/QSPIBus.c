@@ -25,14 +25,6 @@
 #define QSPI_DMA_BUFFER_COUNT (2U)
 #define QSPI_DMA_BUFFER_SIZE (16U * 1024U)
 #define QSPI_COLOR_TIMEOUT_MS (1000U)
-#if defined(CIRCUITPY_LCD_POWER)
-#define CIRCUITPY_QSPIBUS_PANEL_POWER_PIN CIRCUITPY_LCD_POWER
-#endif
-
-#ifndef CIRCUITPY_LCD_POWER_ON_LEVEL
-#define CIRCUITPY_LCD_POWER_ON_LEVEL (1)
-#endif
-
 static void qspibus_release_dma_buffers(qspibus_qspibus_obj_t *self) {
     for (size_t i = 0; i < QSPI_DMA_BUFFER_COUNT; i++) {
         if (self->dma_buffer[i] != NULL) {
@@ -279,7 +271,6 @@ void common_hal_qspibus_qspibus_construct(
     self->cs_pin = cs->number;
     self->dcx_pin = (dcx != NULL) ? dcx->number : -1;
     self->reset_pin = (reset != NULL) ? reset->number : -1;
-    self->power_pin = -1;
     self->frequency = frequency;
     self->bus_initialized = false;
     self->in_transaction = false;
@@ -319,7 +310,7 @@ void common_hal_qspibus_qspibus_construct(
         qspibus_release_dma_buffers(self);
         vSemaphoreDelete(self->transfer_done_sem);
         self->transfer_done_sem = NULL;
-        mp_raise_OSError_msg_varg(MP_ERROR_TEXT("%q failure: %d"), MP_QSTR_SPI, (int)err);
+        mp_raise_ValueError_varg(MP_ERROR_TEXT("%q in use"), MP_QSTR_SPI);
     }
 
     const esp_lcd_panel_io_spi_config_t io_config = {
@@ -357,21 +348,6 @@ void common_hal_qspibus_qspibus_construct(
         gpio_set_direction((gpio_num_t)self->dcx_pin, GPIO_MODE_OUTPUT);
         gpio_set_level((gpio_num_t)self->dcx_pin, 1);
     }
-
-    #ifdef CIRCUITPY_QSPIBUS_PANEL_POWER_PIN
-    const mcu_pin_obj_t *power = CIRCUITPY_QSPIBUS_PANEL_POWER_PIN;
-    if (power != NULL) {
-        if (!common_hal_mcu_pin_is_free(power)) {
-            mp_raise_ValueError_varg(MP_ERROR_TEXT("%q in use"), MP_QSTR_LCD_POWER);
-        }
-        self->power_pin = power->number;
-        claim_pin(power);
-        gpio_set_direction((gpio_num_t)self->power_pin, GPIO_MODE_OUTPUT);
-        gpio_set_level((gpio_num_t)self->power_pin, CIRCUITPY_LCD_POWER_ON_LEVEL ? 1 : 0);
-        // Panel power rail needs extra settle time before reset/init commands.
-        vTaskDelay(pdMS_TO_TICKS(200));
-    }
-    #endif
 
     if (reset != NULL) {
         claim_pin(reset);
@@ -420,9 +396,6 @@ void common_hal_qspibus_qspibus_deinit(qspibus_qspibus_obj_t *self) {
     if (self->dcx_pin >= 0) {
         reset_pin_number(self->dcx_pin);
     }
-    if (self->power_pin >= 0) {
-        reset_pin_number(self->power_pin);
-    }
     if (self->reset_pin >= 0) {
         reset_pin_number(self->reset_pin);
     }
@@ -446,7 +419,7 @@ void common_hal_qspibus_qspibus_write_command(
         raise_deinited_error();
     }
     if (self->in_transaction) {
-        mp_raise_RuntimeError(MP_ERROR_TEXT("Bus in display transaction"));
+        mp_raise_RuntimeError(MP_ERROR_TEXT("Internal error"));
     }
 
     // If caller stages command-only operations repeatedly, flush the previous
@@ -467,7 +440,7 @@ void common_hal_qspibus_qspibus_write_data(
         raise_deinited_error();
     }
     if (self->in_transaction) {
-        mp_raise_RuntimeError(MP_ERROR_TEXT("Bus in display transaction"));
+        mp_raise_RuntimeError(MP_ERROR_TEXT("Internal error"));
     }
     if (len == 0) {
         if (self->has_pending_command) {
@@ -477,7 +450,7 @@ void common_hal_qspibus_qspibus_write_data(
         return;
     }
     if (!self->has_pending_command) {
-        mp_raise_ValueError(MP_ERROR_TEXT("No pending command"));
+        mp_raise_RuntimeError(MP_ERROR_TEXT("Internal error"));
     }
 
     if (qspibus_is_color_payload_command(self->pending_command)) {
@@ -545,7 +518,7 @@ void common_hal_qspibus_qspibus_send(
         raise_deinited_error();
     }
     if (!self->in_transaction) {
-        mp_raise_RuntimeError(MP_ERROR_TEXT("Begin transaction first"));
+        mp_raise_RuntimeError(MP_ERROR_TEXT("Internal error"));
     }
 
     if (data_type == DISPLAY_COMMAND) {
@@ -564,7 +537,7 @@ void common_hal_qspibus_qspibus_send(
             // Zero-length data write after a no-data command is benign.
             return;
         }
-        mp_raise_ValueError(MP_ERROR_TEXT("No pending command"));
+        mp_raise_RuntimeError(MP_ERROR_TEXT("Internal error"));
     }
 
     if (data_length == 0) {
@@ -591,6 +564,16 @@ void common_hal_qspibus_qspibus_end_transaction(mp_obj_t obj) {
         self->has_pending_command = false;
     }
     self->in_transaction = false;
+}
+
+void common_hal_qspibus_qspibus_flush(mp_obj_t obj) {
+    qspibus_qspibus_obj_t *self = MP_OBJ_TO_PTR(obj);
+    if (!self->bus_initialized) {
+        return;
+    }
+    if (!qspibus_wait_all_transfers_done(self, pdMS_TO_TICKS(QSPI_COLOR_TIMEOUT_MS))) {
+        qspibus_reset_transfer_state(self);
+    }
 }
 
 void common_hal_qspibus_qspibus_collect_ptrs(mp_obj_t obj) {

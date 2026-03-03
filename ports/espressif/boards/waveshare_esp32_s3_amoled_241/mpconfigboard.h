@@ -7,19 +7,13 @@
 #define MICROPY_HW_BOARD_NAME "Waveshare ESP32-S3-Touch-AMOLED-2.41"
 #define MICROPY_HW_MCU_NAME   "ESP32S3"
 
-// USB identifiers
-#define USB_VID 0x303A
-#define USB_PID 0x8278
-#define USB_MANUFACTURER "Waveshare"
-#define USB_PRODUCT "ESP32-S3-Touch-AMOLED-2.41"
-
 // I2C bus - Disabled on boot to avoid conflicts. User must manually initialize I2C.
 #define CIRCUITPY_BOARD_I2C         (0)
 #define CIRCUITPY_BOARD_I2C_PIN     {{.scl = &pin_GPIO48, .sda = &pin_GPIO47}}
 
-// QSPI display refresh buffer: 2048 uint32_t words = 8KB on stack.
+// Display refresh buffer: 2048 uint32_t words = 8KB on stack.
 // ESP32-S3 main task stack is 24KB; verified safe with this board.
-#define CIRCUITPY_QSPI_DISPLAY_AREA_BUFFER_SIZE (2048)
+#define CIRCUITPY_DISPLAY_AREA_BUFFER_SIZE (2048)
 
 // AMOLED Display (displayio + qspibus path) - initialized in board_init()
 #define CIRCUITPY_BOARD_DISPLAY      (1)
@@ -31,7 +25,6 @@
 #define CIRCUITPY_LCD_D3             (&pin_GPIO14)
 #define CIRCUITPY_LCD_RESET          (&pin_GPIO21)
 #define CIRCUITPY_LCD_POWER          (&pin_GPIO16)
-#define CIRCUITPY_LCD_POWER_ON_LEVEL (1)  // GPIO level: 1=high, 0=low
 
 // No default SPI bus — SD card uses SDIO, display uses QSPI.
 #define CIRCUITPY_BOARD_SPI         (0)
