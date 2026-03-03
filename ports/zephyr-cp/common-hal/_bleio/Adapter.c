@@ -148,6 +148,12 @@ static void bleio_connected_cb(struct bt_conn *conn, uint8_t err) {
         return;
     }
 
+    // When connectable advertising results in a connection, the controller
+    // auto-stops advertising.  Clear our flag to match (we cannot call
+    // stop_advertising() here because this callback runs in Zephyr's BT
+    // thread context).
+    ble_advertising = false;
+
     common_hal_bleio_adapter_obj.connection_objs = NULL;
 }
 
