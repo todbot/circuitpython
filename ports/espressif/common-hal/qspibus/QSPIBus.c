@@ -139,9 +139,6 @@ static void qspibus_send_color_bytes(
         qspibus_send_command_bytes(self, command, NULL, 0);
         return;
     }
-    if (self->dma_buffer_size == 0) {
-        mp_raise_OSError_msg(MP_ERROR_TEXT("Could not allocate DMA capable buffer"));
-    }
 
     // RAMWR must transition to RAMWRC for continued payload chunks.
     uint8_t chunk_command = command;
@@ -290,8 +287,7 @@ void common_hal_qspibus_qspibus_construct(
     }
 
     if (!qspibus_allocate_dma_buffers(self)) {
-        vSemaphoreDelete(self->transfer_done_sem);
-        self->transfer_done_sem = NULL;
+        common_hal_qspibus_qspibus_deinit(self);
         mp_raise_msg(&mp_type_MemoryError, MP_ERROR_TEXT("Could not allocate DMA capable buffer"));
     }
 
@@ -307,11 +303,12 @@ void common_hal_qspibus_qspibus_construct(
 
     esp_err_t err = spi_bus_initialize(self->host_id, &bus_config, SPI_DMA_CH_AUTO);
     if (err != ESP_OK) {
-        qspibus_release_dma_buffers(self);
-        vSemaphoreDelete(self->transfer_done_sem);
-        self->transfer_done_sem = NULL;
+        common_hal_qspibus_qspibus_deinit(self);
         mp_raise_ValueError_varg(MP_ERROR_TEXT("%q in use"), MP_QSTR_SPI);
     }
+
+    // Mark bus as initialized so deinit knows to call spi_bus_free().
+    self->bus_initialized = true;
 
     const esp_lcd_panel_io_spi_config_t io_config = {
         .cs_gpio_num = self->cs_pin,
@@ -330,10 +327,7 @@ void common_hal_qspibus_qspibus_construct(
 
     err = esp_lcd_new_panel_io_spi((esp_lcd_spi_bus_handle_t)self->host_id, &io_config, &self->io_handle);
     if (err != ESP_OK) {
-        spi_bus_free(self->host_id);
-        qspibus_release_dma_buffers(self);
-        vSemaphoreDelete(self->transfer_done_sem);
-        self->transfer_done_sem = NULL;
+        common_hal_qspibus_qspibus_deinit(self);
         mp_raise_OSError_msg_varg(MP_ERROR_TEXT("%q failure: %d"), MP_QSTR_QSPI, (int)err);
     }
 
@@ -358,25 +352,21 @@ void common_hal_qspibus_qspibus_construct(
         gpio_set_level((gpio_num_t)self->reset_pin, 1);
         vTaskDelay(pdMS_TO_TICKS(120));
     }
-
-    self->bus_initialized = true;
 }
 
 void common_hal_qspibus_qspibus_deinit(qspibus_qspibus_obj_t *self) {
-    if (!self->bus_initialized) {
-        qspibus_release_dma_buffers(self);
-        return;
+    if (self->bus_initialized) {
+        qspibus_panel_sleep_best_effort(self);
+        self->in_transaction = false;
+
+        if (self->io_handle != NULL) {
+            esp_lcd_panel_io_del(self->io_handle);
+            self->io_handle = NULL;
+        }
+
+        spi_bus_free(self->host_id);
+        self->bus_initialized = false;
     }
-
-    qspibus_panel_sleep_best_effort(self);
-    self->in_transaction = false;
-
-    if (self->io_handle != NULL) {
-        esp_lcd_panel_io_del(self->io_handle);
-        self->io_handle = NULL;
-    }
-
-    spi_bus_free(self->host_id);
 
     if (self->transfer_done_sem != NULL) {
         // Set NULL before delete so late ISR callbacks (if any) see NULL and skip.
