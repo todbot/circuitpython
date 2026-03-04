@@ -99,9 +99,10 @@ static mp_obj_t bleio_descriptor_add_to_characteristic(size_t n_args, const mp_o
         }
     }
     mp_get_buffer_raise(initial_value, &initial_value_bufinfo, MP_BUFFER_READ);
-    mp_arg_validate_length_max(initial_value_bufinfo.len, max_length, MP_QSTR_initial_value);
     if (fixed_length) {
         mp_arg_validate_length(initial_value_bufinfo.len, max_length, MP_QSTR_initial_value);
+    } else {
+        mp_arg_validate_length_max(initial_value_bufinfo.len, max_length, MP_QSTR_initial_value);
     }
 
     bleio_descriptor_obj_t *descriptor = mp_obj_malloc(bleio_descriptor_obj_t, &bleio_descriptor_type);
