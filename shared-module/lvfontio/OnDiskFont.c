@@ -591,6 +591,8 @@ int16_t common_hal_lvfontio_ondiskfont_cache_glyph(lvfontio_ondiskfont_t *self, 
         // Glyph is already cached, increment reference count(s).
         self->reference_counts[existing_slot]++;
 
+        // Check if this is a full-width character by looking for a second slot
+        // with the same codepoint right after this one
         bool cached_is_full_width = existing_slot + 1 < self->max_glyphs &&
             self->codepoints[existing_slot + 1] == codepoint;
 
