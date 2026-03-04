@@ -394,11 +394,11 @@ typedef long mp_off_t;
 #define CIRCUITPY_DISPLAY_LIMIT (1)
 #endif
 
-// Display area buffer size in uint32_t words for _refresh_area() VLA.
+// Display area buffer size in bytes for _refresh_area() VLA.
 // Allocated on stack; boards with larger displays can override per-board.
-// Default 128 words = 512 bytes.
+// Default 512 bytes = 128 uint32_t words.
 #ifndef CIRCUITPY_DISPLAY_AREA_BUFFER_SIZE
-#define CIRCUITPY_DISPLAY_AREA_BUFFER_SIZE (128)
+#define CIRCUITPY_DISPLAY_AREA_BUFFER_SIZE (512)
 #endif
 
 #else

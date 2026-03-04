@@ -255,10 +255,6 @@ void displayio_display_bus_set_region_to_update(displayio_display_bus_t *self, d
     _displayio_display_bus_send_region_commands(self, display, area, true);
 }
 
-void displayio_display_bus_send_region_commands(displayio_display_bus_t *self, displayio_display_core_t *display, displayio_area_t *area) {
-    _displayio_display_bus_send_region_commands(self, display, area, false);
-}
-
 void displayio_display_bus_flush(displayio_display_bus_t *self) {
     if (self->flush != NULL) {
         self->flush(self->bus);

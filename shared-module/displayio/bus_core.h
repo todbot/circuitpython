@@ -50,10 +50,6 @@ void displayio_display_bus_end_transaction(displayio_display_bus_t *self);
 
 void displayio_display_bus_set_region_to_update(displayio_display_bus_t *self, displayio_display_core_t *display, displayio_area_t *area);
 
-// Send column/row window commands within an already-open transaction.
-// Caller must have called displayio_display_bus_begin_transaction() first.
-void displayio_display_bus_send_region_commands(displayio_display_bus_t *self, displayio_display_core_t *display, displayio_area_t *area);
-
 // Drain any pending asynchronous transfers on the bus.
 // No-op for synchronous buses (FourWire, I2C, ParallelBus).
 void displayio_display_bus_flush(displayio_display_bus_t *self);

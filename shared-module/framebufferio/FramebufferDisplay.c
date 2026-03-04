@@ -117,7 +117,7 @@ static const displayio_area_t *_get_refresh_areas(framebufferio_framebufferdispl
 
 #define MARK_ROW_DIRTY(r) (dirty_row_bitmask[r / 8] |= (1 << (r & 7)))
 static bool _refresh_area(framebufferio_framebufferdisplay_obj_t *self, const displayio_area_t *area, uint8_t *dirty_row_bitmask) {
-    uint16_t buffer_size = CIRCUITPY_DISPLAY_AREA_BUFFER_SIZE; // In uint32_ts
+    uint16_t buffer_size = CIRCUITPY_DISPLAY_AREA_BUFFER_SIZE / sizeof(uint32_t); // In uint32_ts
 
     displayio_area_t clipped;
     // Clip the area to the display by overlapping the areas. If there is no overlap then we're done.

@@ -214,7 +214,7 @@ static void _send_pixels(busdisplay_busdisplay_obj_t *self, uint8_t *pixels, uin
 }
 
 static bool _refresh_area(busdisplay_busdisplay_obj_t *self, const displayio_area_t *area) {
-    uint32_t buffer_size = CIRCUITPY_DISPLAY_AREA_BUFFER_SIZE; // In uint32_ts
+    uint32_t buffer_size = CIRCUITPY_DISPLAY_AREA_BUFFER_SIZE / sizeof(uint32_t); // In uint32_ts
 
     displayio_area_t clipped;
     // Clip the area to the display by overlapping the areas. If there is no overlap then we're done.
@@ -262,8 +262,6 @@ static bool _refresh_area(busdisplay_busdisplay_obj_t *self, const displayio_are
 
     uint16_t remaining_rows = displayio_area_height(&clipped);
 
-    bool async_bus = (self->bus.flush != NULL);
-
     for (uint16_t j = 0; j < subrectangles; j++) {
         displayio_area_t subrectangle = {
             .x1 = clipped.x1,
@@ -286,31 +284,15 @@ static bool _refresh_area(busdisplay_busdisplay_obj_t *self, const displayio_are
         memset(mask, 0, mask_length * sizeof(mask[0]));
         memset(buffer, 0, buffer_size * sizeof(buffer[0]));
 
-        if (async_bus) {
-            // Async path: fill_area overlaps with previous DMA transfer.
-            // begin_transaction() waits for prior DMA to finish.
-            displayio_display_core_fill_area(&self->core, &subrectangle, mask, buffer);
+        displayio_display_core_fill_area(&self->core, &subrectangle, mask, buffer);
 
-            if (!displayio_display_bus_begin_transaction(&self->bus)) {
-                return false;
-            }
-            displayio_display_bus_send_region_commands(&self->bus, &self->core, &subrectangle);
-            _send_pixels(self, (uint8_t *)buffer, subrectangle_size_bytes);
-            displayio_display_bus_end_transaction(&self->bus);
-        } else {
-            // Sync path: set region first, then fill and send.
-            displayio_display_bus_set_region_to_update(&self->bus, &self->core, &subrectangle);
+        displayio_display_bus_set_region_to_update(&self->bus, &self->core, &subrectangle);
 
-            displayio_display_core_fill_area(&self->core, &subrectangle, mask, buffer);
-
-            if (!displayio_display_bus_is_free(&self->bus)) {
-                return false;
-            }
-
-            displayio_display_bus_begin_transaction(&self->bus);
-            _send_pixels(self, (uint8_t *)buffer, subrectangle_size_bytes);
-            displayio_display_bus_end_transaction(&self->bus);
+        if (!displayio_display_bus_begin_transaction(&self->bus)) {
+            return false;
         }
+        _send_pixels(self, (uint8_t *)buffer, subrectangle_size_bytes);
+        displayio_display_bus_end_transaction(&self->bus);
 
         // Run background tasks so they can run during an explicit refresh.
         // Auto-refresh won't run background tasks here because it is a background task itself.
