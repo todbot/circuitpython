@@ -478,7 +478,7 @@ msgstr ""
 msgid "AP could not be started"
 msgstr ""
 
-#: shared-bindings/_bleio/Address.c shared-bindings/ipaddress/IPv4Address.c
+#: shared-bindings/ipaddress/IPv4Address.c
 #, c-format
 msgid "Address must be %d bytes long"
 msgstr ""
@@ -675,11 +675,6 @@ msgstr ""
 msgid "Brightness not adjustable"
 msgstr ""
 
-#: shared-bindings/_bleio/UUID.c
-#, c-format
-msgid "Buffer + offset too small %d %d %d"
-msgstr ""
-
 #: ports/raspberrypi/bindings/rp2pio/StateMachine.c
 msgid "Buffer elements must be 4 bytes long or less"
 msgstr ""
@@ -720,10 +715,6 @@ msgstr ""
 #: ports/raspberrypi/common-hal/paralleldisplaybus/ParallelBus.c
 #, c-format
 msgid "Bus pin %d is already in use"
-msgstr ""
-
-#: shared-bindings/_bleio/UUID.c
-msgid "Byte buffer must be 16 bytes."
 msgstr ""
 
 #: shared-bindings/aesio/aes.c
@@ -1031,12 +1022,18 @@ msgstr ""
 msgid "Failed to buffer the sample"
 msgstr ""
 
+#: ports/zephyr-cp/common-hal/_bleio/Adapter.c
+msgid "Failed to connect"
+msgstr ""
+
 #: ports/espressif/common-hal/_bleio/Adapter.c
 #: ports/nordic/common-hal/_bleio/Adapter.c
+#: ports/zephyr-cp/common-hal/_bleio/Adapter.c
 msgid "Failed to connect: internal error"
 msgstr ""
 
 #: ports/nordic/common-hal/_bleio/Adapter.c
+#: ports/zephyr-cp/common-hal/_bleio/Adapter.c
 msgid "Failed to connect: timeout"
 msgstr ""
 
@@ -2250,10 +2247,6 @@ msgid "USB error"
 msgstr ""
 
 #: shared-bindings/_bleio/UUID.c
-msgid "UUID integer value must be 0-0xffff"
-msgstr ""
-
-#: shared-bindings/_bleio/UUID.c
 msgid "UUID string not 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'"
 msgstr ""
 
@@ -3395,10 +3388,6 @@ msgstr ""
 msgid "initial values must be iterable"
 msgstr ""
 
-#: shared-bindings/_bleio/Characteristic.c shared-bindings/_bleio/Descriptor.c
-msgid "initial_value length is wrong"
-msgstr ""
-
 #: py/compile.c
 msgid "inline assembler must be a function"
 msgstr ""
@@ -3810,7 +3799,6 @@ msgid "non-hex digit"
 msgstr ""
 
 #: ports/nordic/common-hal/_bleio/Adapter.c
-#: ports/zephyr-cp/common-hal/_bleio/Adapter.c
 msgid "non-zero timeout must be > 0.01"
 msgstr ""
 
@@ -4294,7 +4282,6 @@ msgid "timeout duration exceeded the maximum supported value"
 msgstr ""
 
 #: ports/nordic/common-hal/_bleio/Adapter.c
-#: ports/zephyr-cp/common-hal/_bleio/Adapter.c
 msgid "timeout must be < 655.35 secs"
 msgstr ""
 
