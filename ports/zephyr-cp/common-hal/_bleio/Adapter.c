@@ -13,6 +13,7 @@
 #include <zephyr/bluetooth/bluetooth.h>
 #include <zephyr/bluetooth/conn.h>
 #include <zephyr/bluetooth/hci.h>
+#include <zephyr/bluetooth/hci_vs.h>
 
 #include "py/gc.h"
 #include "py/runtime.h"
@@ -278,11 +279,48 @@ bool common_hal_bleio_adapter_get_enabled(bleio_adapter_obj_t *self) {
 }
 
 mp_int_t common_hal_bleio_adapter_get_tx_power(bleio_adapter_obj_t *self) {
-    mp_raise_NotImplementedError(NULL);
+    struct bt_hci_cp_vs_read_tx_power_level *cp;
+    struct bt_hci_rp_vs_read_tx_power_level *rp;
+    struct net_buf *buf, *rsp = NULL;
+
+    buf = bt_hci_cmd_alloc(K_MSEC(1000));
+    if (!buf) {
+        mp_raise_msg(&mp_type_MemoryError, NULL);
+    }
+    cp = net_buf_add(buf, sizeof(*cp));
+    cp->handle_type = BT_HCI_VS_LL_HANDLE_TYPE_ADV;
+    cp->handle = 0;
+
+    int err = bt_hci_cmd_send_sync(BT_HCI_OP_VS_READ_TX_POWER_LEVEL, buf, &rsp);
+    if (err) {
+        raise_zephyr_error(err);
+    }
+
+    rp = (void *)rsp->data;
+    int8_t power = rp->tx_power_level;
+    net_buf_unref(rsp);
+    return power;
 }
 
 void common_hal_bleio_adapter_set_tx_power(bleio_adapter_obj_t *self, mp_int_t tx_power) {
-    mp_raise_NotImplementedError(NULL);
+    struct bt_hci_cp_vs_write_tx_power_level *cp;
+    struct net_buf *buf, *rsp = NULL;
+
+    buf = bt_hci_cmd_alloc(K_MSEC(3000));
+    if (!buf) {
+        mp_raise_msg(&mp_type_MemoryError, NULL);
+    }
+    cp = net_buf_add(buf, sizeof(*cp));
+    cp->handle_type = BT_HCI_VS_LL_HANDLE_TYPE_ADV;
+    cp->handle = 0;
+    cp->tx_power_level = (int8_t)tx_power;
+
+    int err = bt_hci_cmd_send_sync(BT_HCI_OP_VS_WRITE_TX_POWER_LEVEL, buf, &rsp);
+    if (err) {
+        raise_zephyr_error(err);
+    }
+
+    net_buf_unref(rsp);
 }
 
 bleio_address_obj_t *common_hal_bleio_adapter_get_address(bleio_adapter_obj_t *self) {
@@ -321,7 +359,6 @@ void common_hal_bleio_adapter_start_advertising(bleio_adapter_obj_t *self,
     mp_buffer_info_t *advertising_data_bufinfo,
     mp_buffer_info_t *scan_response_data_bufinfo,
     mp_int_t tx_power, const bleio_address_obj_t *directed_to) {
-    (void)tx_power;
     (void)directed_to;
     (void)interval;
 
@@ -390,6 +427,8 @@ void common_hal_bleio_adapter_start_advertising(bleio_adapter_obj_t *self,
             BT_GAP_ADV_FAST_INT_MAX_2,
             NULL);
     }
+
+    common_hal_bleio_adapter_set_tx_power(self, tx_power);
 
     raise_zephyr_error(bt_le_adv_start(&adv_params,
         adv_data,
@@ -555,7 +594,7 @@ mp_obj_t common_hal_bleio_adapter_connect(bleio_adapter_obj_t *self, bleio_addre
 
             if (info.state == BT_CONN_STATE_DISCONNECTED) {
                 bt_conn_unref(conn);
-                mp_raise_bleio_BluetoothError(MP_ERROR_TEXT("Failed to connect"));
+                mp_raise_bleio_BluetoothError(MP_ERROR_TEXT("Failed to connect: timeout"));
             }
         } else if (err != -ENOTCONN) {
             bt_conn_unref(conn);

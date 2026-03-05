@@ -10,6 +10,7 @@ pytestmark = pytest.mark.circuitpython_board("native_nrf5340bsim")
 BSIM_PERIPHERAL_CODE = """\
 import _bleio
 import time
+import sys
 
 adapter = _bleio.adapter
 
@@ -20,50 +21,27 @@ print("peripheral start")
 adapter.start_advertising(advertisement, connectable=True)
 print("advertising", adapter.advertising)
 
-for _ in range(80):
-    if adapter.connected:
-        break
-    time.sleep(0.1)
+was_connected = False
+timeout = time.monotonic() + 8.0
+while not was_connected and time.monotonic() < timeout:
+    time.sleep(0.01)
+    was_connected = adapter.connected
 
-print("connected", adapter.connected, "advertising", adapter.advertising)
+if not was_connected:
+    print("connect timed out")
+    sys.exit(-1)
 
-for _ in range(80):
-    if not adapter.connected:
-        break
-    time.sleep(0.1)
+print("connected", was_connected, "advertising", adapter.advertising)
 
-print("disconnected", adapter.connected, len(adapter.connections))
-"""
-
-BSIM_PERIPHERAL_CP_CENTRAL_PERIPHERAL_CODE = """\
-import _bleio
-import time
-
-adapter = _bleio.adapter
-
-name = b"CPPERIPH"
-advertisement = bytes((2, 0x01, 0x06, len(name) + 1, 0x09)) + name
-
-print("peripheral start")
-adapter.start_advertising(advertisement, connectable=True)
-print("advertising", adapter.advertising)
-
-for _ in range(80):
-    if adapter.connected:
-        break
-    time.sleep(0.1)
-
-print("connected", adapter.connected, "advertising", adapter.advertising)
-
-for _ in range(80):
-    if not adapter.connected:
-        break
-    time.sleep(0.1)
+if was_connected:
+    timeout = time.monotonic() + 8.0
+    while adapter.connected and time.monotonic() < timeout:
+        time.sleep(0.1)
 
 print("disconnected", adapter.connected, len(adapter.connections))
 """
 
-BSIM_PERIPHERAL_CP_CENTRAL_CODE = """\
+BSIM_CENTRAL_CODE = """\
 import _bleio
 import time
 
@@ -86,9 +64,8 @@ connection = adapter.connect(target, timeout=5.0)
 print("connected", connection.connected, adapter.connected, len(adapter.connections))
 connection.disconnect()
 
-for _ in range(40):
-    if not connection.connected and not adapter.connected:
-        break
+timeout = time.monotonic() + 4.0
+while (connection.connected or adapter.connected) and time.monotonic() < timeout:
     time.sleep(0.1)
 
 print("disconnected", connection.connected, adapter.connected, len(adapter.connections))
@@ -118,8 +95,8 @@ def test_bsim_peripheral_zephyr_central(bsim_phy, circuitpython, zephyr_sample):
 
 
 @pytest.mark.duration(14)
-@pytest.mark.circuitpy_drive({"code.py": BSIM_PERIPHERAL_CP_CENTRAL_CODE})
-@pytest.mark.circuitpy_drive({"code.py": BSIM_PERIPHERAL_CP_CENTRAL_PERIPHERAL_CODE})
+@pytest.mark.circuitpy_drive({"code.py": BSIM_PERIPHERAL_CODE})
+@pytest.mark.circuitpy_drive({"code.py": BSIM_CENTRAL_CODE})
 def test_bsim_peripheral_cp_central(bsim_phy, circuitpython1, circuitpython2):
     """Two CP instances: device 0 peripheral, device 1 central."""
     peripheral = circuitpython1
