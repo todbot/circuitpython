@@ -90,9 +90,10 @@ static mp_obj_t _next_device(usb_core_devices_obj_t *iter) {
         // We passed the filters. Now make a properly allocated object to
         // return to the user.
         usb_core_device_obj_t *self = mp_obj_malloc(usb_core_device_obj_t, &usb_core_device_type);
-
         common_hal_usb_core_device_construct(self, i);
+
         iter->next_index = i + 1;
+
         return MP_OBJ_FROM_PTR(self);
     }
     // Iter is done.

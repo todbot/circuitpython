@@ -34,8 +34,6 @@
 static mp_obj_t bleio_uuid_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     mp_arg_check_num(n_args, n_kw, 1, 1, false);
 
-    bleio_uuid_obj_t *self = mp_obj_malloc(bleio_uuid_obj_t, &bleio_uuid_type);
-
     const mp_obj_t value = all_args[0];
     uint8_t uuid128[16];
 
@@ -46,8 +44,10 @@ static mp_obj_t bleio_uuid_make_new(const mp_obj_type_t *type, size_t n_args, si
         }
 
         // NULL means no 128-bit value.
+        bleio_uuid_obj_t *self = mp_obj_malloc(bleio_uuid_obj_t, &bleio_uuid_type);
         common_hal_bleio_uuid_construct(self, uuid16, NULL);
 
+        return MP_OBJ_FROM_PTR(self);
     } else {
         if (mp_obj_is_str(value)) {
             // 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'
@@ -93,10 +93,12 @@ static mp_obj_t bleio_uuid_make_new(const mp_obj_type_t *type, size_t n_args, si
         uint32_t uuid16 = (uuid128[13] << 8) | uuid128[12];
         uuid128[12] = 0;
         uuid128[13] = 0;
-        common_hal_bleio_uuid_construct(self, uuid16, uuid128);
-    }
 
-    return MP_OBJ_FROM_PTR(self);
+        bleio_uuid_obj_t *self = mp_obj_malloc(bleio_uuid_obj_t, &bleio_uuid_type);
+        common_hal_bleio_uuid_construct(self, uuid16, uuid128);
+
+        return MP_OBJ_FROM_PTR(self);
+    }
 }
 
 //|     uuid16: int
