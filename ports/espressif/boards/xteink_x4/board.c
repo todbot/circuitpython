@@ -16,11 +16,11 @@
 
 #define DELAY 0x80
 
-// SSD1677 controller driving a GDEQ0426T82 4.26" 800x480 grayscale E-Ink display.
+// SSD1677 controller driving a GDEQ0426T82 4.26" 800x480 E-Ink display.
 
 const uint8_t ssd1677_display_start_sequence[] = {
     // Software Reset
-    0x12, DELAY, 0x00, 0x14,                         // SWRESET + wait 20ms
+    0x12, DELAY, 0x00, 0x14,
 
     // Temperature Sensor Control (use internal sensor)
     0x18, 0x00, 0x01, 0x80,
@@ -28,49 +28,45 @@ const uint8_t ssd1677_display_start_sequence[] = {
     // Booster Soft Start
     0x0C, 0x00, 0x05, 0xAE, 0xC7, 0xC3, 0xC0, 0x40,
 
-    // Driver Output Control: 479 gates (HEIGHT-1 = 0x01DF)
+    // Driver Output Control: 480 gates, GD=0, SM=1, TB=0 = 0x02
     0x01, 0x00, 0x03, 0xDF, 0x01, 0x02,
 
-    // Data Entry Mode: X increment, Y increment
-    0x11, 0x00, 0x01, 0x02,
+    // Data Entry Mode: X increment, Y decrement = 0x01
+    0x11, 0x00, 0x01, 0x01,
 
     // Border Waveform Control
     0x3C, 0x00, 0x01, 0x01,
 
     // Set RAM X Address Start/End: 0 to 799
-
-    // X start = 0 (LE: 0x00, 0x00), X end = 799 (LE: 0x1F, 0x03)
     0x44, 0x00, 0x04, 0x00, 0x00, 0x1F, 0x03,
 
-    // Set RAM Y Address Start/End: 0 to 479
-    0x45, 0x00, 0x04, 0x00, 0x00, 0xDF, 0x01,
+    // Set RAM Y Address Start/End: 479 down to 0
+    0x45, 0x00, 0x04, 0xDF, 0x01, 0x00, 0x00,
 
     // Set RAM X Counter to 0
     0x4E, 0x00, 0x02, 0x00, 0x00,
 
-    // Set RAM Y Counter to 0
-    0x4F, 0x00, 0x02, 0x00, 0x00,
+    // Set RAM Y Counter to 479
+    0x4F, 0x00, 0x02, 0xDF, 0x01,
 
     // Auto Write BW RAM (clear to white)
-    0x46, DELAY, 0x01, 0xF7, 0xFF,                   // + wait 255ms
+    0x46, DELAY, 0x01, 0xF7, 0xFF,
 
-    // Display Update Control 1: bypass RED buffer for mono mode
+    // Display Update Control 1: bypass RED
     0x21, 0x00, 0x02, 0x40, 0x00,
 
-    // Display Update Control 2: full refresh sequence with OTP LUT
+    // Display Update Control 2: full refresh with OTP LUT
     0x22, 0x00, 0x01, 0xF7,
 };
 
 const uint8_t ssd1677_display_stop_sequence[] = {
-    // Power off sequence
-    0x22, 0x00, 0x01, 0x83,       // Display update control: power off
-    0x20, 0x00, 0x00,             // Master activation
-    // Deep sleep
-    0x10, 0x00, 0x01, 0x01,       // Enter deep sleep mode
+    0x22, 0x00, 0x01, 0x83,
+    0x20, 0x00, 0x00,
+    0x10, 0x00, 0x01, 0x01,
 };
 
 const uint8_t ssd1677_display_refresh_sequence[] = {
-    0x20, 0x00, 0x00
+    0x20, 0x00, 0x00,
 };
 
 void board_init(void) {
@@ -104,12 +100,12 @@ void board_init(void) {
     args.ram_height = 480;
     args.rotation = 0;
     args.write_black_ram_command = 0x24;
-    args.black_bits_inverted = true;
+    args.black_bits_inverted = false;
     args.refresh_sequence = ssd1677_display_refresh_sequence;
     args.refresh_sequence_len = sizeof(ssd1677_display_refresh_sequence);
-    args.refresh_time = 1.6;             // ~1600ms full refresh
+    args.refresh_time = 1.6;
     args.busy_pin = &pin_GPIO6;
-    args.busy_state = true;              // BUSY is active HIGH on SSD1677
+    args.busy_state = true;
     args.seconds_per_frame = 5.0;
     args.grayscale = false;
     args.two_byte_sequence_length = true;
