@@ -16,6 +16,7 @@
 #include <zephyr/autoconf.h>
 #include <zephyr/kernel.h>
 #include <zephyr/sys/reboot.h>
+#include <zephyr/sys/util.h>
 
 #if defined(CONFIG_ARCH_POSIX)
 #include <limits.h>
@@ -29,7 +30,16 @@
 #include "lib/tlsf/tlsf.h"
 #include <zephyr/device.h>
 
+#if defined(CONFIG_TRACING_PERFETTO) && defined(CONFIG_BOARD_NATIVE_SIM)
+#include "perfetto_encoder.h"
+#include <zephyr/sys/mem_stats.h>
+#define CIRCUITPY_PERFETTO_TRACK_GROUP_UUID 0x3000ULL
+#define CIRCUITPY_PERFETTO_VM_HEAP_USED_UUID 0x3001ULL
+#define CIRCUITPY_PERFETTO_OUTER_HEAP_USED_UUID 0x3002ULL
+#endif
+
 static tlsf_t heap;
+static size_t tlsf_heap_used = 0;
 
 // Auto generated in pins.c
 extern const struct device *const rams[];
@@ -72,12 +82,60 @@ static void native_sim_register_cmdline_opts(void) {
 NATIVE_TASK(native_sim_register_cmdline_opts, PRE_BOOT_1, 0);
 #endif
 
+#if defined(CONFIG_TRACING_PERFETTO) && defined(CONFIG_BOARD_NATIVE_SIM)
+static bool perfetto_circuitpython_tracks_emitted;
+
+static void perfetto_emit_outer_heap_stats(void) {
+    if (!perfetto_start()) {
+        return;
+    }
+    size_t total = tlsf_heap_used;
+    #if defined(CONFIG_COMMON_LIBC_MALLOC) && defined(CONFIG_SYS_HEAP_RUNTIME_STATS)
+    extern int malloc_runtime_stats_get(struct sys_memory_stats *stats);
+    struct sys_memory_stats stats;
+    if (malloc_runtime_stats_get(&stats) == 0) {
+        total += stats.allocated_bytes;
+    }
+    #endif
+    perfetto_emit_counter(CIRCUITPY_PERFETTO_OUTER_HEAP_USED_UUID, (int64_t)total);
+    Z_SPIN_DELAY(1);
+}
+
+static void perfetto_emit_circuitpython_tracks(void) {
+    if (perfetto_circuitpython_tracks_emitted) {
+        return;
+    }
+    if (!perfetto_start()) {
+        return;
+    }
+    perfetto_emit_track_descriptor(CIRCUITPY_PERFETTO_TRACK_GROUP_UUID,
+        perfetto_get_process_uuid(),
+        "CircuitPython");
+    perfetto_emit_counter_track_descriptor(CIRCUITPY_PERFETTO_VM_HEAP_USED_UUID,
+        CIRCUITPY_PERFETTO_TRACK_GROUP_UUID,
+        "VM Heap Used",
+        PERFETTO_COUNTER_UNIT_BYTES);
+    perfetto_emit_counter_track_descriptor(CIRCUITPY_PERFETTO_OUTER_HEAP_USED_UUID,
+        CIRCUITPY_PERFETTO_TRACK_GROUP_UUID,
+        "Outer Heap Used",
+        PERFETTO_COUNTER_UNIT_BYTES);
+    perfetto_circuitpython_tracks_emitted = true;
+}
+#else
+static inline void perfetto_emit_outer_heap_stats(void) {
+}
+
+static inline void perfetto_emit_circuitpython_tracks(void) {
+}
+#endif
+
 static void _tick_function(struct k_timer *timer_id) {
     supervisor_tick();
 }
 
 safe_mode_t port_init(void) {
     k_timer_init(&tick_timer, _tick_function, NULL);
+    perfetto_emit_circuitpython_tracks();
     return SAFE_MODE_NONE;
 }
 
@@ -233,6 +291,7 @@ void port_heap_init(void) {
         }
         valid_pool_count++;
     }
+    perfetto_emit_outer_heap_stats();
     #if !DT_HAS_CHOSEN(zephyr_sram)
     #error "No SRAM!"
     #endif
@@ -243,30 +302,54 @@ void *port_malloc(size_t size, bool dma_capable) {
     if (valid_pool_count > 0) {
         block = tlsf_malloc(heap, size);
     }
+    if (block != NULL) {
+        tlsf_heap_used += tlsf_block_size(block);
+    }
     #ifdef CONFIG_COMMON_LIBC_MALLOC
     if (block == NULL) {
         block = malloc(size);
     }
     #endif
+    if (block != NULL) {
+        perfetto_emit_outer_heap_stats();
+    }
     return block;
 }
 
 void port_free(void *ptr) {
-    if (valid_pool_count > 0 && !(ptr >= zephyr_malloc_bottom && ptr < zephyr_malloc_top)) {
-        tlsf_free(heap, ptr);
+    if (ptr == NULL) {
         return;
     }
-    #ifdef CONFIG_COMMON_LIBC_MALLOC
-    free(ptr);
-    #endif
+    if (valid_pool_count > 0 && !(ptr >= zephyr_malloc_bottom && ptr < zephyr_malloc_top)) {
+        tlsf_heap_used -= tlsf_block_size(ptr);
+        tlsf_free(heap, ptr);
+    } else {
+        #ifdef CONFIG_COMMON_LIBC_MALLOC
+        free(ptr);
+        #endif
+    }
+    perfetto_emit_outer_heap_stats();
 }
 
 void *port_realloc(void *ptr, size_t size, bool dma_capable) {
+    if (ptr == NULL) {
+        return port_malloc(size, dma_capable);
+    }
     if (valid_pool_count > 0 && !(ptr >= zephyr_malloc_bottom && ptr < zephyr_malloc_top)) {
-        return tlsf_realloc(heap, ptr, size);
+        size_t old_size = tlsf_block_size(ptr);
+        void *new_block = tlsf_realloc(heap, ptr, size);
+        if (new_block != NULL) {
+            tlsf_heap_used = tlsf_heap_used - old_size + tlsf_block_size(new_block);
+            perfetto_emit_outer_heap_stats();
+        }
+        return new_block;
     }
     #ifdef CONFIG_COMMON_LIBC_MALLOC
-    return realloc(ptr, size);
+    void *new_block = realloc(ptr, size);
+    if (new_block != NULL) {
+        perfetto_emit_outer_heap_stats();
+    }
+    return new_block;
     #endif
     return NULL;
 }
