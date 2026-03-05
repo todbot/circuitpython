@@ -13,8 +13,7 @@
 #include "shared-bindings/_bleio/Connection.h"
 #include "shared-bindings/_bleio/ScanResults.h"
 
-#define BLEIO_TOTAL_CONNECTION_COUNT 5
-#define BLEIO_HANDLE_INVALID 0xffff
+#define BLEIO_TOTAL_CONNECTION_COUNT CONFIG_BT_MAX_CONN
 
 extern bleio_connection_internal_t bleio_connections[BLEIO_TOTAL_CONNECTION_COUNT];
 

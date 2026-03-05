@@ -107,6 +107,8 @@ def bsim_phy(request, bsim_phy_binary, native_sim_env, sim_id):
         "-v=9",  # Cleaning up level is on 9. Connecting is 7.
         f"-s={sim_id}",
         f"-D={devices}",
+        "-argschannel",
+        "-at=40",  # 40 dB attenuation (default 60) so RSSI ~ -40 dBm
     ]
     print("Running:", " ".join(cmd))
     proc = subprocess.Popen(
@@ -213,11 +215,13 @@ def zephyr_sample(request, bsim_phy, native_sim_env, sim_id):
     print(sample_proc.serial.all_output)
 
 
+# pytest markers are defined inside out meaning the bottom one is first in the
+# list and the top is last. So use negative indices to reverse them.
 @pytest.fixture
 def circuitpython1(circuitpython):
-    return circuitpython[0]
+    return circuitpython[-1]
 
 
 @pytest.fixture
 def circuitpython2(circuitpython):
-    return circuitpython[1]
+    return circuitpython[-2]
