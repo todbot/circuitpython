@@ -157,11 +157,17 @@ bool common_hal_busio_spi_configure(busio_spi_obj_t *self,
     return true;
 }
 
-bool common_hal_busio_spi_try_lock(busio_spi_obj_t *self) {
+// Wait as long as needed for the lock. This is used by SD card access from USB.
+// Overrides the default busy-wait implementation in shared-bindings/busio/SPI.c
+bool common_hal_busio_spi_wait_for_lock(busio_spi_obj_t *self, uint32_t timeout_ms) {
     if (common_hal_busio_spi_deinited(self)) {
         return false;
     }
-    return xSemaphoreTake(self->mutex, 0) == pdTRUE;
+    return xSemaphoreTake(self->mutex, pdMS_TO_TICKS(timeout_ms)) == pdTRUE;
+}
+
+bool common_hal_busio_spi_try_lock(busio_spi_obj_t *self) {
+    return common_hal_busio_spi_wait_for_lock(self, 0);
 }
 
 bool common_hal_busio_spi_has_lock(busio_spi_obj_t *self) {
