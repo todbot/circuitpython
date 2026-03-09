@@ -7,13 +7,13 @@
 // This implementation largely follows the structure of adafruit_sdcard.py
 
 #include "extmod/vfs.h"
-#include "esp_log.h"
 #include "shared-bindings/busio/SPI.h"
 #include "shared-bindings/digitalio/DigitalInOut.h"
 #include "shared-bindings/sdcardio/SDCard.h"
 #include "shared-bindings/time/__init__.h"
 #include "shared-bindings/util.h"
 #include "shared-module/sdcardio/SDCard.h"
+#include "supervisor/shared/tick.h"
 
 #include "py/mperrno.h"
 
@@ -29,6 +29,7 @@
 // So let's allow a nice long time, but don't wait in a tight loop: allow background tasks to run.
 #define CMD_TIMEOUT_MS (500)
 #define TIMEOUT_MS (500)
+#define SPI_TIMEOUT_MS (10000)
 
 #define R1_IDLE_STATE (1 << 0)
 #define R1_ILLEGAL_COMMAND (1 << 2)
@@ -59,9 +60,8 @@ static bool lock_and_configure_bus(sdcardio_sdcard_obj_t *self) {
     if (common_hal_sdcardio_sdcard_deinited(self)) {
         return false;
     }
-    common_hal_sdcardio_check_for_deinit(self);
 
-    if (!common_hal_busio_spi_try_lock(self->bus)) {
+    if (!common_hal_busio_spi_wait_for_lock(self->bus, SPI_TIMEOUT_MS)) {
         return false;
     }
 
@@ -268,7 +268,6 @@ static mp_rom_error_text_t init_card(sdcardio_sdcard_obj_t *self) {
     {
         bool reached_idle_state = false;
         for (int i = 0; i < 5; i++) {
-            ESP_LOGW("init_card", "loop: %d", i);
             // do not call cmd with wait=true, because that will return
             // prematurely if the idle state is not reached. we can't depend on
             // this when the card is not yet in SPI mode
@@ -403,7 +402,7 @@ mp_uint_t sdcardio_sdcard_readblocks(mp_obj_t self_in, uint8_t *buf, uint32_t st
     // deinit check is in lock_and_configure_bus()
     sdcardio_sdcard_obj_t *self = MP_OBJ_TO_PTR(self_in);
     if (!lock_and_configure_bus(self)) {
-        return -MP_EAGAIN;
+        return -MP_ETIMEDOUT;
     }
     int r = 0;
     size_t buflen = 512 * nblocks;
@@ -503,7 +502,7 @@ mp_uint_t sdcardio_sdcard_writeblocks(mp_obj_t self_in, uint8_t *buf, uint32_t s
     // deinit check is in lock_and_configure_bus()
     sdcardio_sdcard_obj_t *self = MP_OBJ_TO_PTR(self_in);
     if (!lock_and_configure_bus(self)) {
-        return -MP_EAGAIN;
+        return -MP_ETIMEDOUT;
     }
 
     if (!self->in_cmd25 || start_block != self->next_block) {
@@ -538,7 +537,7 @@ mp_uint_t sdcardio_sdcard_writeblocks(mp_obj_t self_in, uint8_t *buf, uint32_t s
 mp_negative_errno_t common_hal_sdcardio_sdcard_sync(sdcardio_sdcard_obj_t *self) {
     // deinit check is in lock_and_configure_bus()
     if (!lock_and_configure_bus(self)) {
-        return -MP_EAGAIN;
+        return -MP_ETIMEDOUT;
     }
     int r = exit_cmd25(self);
     extraclock_and_unlock_bus(self);
