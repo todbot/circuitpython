@@ -9,16 +9,16 @@
 
 #include <string.h>
 
-#include "shared-bindings/microcontroller/Pin.h"
-#include "shared-bindings/busio/SPI.h"
-#include "shared-bindings/util.h"
-
-#include "shared/runtime/buffer_helper.h"
-#include "shared/runtime/context_manager_helpers.h"
 #include "py/binary.h"
 #include "py/mperrno.h"
 #include "py/objproperty.h"
 #include "py/runtime.h"
+#include "shared-bindings/microcontroller/Pin.h"
+#include "shared-bindings/busio/SPI.h"
+#include "shared-bindings/util.h"
+#include "shared/runtime/buffer_helper.h"
+#include "shared/runtime/context_manager_helpers.h"
+#include "supervisor/shared/tick.h"
 
 
 //| class SPI:
@@ -493,4 +493,17 @@ MP_DEFINE_CONST_OBJ_TYPE(
 
 busio_spi_obj_t *validate_obj_is_spi_bus(mp_obj_t obj, qstr arg_name) {
     return mp_arg_validate_type(obj, &busio_spi_type, arg_name);
+}
+
+// Wait as long as needed for the lock. This is used by SD card access from USB.
+// The default implementation is to busy-wait while running the background tasks. espressif is different.
+bool common_hal_busio_spi_wait_for_lock(busio_spi_obj_t *self, uint32_t timeout_ms) {
+    uint64_t deadline = supervisor_ticks_ms64() + timeout_ms;
+    while (supervisor_ticks_ms64() < deadline) {
+        if (common_hal_busio_spi_try_lock(self)) {
+            return true;
+        }
+        RUN_BACKGROUND_TASKS;
+    }
+    return false;
 }
