@@ -214,7 +214,7 @@ static void _send_pixels(busdisplay_busdisplay_obj_t *self, uint8_t *pixels, uin
 }
 
 static bool _refresh_area(busdisplay_busdisplay_obj_t *self, const displayio_area_t *area) {
-    uint32_t buffer_size = CIRCUITPY_DISPLAY_AREA_BUFFER_SIZE / sizeof(uint32_t); // In uint32_ts
+    uint16_t buffer_size = CIRCUITPY_DISPLAY_AREA_BUFFER_SIZE / sizeof(uint32_t); // In uint32_ts
 
     displayio_area_t clipped;
     // Clip the area to the display by overlapping the areas. If there is no overlap then we're done.
@@ -223,7 +223,7 @@ static bool _refresh_area(busdisplay_busdisplay_obj_t *self, const displayio_are
     }
     uint16_t rows_per_buffer = displayio_area_height(&clipped);
     uint8_t pixels_per_word = (sizeof(uint32_t) * 8) / self->core.colorspace.depth;
-    uint32_t pixels_per_buffer = displayio_area_size(&clipped);
+    uint16_t pixels_per_buffer = displayio_area_size(&clipped);
 
     uint16_t subrectangles = 1;
     // for SH1107 and other boundary constrained controllers

@@ -117,7 +117,7 @@ void displayio_display_bus_end_transaction(displayio_display_bus_t *self) {
     self->end_transaction(self->bus);
 }
 
-static void _displayio_display_bus_send_region_commands(displayio_display_bus_t *self, displayio_display_core_t *display, displayio_area_t *area) {
+void displayio_display_bus_set_region_to_update(displayio_display_bus_t *self, displayio_display_core_t *display, displayio_area_t *area) {
     uint16_t x1 = area->x1 + self->colstart;
     uint16_t x2 = area->x2 + self->colstart;
     uint16_t y1 = area->y1 + self->rowstart;
@@ -233,10 +233,6 @@ static void _displayio_display_bus_send_region_commands(displayio_display_bus_t 
         self->send(self->bus, DISPLAY_DATA, chip_select, data, data_length / 2);
         displayio_display_bus_end_transaction(self);
     }
-}
-
-void displayio_display_bus_set_region_to_update(displayio_display_bus_t *self, displayio_display_core_t *display, displayio_area_t *area) {
-    _displayio_display_bus_send_region_commands(self, display, area);
 }
 
 void displayio_display_bus_flush(displayio_display_bus_t *self) {
