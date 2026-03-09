@@ -1020,7 +1020,11 @@ int __attribute__((used)) main(void) {
     // initialise the cpu and peripherals
     set_safe_mode(port_init());
 
+    // All ports need pins reset, after never-reset pins are marked in port_init();
+    reset_all_pins();
+
     port_heap_init();
+
 
     // Turn on RX and TX LEDs if we have them.
     init_rxtx_leds();
