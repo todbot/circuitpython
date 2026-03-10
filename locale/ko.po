@@ -112,6 +112,7 @@ msgid "%q contains duplicate pins"
 msgstr "%q에 중복된 핀이 포함"
 
 #: ports/atmel-samd/common-hal/sdioio/SDCard.c
+#: ports/espressif/common-hal/qspibus/QSPIBus.c
 msgid "%q failure: %d"
 msgstr "%q 실패: %d"
 
@@ -901,7 +902,7 @@ msgstr "좌표 배열의 길이가 다릅니다"
 msgid "Coordinate arrays types have different sizes"
 msgstr "좌표 배열 유형은 크기가 다릅니다"
 
-#: shared-module/usb/core/Device.c
+#: shared-module/usb/core/Device.c ports/espressif/common-hal/qspibus/QSPIBus.c
 msgid "Could not allocate DMA capable buffer"
 msgstr ""
 
@@ -1005,6 +1006,7 @@ msgstr "ECB는 한 번에 16 바이트에서만 작동합니다"
 
 #: ports/espressif/common-hal/busio/SPI.c
 #: ports/espressif/common-hal/canio/CAN.c
+#: ports/espressif/common-hal/qspibus/QSPIBus.c
 msgid "ESP-IDF memory allocation failed"
 msgstr "ESP-IDF 메모리 할당에 실패하였습니다"
 
@@ -1292,7 +1294,8 @@ msgstr "내부 오디오 버퍼가 너무 작습니다"
 msgid "Internal define error"
 msgstr "내부 정의 오류"
 
-#: shared-bindings/pwmio/PWMOut.c supervisor/shared/settings.c
+#: ports/espressif/common-hal/qspibus/QSPIBus.c shared-bindings/pwmio/PWMOut.c
+#: supervisor/shared/settings.c
 msgid "Internal error"
 msgstr "내부 오류"
 
@@ -1571,7 +1574,7 @@ msgstr "빠른 메모리 부족"
 #: ports/stm/common-hal/busio/UART.c shared-bindings/fourwire/FourWire.c
 #: shared-bindings/i2cdisplaybus/I2CDisplayBus.c
 #: shared-bindings/paralleldisplaybus/ParallelBus.c
-#: shared-module/bitbangio/SPI.c
+#: shared-bindings/qspibus/QSPIBus.c shared-module/bitbangio/SPI.c
 msgid "No %q pin"
 msgstr "%q 핀이 없습니다"
 
@@ -1808,6 +1811,7 @@ msgid "Operation or feature not supported"
 msgstr "작업 또는 기능이 지원되지 않습니다"
 
 #: ports/espressif/common-hal/espidf/__init__.c
+#: ports/espressif/common-hal/qspibus/QSPIBus.c
 #, fuzzy
 msgid "Operation timed out"
 msgstr "작업 시간 초과되었습니다"
