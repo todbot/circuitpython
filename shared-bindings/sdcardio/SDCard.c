@@ -82,10 +82,9 @@ static mp_obj_t sdcardio_sdcard_make_new(const mp_obj_type_t *type, size_t n_arg
     const mcu_pin_obj_t *cs = validate_obj_is_free_pin(args[ARG_cs].u_obj, MP_QSTR_cs);
 
     sdcardio_sdcard_obj_t *self = mp_obj_malloc_with_finaliser(sdcardio_sdcard_obj_t, &sdcardio_SDCard_type);
-
     common_hal_sdcardio_sdcard_construct(self, spi, cs, args[ARG_baudrate].u_int);
 
-    return self;
+    return MP_OBJ_FROM_PTR(self);
 }
 
 
