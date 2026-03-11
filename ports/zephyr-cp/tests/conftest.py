@@ -4,7 +4,6 @@
 """Pytest fixtures for CircuitPython native_sim testing."""
 
 import logging
-import os
 import re
 import select
 import subprocess
@@ -13,59 +12,50 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
+import serial
+from . import NativeSimProcess
+from .perfetto_input_trace import write_input_trace
+
 from perfetto.trace_processor import TraceProcessor
 
 logger = logging.getLogger(__name__)
 
+
+def pytest_configure(config):
+    config.addinivalue_line(
+        "markers", "circuitpy_drive(files): run CircuitPython with files in the flash image"
+    )
+    config.addinivalue_line(
+        "markers", "disable_i2c_devices(*names): disable native_sim I2C emulator devices"
+    )
+    config.addinivalue_line(
+        "markers", "circuitpython_board(board_id): which board id to use in the test"
+    )
+    config.addinivalue_line(
+        "markers",
+        "zephyr_sample(sample, board='nrf52_bsim', device_id=1): build and run a Zephyr sample for bsim tests",
+    )
+    config.addinivalue_line(
+        "markers",
+        "duration(seconds): native_sim timeout and bsim PHY simulation duration",
+    )
+    config.addinivalue_line(
+        "markers",
+        "code_py_runs(count): stop native_sim after count code.py runs (default: 1)",
+    )
+    config.addinivalue_line(
+        "markers",
+        "input_trace(trace): inject input signal trace data into native_sim",
+    )
+    config.addinivalue_line(
+        "markers",
+        "native_sim_rt: run native_sim in realtime mode (-rt instead of -no-rt)",
+    )
+
+
 ZEPHYR_CP = Path(__file__).parent.parent
 BUILD_DIR = ZEPHYR_CP / "build-native_native_sim"
 BINARY = BUILD_DIR / "zephyr-cp/zephyr/zephyr.exe"
-
-
-@dataclass
-class InputTrigger:
-    """A trigger for sending input to the simulator.
-
-    Attributes:
-        trigger: Text to match in output to trigger input, or None for immediate send.
-        data: Bytes to send when triggered.
-        sent: Whether this trigger has been sent (set internally).
-    """
-
-    trigger: str | None
-    data: bytes
-    sent: bool = False
-
-
-@dataclass
-class SimulatorResult:
-    """Result from running CircuitPython on the simulator."""
-
-    output: str
-    trace_file: Path
-
-
-def parse_gpio_trace(trace_file: Path, pin_name: str = "gpio_emul.00") -> list[tuple[int, int]]:
-    """Parse GPIO trace from Perfetto trace file.
-
-    Args:
-        trace_file: Path to the Perfetto trace file.
-        pin_name: Name of the GPIO pin track (e.g., "gpio_emul.00").
-
-    Returns:
-        List of (timestamp_ns, value) tuples for the specified GPIO pin.
-    """
-    tp = TraceProcessor(file_path=str(trace_file))
-    result = tp.query(
-        f'''
-        SELECT c.ts, c.value
-        FROM counter c
-        JOIN track t ON c.track_id = t.id
-        WHERE t.name = "{pin_name}"
-        ORDER BY c.ts
-        '''
-    )
-    return [(row.ts, int(row.value)) for row in result]
 
 
 def _iter_uart_tx_slices(trace_file: Path) -> list[tuple[int, int, str, str]]:
@@ -134,179 +124,136 @@ def log_uart_trace_output(trace_file: Path) -> None:
 
 
 @pytest.fixture
-def native_sim_binary():
+def board(request):
+    board = request.node.get_closest_marker("circuitpython_board")
+    if board is not None:
+        board = board.args[0]
+    else:
+        board = "native_native_sim"
+    return board
+
+
+@pytest.fixture
+def native_sim_binary(request, board):
     """Return path to native_sim binary, skip if not built."""
-    if not BINARY.exists():
-        pytest.skip(f"native_sim not built: {BINARY}")
-    return BINARY
+    ZEPHYR_CP = Path(__file__).parent.parent
+    build_dir = ZEPHYR_CP / f"build-{board}"
+    binary = build_dir / "zephyr-cp/zephyr/zephyr.exe"
+
+    if not binary.exists():
+        pytest.skip(f"binary not built: {binary}")
+    return binary
 
 
 @pytest.fixture
-def create_flash_image(tmp_path):
-    """Factory fixture to create FAT flash images."""
-
-    def _create(files: dict[str, str]) -> Path:
-        flash = tmp_path / "flash.bin"
-
-        # Create 2MB empty file
-        flash.write_bytes(b"\x00" * (2 * 1024 * 1024))
-
-        # Format as FAT (mformat)
-        subprocess.run(["mformat", "-i", str(flash), "::"], check=True)
-
-        # Copy files (mcopy)
-        for name, content in files.items():
-            src = tmp_path / name
-            src.write_text(content)
-            subprocess.run(["mcopy", "-i", str(flash), str(src), f"::{name}"], check=True)
-
-        return flash
-
-    return _create
+def native_sim_env() -> dict[str, str]:
+    return {}
 
 
 @pytest.fixture
-def run_circuitpython(native_sim_binary, create_flash_image, tmp_path):
-    """Run CircuitPython with given code string and return output from PTY.
+def sim_id(request) -> str:
+    return request.node.nodeid.replace("/", "_")
 
-    Args:
-        code: Python code to write to code.py, or None for no code.py.
-        timeout: Timeout in seconds for the simulation.
-        erase_flash: If True, erase flash before running.
-        input_sequence: List of InputTrigger objects. When trigger text is seen
-            in output, the corresponding data is written to the PTY. If trigger
-            is None, the data is sent immediately when PTY is opened.
-    """
 
-    def _run(
-        code: str | None,
-        timeout: float = 5.0,
-        erase_flash: bool = False,
-        input_sequence: list[InputTrigger] | None = None,
-        disabled_i2c_devices: list[str] | None = None,
-    ) -> SimulatorResult:
-        files = {"code.py": code} if code is not None else {}
-        flash = create_flash_image(files)
-        triggers = list(input_sequence) if input_sequence else []
-        trace_file = tmp_path / "trace.perfetto"
+@pytest.fixture
+def circuitpython(request, board, sim_id, native_sim_binary, native_sim_env, tmp_path):
+    """Run CircuitPython with given code string and return PTY output."""
 
-        cmd = [
-            str(native_sim_binary),
-            f"--flash={flash}",
-            "--flash_rm",
-            "-no-rt",
-            "-wait_uart",
-            f"-stop_at={timeout}",
-            f"--trace-file={trace_file}",
-        ]
-        if erase_flash:
-            cmd.append("--flash_erase")
-        if disabled_i2c_devices:
-            for device in disabled_i2c_devices:
+    instance_count = 1
+    if "circuitpython1" in request.fixturenames and "circuitpython2" in request.fixturenames:
+        instance_count = 2
+
+    drives = list(request.node.iter_markers_with_node("circuitpy_drive"))
+    if len(drives) != instance_count:
+        raise RuntimeError(f"not enough drives for {instance_count} instances")
+
+    input_trace_markers = list(request.node.iter_markers_with_node("input_trace"))
+    if len(input_trace_markers) > 1:
+        raise RuntimeError("expected at most one input_trace marker")
+
+    input_trace = None
+    if input_trace_markers and len(input_trace_markers[0][1].args) == 1:
+        input_trace = input_trace_markers[0][1].args[0]
+
+    procs = []
+    for i in range(instance_count):
+        flash = tmp_path / f"flash-{i}.bin"
+        flash.write_bytes(b"\xff" * (2 * 1024 * 1024))
+        files = None
+        if len(drives[i][1].args) == 1:
+            files = drives[i][1].args[0]
+        if files is not None:
+            subprocess.run(["mformat", "-i", str(flash), "::"], check=True)
+            tmp_drive = tmp_path / f"drive{i}"
+            tmp_drive.mkdir(exist_ok=True)
+
+            for name, content in files.items():
+                src = tmp_drive / name
+                src.write_text(content)
+                subprocess.run(["mcopy", "-i", str(flash), str(src), f"::{name}"], check=True)
+
+        trace_file = tmp_path / f"trace-{i}.perfetto"
+
+        input_trace_file = None
+        if input_trace is not None:
+            input_trace_file = tmp_path / f"input-{i}.perfetto"
+            write_input_trace(input_trace_file, input_trace)
+
+        marker = request.node.get_closest_marker("duration")
+        if marker is None:
+            timeout = 10
+        else:
+            timeout = marker.args[0]
+
+        runs_marker = request.node.get_closest_marker("code_py_runs")
+        if runs_marker is None:
+            code_py_runs = 1
+        else:
+            code_py_runs = int(runs_marker.args[0])
+
+        use_realtime = request.node.get_closest_marker("native_sim_rt") is not None
+
+        if "bsim" in board:
+            cmd = [str(native_sim_binary), f"--flash_app={flash}"]
+            if instance_count > 1:
+                cmd.append("-disconnect_on_exit=1")
+            cmd.extend(
+                (
+                    f"-s={sim_id}",
+                    f"-d={i}",
+                    "-uart0_pty",
+                    "-uart0_pty_wait_for_readers",
+                    "-uart_pty_wait",
+                    f"--vm-runs={code_py_runs + 1}",
+                )
+            )
+        else:
+            cmd = [str(native_sim_binary), f"--flash={flash}"]
+            # native_sim vm-runs includes the boot VM setup run.
+            realtime_flag = "-rt" if use_realtime else "-no-rt"
+            cmd.extend((realtime_flag, "-wait_uart", f"--vm-runs={code_py_runs + 1}"))
+
+        if input_trace_file is not None:
+            cmd.append(f"--input-trace={input_trace_file}")
+
+        marker = request.node.get_closest_marker("disable_i2c_devices")
+        if marker and len(marker.args) > 0:
+            for device in marker.args:
                 cmd.append(f"--disable-i2c={device}")
         logger.info("Running: %s", " ".join(cmd))
 
-        # Start the process
-        proc = subprocess.Popen(
-            cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-        )
+        procs.append(NativeSimProcess(cmd, timeout, trace_file, native_sim_env))
+    if instance_count == 1:
+        yield procs[0]
+    else:
+        yield procs
+    for i, proc in enumerate(procs):
+        if instance_count > 1:
+            print(f"---------- Instance {i} -----------")
+        proc.shutdown()
 
-        pty_path = None
-        pty_fd = None
-        output = []
-        stdout_lines = []
-
-        try:
-            # Read stdout to find the PTY path
-            start_time = time.time()
-            while time.time() - start_time < timeout + 5:
-                if proc.poll() is not None:
-                    # Process exited
-                    break
-
-                # Check if stdout has data
-                ready, _, _ = select.select([proc.stdout], [], [], 0.1)
-                if ready:
-                    line = proc.stdout.readline()
-                    if not line:
-                        break
-
-                    stdout_lines.append(line.rstrip())
-
-                    # Look for PTY path
-                    match = re.search(r"uart connected to pseudotty: (/dev/pts/\d+)", line)
-                    if match:
-                        pty_path = match.group(1)
-                        # Open the PTY for reading and writing
-                        pty_fd = os.open(pty_path, os.O_RDWR | os.O_NONBLOCK)
-
-                        # Send any immediate triggers (trigger=None)
-                        for t in triggers:
-                            if t.trigger is None and not t.sent:
-                                os.write(pty_fd, t.data)
-                                logger.info("PTY input (immediate): %r", t.data)
-                                t.sent = True
-                        break
-
-            if pty_fd is None:
-                raise RuntimeError("Failed to find PTY path in output")
-
-            def check_triggers(accumulated_output: str) -> None:
-                """Check accumulated output against triggers and send input."""
-                for t in triggers:
-                    if t.trigger is not None and not t.sent:
-                        if t.trigger in accumulated_output:
-                            os.write(pty_fd, t.data)
-                            logger.info("PTY input (trigger %r): %r", t.trigger, t.data)
-                            t.sent = True
-
-            # Read from PTY until process exits or timeout
-            while time.time() - start_time < timeout + 1:
-                if proc.poll() is not None:
-                    # Process exited, do one final read
-                    try:
-                        ready, _, _ = select.select([pty_fd], [], [], 0.1)
-                        if ready:
-                            data = os.read(pty_fd, 4096)
-                            if data:
-                                output.append(data.decode("utf-8", errors="replace"))
-                    except (OSError, BlockingIOError):
-                        pass
-                    break
-
-                # Check if PTY has data
-                try:
-                    ready, _, _ = select.select([pty_fd], [], [], 0.1)
-                    if ready:
-                        data = os.read(pty_fd, 4096)
-                        if data:
-                            output.append(data.decode("utf-8", errors="replace"))
-                            check_triggers("".join(output))
-                except (OSError, BlockingIOError):
-                    pass
-
-            # Read any remaining stdout
-            remaining_stdout = proc.stdout.read()
-            if remaining_stdout:
-                stdout_lines.extend(remaining_stdout.rstrip().split("\n"))
-
-            # Log stdout
-            for line in stdout_lines:
-                logger.info("stdout: %s", line)
-
-            pty_output = "".join(output)
-            for line in pty_output.split("\n"):
-                logger.info("PTY output: %s", repr(line.strip()))
-            log_uart_trace_output(trace_file)
-            return SimulatorResult(output=pty_output, trace_file=trace_file)
-
-        finally:
-            if pty_fd is not None:
-                os.close(pty_fd)
-            proc.terminate()
-            proc.wait(timeout=1)
-
-    return _run
+        print("All serial output:")
+        print(proc.serial.all_output)
+        print()
+        print("All debug serial output:")
+        print(proc.debug_serial.all_output)

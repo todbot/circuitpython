@@ -12,6 +12,9 @@
 
 
 void raise_zephyr_error(int err) {
+    if (err == 0) {
+        return;
+    }
     switch (-err) {
         case EALREADY:
             printk("EALREADY\n");
@@ -40,7 +43,14 @@ void raise_zephyr_error(int err) {
         case ENOTSUP:
             printk("ENOTSUP\n");
             break;
+        case EADDRINUSE:
+            printk("EADDRINUSE\n");
+            break;
+        case EINVAL:
+            printk("EINVAL\n");
+            break;
         default:
             printk("Zephyr error %d\n", err);
     }
+    mp_raise_OSError(-err);
 }

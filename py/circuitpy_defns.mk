@@ -201,6 +201,9 @@ endif
 ifeq ($(CIRCUITPY_DISPLAYIO),1)
 SRC_PATTERNS += displayio/%
 endif
+ifeq ($(CIRCUITPY_DOTCLOCKFRAMEBUFFER),1)
+SRC_PATTERNS += dotclockframebuffer/%
+endif
 ifeq ($(CIRCUITPY_DUALBANK),1)
 SRC_PATTERNS += dualbank/%
 endif
@@ -354,8 +357,8 @@ endif
 ifeq ($(CIRCUITPY_RGBMATRIX),1)
 SRC_PATTERNS += rgbmatrix/%
 endif
-ifeq ($(CIRCUITPY_DOTCLOCKFRAMEBUFFER),1)
-SRC_PATTERNS += dotclockframebuffer/%
+ifeq ($(CIRCUITPY_QSPIBUS),1)
+SRC_PATTERNS += qspibus/%
 endif
 ifeq ($(CIRCUITPY_RP2PIO),1)
 SRC_PATTERNS += rp2pio/%
@@ -552,6 +555,8 @@ SRC_COMMON_HAL_ALL = \
 	pulseio/__init__.c \
 	pwmio/PWMOut.c \
 	pwmio/__init__.c \
+	qspibus/QSPIBus.c \
+	qspibus/__init__.c \
 	rclcpy/__init__.c \
 	rclcpy/Node.c \
 	rclcpy/Publisher.c \
@@ -959,7 +964,6 @@ SRC_SHARED_MODULE_INTERNAL = \
 $(filter $(SRC_PATTERNS), \
 	displayio/bus_core.c \
 	displayio/display_core.c \
-	os/getenv.c \
 	usb/utf16le.c \
 )
 

@@ -123,6 +123,9 @@ INC += \
 	-isystem esp-idf/components/soc/include \
 	-isystem esp-idf/components/soc/$(IDF_TARGET)/include \
 	-isystem esp-idf/components/soc/$(IDF_TARGET)/register \
+	-isystem esp-idf/components/soc/$(IDF_TARGET)/register/hw_ver3 \
+	-isystem esp-idf/components/soc/$(IDF_TARGET)/register/hw_ver2 \
+	-isystem esp-idf/components/soc/$(IDF_TARGET)/register/hw_ver1 \
 	-isystem esp-idf/components/spi_flash/include \
 	-isystem esp-idf/components/usb/include \
 	-isystem esp-idf/components/ulp/ulp_fsm/include \
@@ -775,6 +778,9 @@ ifneq ($(CIRCUITPY_MIPIDSI),0)
 	ESP_IDF_COMPONENTS_LINK += esp_lcd
 endif
 ifneq ($(CIRCUITPY_PARALLELDISPLAYBUS),0)
+	ESP_IDF_COMPONENTS_LINK += esp_lcd
+endif
+ifneq ($(CIRCUITPY_QSPIBUS),0)
 	ESP_IDF_COMPONENTS_LINK += esp_lcd
 endif
 ifneq ($(CIRCUITPY_USB_DEVICE),0)

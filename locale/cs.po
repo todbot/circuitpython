@@ -487,7 +487,7 @@ msgstr "pow() nepodporuje 3 argumenty"
 msgid "AP could not be started"
 msgstr "AP nemohl být spuštěn"
 
-#: shared-bindings/_bleio/Address.c shared-bindings/ipaddress/IPv4Address.c
+#: shared-bindings/ipaddress/IPv4Address.c
 #, c-format
 msgid "Address must be %d bytes long"
 msgstr "Adresa musí být %d bajtů dlouhá"
@@ -594,7 +594,7 @@ msgstr "Již běží"
 msgid "Already scanning for wifi networks"
 msgstr "Již skenuje wifi sítě"
 
-#: shared-module/os/getenv.c
+#: supervisor/shared/settings.c
 #, c-format
 msgid "An error occurred while retrieving '%s':\n"
 msgstr "Došlo k chybě při načítání '%s'\n"
@@ -686,11 +686,6 @@ msgstr "RX a TX jsou vyžadovány pro kontrolu toku"
 msgid "Brightness not adjustable"
 msgstr "Jas není nastavitelný"
 
-#: shared-bindings/_bleio/UUID.c
-#, c-format
-msgid "Buffer + offset too small %d %d %d"
-msgstr "Vyrovnávací paměť + offset je příliš malý %d %d %d"
-
 #: ports/raspberrypi/bindings/rp2pio/StateMachine.c
 msgid "Buffer elements must be 4 bytes long or less"
 msgstr "Prvky bufferu musí být 4 bajty dlouhé nebo méně"
@@ -732,10 +727,6 @@ msgstr "Buffer příliš malý"
 #, c-format
 msgid "Bus pin %d is already in use"
 msgstr "Sběrnicový pin %d je již používán"
-
-#: shared-bindings/_bleio/UUID.c
-msgid "Byte buffer must be 16 bytes."
-msgstr "Buffer musí být dlouhý 16 bajtů."
 
 #: shared-bindings/aesio/aes.c
 msgid "CBC blocks must be multiples of 16 bytes"
@@ -1047,12 +1038,18 @@ msgstr "Nepodařilo se alokovat paměť pro wifi scan"
 msgid "Failed to buffer the sample"
 msgstr "Nepodařilo se nabufferovat sample"
 
+#: ports/zephyr-cp/common-hal/_bleio/Adapter.c
+msgid "Failed to connect"
+msgstr ""
+
 #: ports/espressif/common-hal/_bleio/Adapter.c
 #: ports/nordic/common-hal/_bleio/Adapter.c
+#: ports/zephyr-cp/common-hal/_bleio/Adapter.c
 msgid "Failed to connect: internal error"
 msgstr "Připojení se nezdařilo: interní chyba"
 
 #: ports/nordic/common-hal/_bleio/Adapter.c
+#: ports/zephyr-cp/common-hal/_bleio/Adapter.c
 msgid "Failed to connect: timeout"
 msgstr "Nepodařilo se připojit: časový limit"
 
@@ -1110,7 +1107,6 @@ msgid "File exists"
 msgstr "soubor existuje"
 
 #: shared-bindings/supervisor/__init__.c shared-module/lvfontio/OnDiskFont.c
-#: shared-module/os/getenv.c
 msgid "File not found"
 msgstr "Soubor nenalezen"
 
@@ -1263,7 +1259,7 @@ msgstr "Interní audio buffer je příliš malý"
 msgid "Internal define error"
 msgstr ""
 
-#: shared-bindings/pwmio/PWMOut.c shared-module/os/getenv.c
+#: shared-bindings/pwmio/PWMOut.c supervisor/shared/settings.c
 msgid "Internal error"
 msgstr "Interní chyba"
 
@@ -1352,6 +1348,10 @@ msgstr "Chybná MAC adresa"
 msgid "Invalid ROS domain ID"
 msgstr ""
 
+#: ports/zephyr-cp/common-hal/_bleio/Adapter.c
+msgid "Invalid advertising data"
+msgstr ""
+
 #: ports/espressif/common-hal/espidf/__init__.c py/moderrno.c
 msgid "Invalid argument"
 msgstr "Neplatný argument"
@@ -1360,17 +1360,12 @@ msgstr "Neplatný argument"
 msgid "Invalid bits per value"
 msgstr ""
 
-#: shared-module/os/getenv.c
-#, c-format
-msgid "Invalid byte %.*s"
-msgstr "Špatný byte %.*s"
-
 #: ports/atmel-samd/common-hal/imagecapture/ParallelImageCapture.c
 #, c-format
 msgid "Invalid data_pins[%d]"
 msgstr "Chybný data_pin[%d]"
 
-#: shared-module/msgpack/__init__.c
+#: shared-module/msgpack/__init__.c supervisor/shared/settings.c
 msgid "Invalid format"
 msgstr "Špatný formát"
 
@@ -1401,17 +1396,13 @@ msgstr "Chybný soket pro TLS"
 msgid "Invalid state"
 msgstr "Chybný stav"
 
-#: shared-module/os/getenv.c
+#: supervisor/shared/settings.c
 msgid "Invalid unicode escape"
 msgstr "Neplatná unicode escape sekvence"
 
 #: shared-bindings/aesio/aes.c
 msgid "Key must be 16, 24, or 32 bytes long"
 msgstr "Klíč musí být dlouhý 16, 24 nebo 32 bajtů"
-
-#: shared-module/os/getenv.c
-msgid "Key not found"
-msgstr "Klíč nenalezen"
 
 #: shared-module/is31fl3741/FrameBuffer.c
 msgid "LED mappings must match display size"
@@ -2096,9 +2087,12 @@ msgstr ""
 
 #: ports/espressif/common-hal/socketpool/SocketPool.c
 #: ports/raspberrypi/common-hal/socketpool/SocketPool.c
-#: ports/zephyr-cp/common-hal/socketpool/SocketPool.c
 msgid "SocketPool can only be used with wifi.radio"
 msgstr "SocketPool je možné použít pouze s wifi.radio"
+
+#: ports/zephyr-cp/common-hal/socketpool/SocketPool.c
+msgid "SocketPool can only be used with wifi.radio or hostnetwork.HostNetwork"
+msgstr ""
 
 #: shared-bindings/aesio/aes.c
 msgid "Source and destination buffers must be the same length"
@@ -2273,10 +2267,6 @@ msgstr "USB zařízení používají příliš mnoho názvů rozhraní."
 #: shared-module/usb_hid/Device.c
 msgid "USB error"
 msgstr "Chyba USB"
-
-#: shared-bindings/_bleio/UUID.c
-msgid "UUID integer value must be 0-0xffff"
-msgstr "UUID integer musí být 0-0xffff"
 
 #: shared-bindings/_bleio/UUID.c
 msgid "UUID string not 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'"
@@ -3424,10 +3414,6 @@ msgstr ""
 #: extmod/ulab/code/scipy/optimize/optimize.c
 msgid "initial values must be iterable"
 msgstr "výchozí hodnoty musí být iterovatelné"
-
-#: shared-bindings/_bleio/Characteristic.c shared-bindings/_bleio/Descriptor.c
-msgid "initial_value length is wrong"
-msgstr "délka initial_value je chybná"
 
 #: py/compile.c
 msgid "inline assembler must be a function"
@@ -4614,6 +4600,26 @@ msgstr ""
 #: extmod/ulab/code/scipy/signal/signal.c
 msgid "zi must be of shape (n_section, 2)"
 msgstr ""
+
+#, c-format
+#~ msgid "Buffer + offset too small %d %d %d"
+#~ msgstr "Vyrovnávací paměť + offset je příliš malý %d %d %d"
+
+#~ msgid "Byte buffer must be 16 bytes."
+#~ msgstr "Buffer musí být dlouhý 16 bajtů."
+
+#~ msgid "UUID integer value must be 0-0xffff"
+#~ msgstr "UUID integer musí být 0-0xffff"
+
+#~ msgid "initial_value length is wrong"
+#~ msgstr "délka initial_value je chybná"
+
+#, c-format
+#~ msgid "Invalid byte %.*s"
+#~ msgstr "Špatný byte %.*s"
+
+#~ msgid "Key not found"
+#~ msgstr "Klíč nenalezen"
 
 #, c-format
 #~ msgid "%%c requires int or char"

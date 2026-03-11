@@ -20,7 +20,9 @@ MANUAL_COMPAT_TO_DRIVER = {
     "nordic_nrf_uarte": "serial",
     "nordic_nrf_uart": "serial",
     "nordic_nrf_twim": "i2c",
+    "nordic_nrf_twi": "i2c",
     "nordic_nrf_spim": "spi",
+    "nordic_nrf_spi": "spi",
 }
 
 # These are controllers, not the flash devices themselves.
@@ -94,6 +96,19 @@ CONNECTORS = {
         "D12",
         "D13",
     ],
+    "nordic,expansion-board-header": [
+        "P1_04",
+        "P1_05",
+        "P1_06",
+        "P1_07",
+        "P1_08",
+        "P1_09",
+        "P1_10",
+        "P1_11",
+        "P1_12",
+        "P1_13",
+        "P1_14",
+    ],
     "arducam,dvp-20pin-connector": [
         "SCL",
         "SDA",
@@ -142,6 +157,16 @@ CONNECTORS = {
         "LCD_D13",
         "LCD_D14",
         "LCD_D15",
+    ],
+    "nxp,lcd-pmod": [
+        "LCD_WR",
+        "TOUCH_SCL",
+        "LCD_DC",
+        "TOUCH_SDA",
+        "LCD_MOSI",
+        "TOUCH_RESET",
+        "LCD_CS",
+        "TOUCH_INT",
     ],
     "raspberrypi,csi-connector": [
         "CSI_D0_N",
@@ -354,6 +379,12 @@ def find_ram_regions(device_tree):
         if "zephyr,memory-region" not in compatible or "zephyr,memory-region" not in node.props:
             continue
 
+        is_mmio_sram = "mmio-sram" in compatible
+        device_type = node.props.get("device_type")
+        has_memory_device_type = device_type and device_type.to_string() == "memory"
+        if not (is_mmio_sram or has_memory_device_type):
+            continue
+
         size = node.props["reg"].to_nums()[1]
 
         start = "__" + node.props["zephyr,memory-region"].to_string() + "_end"
@@ -378,7 +409,26 @@ def zephyr_dts_to_cp_board(board_id, portdir, builddir, zephyrbuilddir):  # noqa
     board_info = {
         "wifi": False,
         "usb_device": False,
+        "_bleio": False,
+        "hostnetwork": board_id in ["native_sim"],
     }
+
+    config_bt_enabled = False
+    config_bt_found = False
+    config_present = True
+    config = zephyrbuilddir / ".config"
+    if not config.exists():
+        config_present = False
+    else:
+        for line in config.read_text().splitlines():
+            if line.startswith("CONFIG_BT="):
+                config_bt_enabled = line.strip().endswith("=y")
+                config_bt_found = True
+                break
+            if line.startswith("# CONFIG_BT is not set"):
+                config_bt_enabled = False
+                config_bt_found = True
+                break
 
     runners = zephyrbuilddir / "runners.yaml"
     runners = yaml.safe_load(runners.read_text())
@@ -433,6 +483,7 @@ def zephyr_dts_to_cp_board(board_id, portdir, builddir, zephyrbuilddir):  # noqa
     # Store active Zephyr device labels per-driver so that we can make them available via board.
     active_zephyr_devices = {}
     usb_num_endpoint_pairs = 0
+    ble_hardware_present = False
     for k in device_tree.root.nodes["chosen"].props:
         value = device_tree.root.nodes["chosen"].props[k]
         path2chosen[value.to_path()] = k
@@ -484,6 +535,8 @@ def zephyr_dts_to_cp_board(board_id, portdir, builddir, zephyrbuilddir):  # noqa
                 usb_num_endpoint_pairs += min(single_direction_endpoints)
             elif driver.startswith("wifi"):
                 board_info["wifi"] = True
+            elif driver == "bluetooth/hci":
+                ble_hardware_present = True
             elif driver in EXCEPTIONAL_DRIVERS:
                 pass
             elif driver in BUSIO_CLASSES:
@@ -504,16 +557,26 @@ def zephyr_dts_to_cp_board(board_id, portdir, builddir, zephyrbuilddir):  # noqa
             all_ioports.append(node.labels[0])
             if status == "okay":
                 ioports[node.labels[0]] = set(range(0, ngpios))
-        if gpio_map and compatible[0] != "gpio-nexus":
-            i = 0
-            for offset, t, label in gpio_map._markers:
-                if not label:
-                    continue
-                num = int.from_bytes(gpio_map.value[offset + 4 : offset + 8], "big")
-                if (label, num) not in board_names:
-                    board_names[(label, num)] = []
-                board_names[(label, num)].append(CONNECTORS[compatible[0]][i])
-                i += 1
+        if gpio_map and compatible and compatible[0] != "gpio-nexus":
+            connector_pins = CONNECTORS.get(compatible[0], None)
+            if connector_pins is None:
+                logger.warning(f"Unsupported connector mapping compatible: {compatible[0]}")
+            else:
+                i = 0
+                for offset, t, label in gpio_map._markers:
+                    if not label:
+                        continue
+                    if i >= len(connector_pins):
+                        logger.warning(
+                            f"Connector mapping for {compatible[0]} has more pins than names; "
+                            f"stopping at {len(connector_pins)}"
+                        )
+                        break
+                    num = int.from_bytes(gpio_map.value[offset + 4 : offset + 8], "big")
+                    if (label, num) not in board_names:
+                        board_names[(label, num)] = []
+                    board_names[(label, num)].append(connector_pins[i])
+                    i += 1
         if "gpio-leds" in compatible:
             for led in node.nodes:
                 led = node.nodes[led]
@@ -551,15 +614,18 @@ def zephyr_dts_to_cp_board(board_id, portdir, builddir, zephyrbuilddir):  # noqa
     if len(all_ioports) > 1:
         a, b = all_ioports[:2]
         i = 0
-        while a[i] == b[i]:
+        max_i = min(len(a), len(b))
+        while i < max_i and a[i] == b[i]:
             i += 1
         shared_prefix = a[:i]
         for ioport in ioports:
             if not ioport.startswith(shared_prefix):
                 shared_prefix = ""
                 break
-    else:
+    elif all_ioports:
         shared_prefix = all_ioports[0]
+    else:
+        shared_prefix = ""
 
     pin_defs = []
     pin_declarations = ["#pragma once"]
@@ -580,7 +646,13 @@ def zephyr_dts_to_cp_board(board_id, portdir, builddir, zephyrbuilddir):  # noqa
             board_pin_names = board_names.get((ioport, num), [])
 
             for board_pin_name in board_pin_names:
-                board_pin_name = board_pin_name.upper().replace(" ", "_").replace("-", "_")
+                board_pin_name = (
+                    board_pin_name.upper()
+                    .replace(" ", "_")
+                    .replace("-", "_")
+                    .replace("(", "")
+                    .replace(")", "")
+                )
                 board_pin_mapping.append(
                     f"{{ MP_ROM_QSTR(MP_QSTR_{board_pin_name}), MP_ROM_PTR(&pin_{pin_object_name}) }},"
                 )
@@ -669,7 +741,8 @@ static MP_DEFINE_CONST_FUN_OBJ_0({function_object}, {c_function_name});""".lstri
         device, start, end, size, path = ram
         max_size = max(max_size, size)
         # We always start at the end of a Zephyr linker section so we need the externs and &.
-        if board_id in ["native_sim"]:
+        # Native/simulated boards don't have real memory-mapped RAM, so we allocate static arrays.
+        if board_id in ["native_sim"] or "bsim" in board_id:
             ram_externs.append("// This is a native board so we provide all of RAM for our heaps.")
             ram_externs.append(f"static uint32_t _{device}[{size // 4}]; // {path}")
             start = f"(const uint32_t *) (_{device})"
@@ -699,10 +772,24 @@ static MP_DEFINE_CONST_FUN_OBJ_0({function_object}, {c_function_name});""".lstri
         pins.write_text(pin_declarations)
 
     board_c = board_dir / "board.c"
+    hostnetwork_include = ""
+    hostnetwork_entry = ""
+    if board_info.get("hostnetwork", False):
+        hostnetwork_include = (
+            '#if CIRCUITPY_HOSTNETWORK\n#include "bindings/hostnetwork/__init__.h"\n#endif\n'
+        )
+        hostnetwork_entry = (
+            "#if CIRCUITPY_HOSTNETWORK\n"
+            "    { MP_ROM_QSTR(MP_QSTR_NETWORK), MP_ROM_PTR(&common_hal_hostnetwork_obj) },\n"
+            "#endif\n"
+        )
+
     new_board_c_content = f"""
     // This file is autogenerated by build_circuitpython.py
 
 #include "shared-bindings/board/__init__.h"
+
+{hostnetwork_include}
 
 #include <stdint.h>
 
@@ -732,6 +819,7 @@ MP_DEFINE_CONST_DICT(mcu_pin_globals, mcu_pin_globals_table);
 static const mp_rom_map_elem_t board_module_globals_table[] = {{
 CIRCUITPYTHON_BOARD_DICT_STANDARD_ITEMS
 
+{hostnetwork_entry}
 {board_pin_mapping}
 
 {zephyr_binding_labels}
@@ -741,8 +829,20 @@ CIRCUITPYTHON_BOARD_DICT_STANDARD_ITEMS
 MP_DEFINE_CONST_DICT(board_module_globals, board_module_globals_table);
 """
     board_c.write_text(new_board_c_content)
+    if ble_hardware_present:
+        if not config_present:
+            raise RuntimeError(
+                "Missing Zephyr .config; CONFIG_BT must be set explicitly when BLE hardware is present."
+            )
+        if not config_bt_found:
+            raise RuntimeError(
+                "CONFIG_BT is missing from Zephyr .config; set it explicitly when BLE hardware is present."
+            )
+
+    board_info["_bleio"] = ble_hardware_present and config_bt_enabled
     board_info["source_files"] = [board_c]
     board_info["cflags"] = ("-I", board_dir)
     board_info["flash_count"] = len(flashes)
+    board_info["rotaryio"] = bool(ioports)
     board_info["usb_num_endpoint_pairs"] = usb_num_endpoint_pairs
     return board_info

@@ -43,6 +43,7 @@ compiler = cpbuild.Compiler(srcdir, builddir, cmake_args)
 
 ALWAYS_ON_MODULES = ["sys", "collections"]
 DEFAULT_MODULES = [
+    "__future__",
     "time",
     "os",
     "microcontroller",
@@ -51,6 +52,7 @@ DEFAULT_MODULES = [
     "json",
     "random",
     "digitalio",
+    "rotaryio",
     "rainbowio",
     "traceback",
     "warnings",
@@ -80,9 +82,18 @@ REVERSE_DEPENDENCIES = {
 }
 
 # Other flags to set when a module is enabled
-EXTRA_FLAGS = {"busio": ["BUSIO_SPI", "BUSIO_I2C"]}
+EXTRA_FLAGS = {
+    "busio": ["BUSIO_SPI", "BUSIO_I2C"],
+    "rotaryio": ["ROTARYIO_SOFTENCODER"],
+}
 
-SHARED_MODULE_AND_COMMON_HAL = ["os"]
+SHARED_MODULE_AND_COMMON_HAL = ["_bleio", "os", "rotaryio"]
+
+# Mapping from module directory name to the flag name used in CIRCUITPY_<FLAG>
+MODULE_FLAG_NAMES = {
+    "__future__": "FUTURE",
+    "_bleio": "BLEIO",
+}
 
 
 async def preprocess_and_split_defs(compiler, source_file, build_path, flags):
@@ -217,6 +228,20 @@ async def generate_display_resources(output_path, translation, font, extra_chara
     )
 
 
+async def generate_web_workflow_static(output_path, static_files):
+    await cpbuild.run_command(
+        [
+            "python",
+            srcdir / "tools" / "gen_web_workflow_static.py",
+            "--output_c_file",
+            output_path,
+            *static_files,
+        ],
+        srcdir,
+        check_hash=[output_path],
+    )
+
+
 def determine_enabled_modules(board_info, portdir, srcdir):
     """Determine which CircuitPython modules should be enabled based on board capabilities.
 
@@ -239,10 +264,16 @@ def determine_enabled_modules(board_info, portdir, srcdir):
         enabled_modules.add("storage")
         module_reasons["storage"] = "Zephyr board has flash"
 
-    if "wifi" in enabled_modules:
+    network_enabled = board_info.get("wifi", False) or board_info.get("hostnetwork", False)
+
+    if network_enabled:
         enabled_modules.add("socketpool")
-        enabled_modules.add("ssl")
         module_reasons["socketpool"] = "Zephyr networking enabled"
+        enabled_modules.add("hashlib")
+        module_reasons["hashlib"] = "Zephyr networking enabled"
+
+    if board_info.get("wifi", False) or board_info.get("ethernet", False):
+        enabled_modules.add("ssl")
         module_reasons["ssl"] = "Zephyr networking enabled"
 
     for port_module in (portdir / "bindings").iterdir():
@@ -289,6 +320,8 @@ async def build_circuitpython():
     lto = cmake_args.get("LTO", "n") == "y"
     circuitpython_flags.append(f"-DCIRCUITPY_ENABLE_MPY_NATIVE={1 if enable_mpy_native else 0}")
     circuitpython_flags.append(f"-DCIRCUITPY_FULL_BUILD={1 if full_build else 0}")
+    circuitpython_flags.append(f"-DCIRCUITPY_SETTINGS_TOML={1 if full_build else 0}")
+    circuitpython_flags.append("-DCIRCUITPY_STATUS_BAR=1")
     circuitpython_flags.append(f"-DCIRCUITPY_USB_HOST={1 if usb_host else 0}")
     circuitpython_flags.append(f"-DCIRCUITPY_BOARD_ID='\"{board}\"'")
     circuitpython_flags.append(f"-DCIRCUITPY_TRANSLATE_OBJECT={1 if lto else 0}")
@@ -338,9 +371,17 @@ async def build_circuitpython():
 
     autogen_board_info_fn = mpconfigboard_fn.parent / "autogen_board_info.toml"
 
+    creator_id = mpconfigboard.get("CIRCUITPY_CREATOR_ID", mpconfigboard.get("USB_VID", 0x1209))
+    creation_id = mpconfigboard.get("CIRCUITPY_CREATION_ID", mpconfigboard.get("USB_PID", 0x000C))
+    circuitpython_flags.append(f"-DCIRCUITPY_CREATOR_ID=0x{creator_id:08x}")
+    circuitpython_flags.append(f"-DCIRCUITPY_CREATION_ID=0x{creation_id:08x}")
+
     enabled_modules, module_reasons = determine_enabled_modules(board_info, portdir, srcdir)
 
+    web_workflow_enabled = board_info.get("wifi", False) or board_info.get("hostnetwork", False)
+
     circuitpython_flags.extend(board_info["cflags"])
+    circuitpython_flags.append(f"-DCIRCUITPY_WEB_WORKFLOW={1 if web_workflow_enabled else 0}")
     supervisor_source = [
         "main.c",
         "extmod/modjson.c",
@@ -373,9 +414,11 @@ async def build_circuitpython():
     supervisor_source = [pathlib.Path(p) for p in supervisor_source]
     supervisor_source.extend(board_info["source_files"])
     supervisor_source.extend(top.glob("supervisor/shared/*.c"))
+    if "_bleio" in enabled_modules:
+        supervisor_source.append(top / "supervisor/shared/bluetooth/bluetooth.c")
     supervisor_source.append(top / "supervisor/shared/translate/translate.c")
-    # if web_workflow:
-    #     supervisor_source.extend(top.glob("supervisor/shared/web_workflow/*.c"))
+    if web_workflow_enabled:
+        supervisor_source.extend(top.glob("supervisor/shared/web_workflow/*.c"))
 
     usb_ok = board_info.get("usb_device", False)
     circuitpython_flags.append(f"-DCIRCUITPY_USB_DEVICE={1 if usb_ok else 0}")
@@ -403,10 +446,22 @@ async def build_circuitpython():
             (portdir / "supervisor/usb.c", srcdir / "supervisor/shared/usb.c")
         )
 
+    creator_id = mpconfigboard.get("CIRCUITPY_CREATOR_ID", mpconfigboard.get("USB_VID"))
+    creation_id = mpconfigboard.get("CIRCUITPY_CREATION_ID", mpconfigboard.get("USB_PID"))
+    if creator_id is not None:
+        circuitpython_flags.append(f"-DCIRCUITPY_CREATOR_ID=0x{creator_id:08x}")
+    if creation_id is not None:
+        circuitpython_flags.append(f"-DCIRCUITPY_CREATION_ID=0x{creation_id:08x}")
+
     # Always use port serial. It'll switch between USB and UART automatically.
     circuitpython_flags.append("-DCIRCUITPY_PORT_SERIAL=1")
 
-    if "ssl" in enabled_modules:
+    if "hashlib" in enabled_modules:
+        circuitpython_flags.append("-DCIRCUITPY_HASHLIB_MBEDTLS=1")
+        if "ssl" not in enabled_modules:
+            circuitpython_flags.append("-DCIRCUITPY_HASHLIB_MBEDTLS_ONLY=1")
+
+    if "ssl" in enabled_modules or "hashlib" in enabled_modules:
         # TODO: Figure out how to get these paths from zephyr
         circuitpython_flags.append("-DMBEDTLS_CONFIG_FILE='\"config-mbedtls.h\"'")
         circuitpython_flags.extend(
@@ -419,7 +474,8 @@ async def build_circuitpython():
             ("-isystem", portdir / "modules" / "crypto" / "mbedtls" / "include")
         )
         circuitpython_flags.extend(("-isystem", zephyrdir / "modules" / "mbedtls" / "configs"))
-        supervisor_source.append(top / "lib" / "mbedtls_config" / "crt_bundle.c")
+        if "ssl" in enabled_modules:
+            supervisor_source.append(top / "lib" / "mbedtls_config" / "crt_bundle.c")
 
     # Make sure all modules have a setting by filling in defaults.
     hal_source = []
@@ -445,7 +501,8 @@ async def build_circuitpython():
         if module.name in module_reasons:
             v.comment(module_reasons[module.name])
         autogen_modules.add(module.name, v)
-        circuitpython_flags.append(f"-DCIRCUITPY_{module.name.upper()}={1 if enabled else 0}")
+        flag_name = MODULE_FLAG_NAMES.get(module.name, module.name.upper())
+        circuitpython_flags.append(f"-DCIRCUITPY_{flag_name}={1 if enabled else 0}")
 
         if enabled:
             if module.name in EXTRA_FLAGS:
@@ -533,6 +590,12 @@ async def build_circuitpython():
             tg.create_task(
                 generate_display_resources(output_path, translation, font_path, extra_characters)
             )
+            source_files.append(output_path)
+
+        if web_workflow_enabled:
+            output_path = board_build / "autogen_web_workflow_static.c"
+            static_files = sorted((srcdir / "supervisor/shared/web_workflow/static").glob("*"))
+            tg.create_task(generate_web_workflow_static(output_path, static_files))
             source_files.append(output_path)
 
     # This file is generated by the QSTR/translation process.
