@@ -65,12 +65,16 @@ void port_wake_main_task_from_isr(void) {
     k_event_set(&main_needed, 1);
 }
 
-void port_yield(void) {
+void port_task_yield(void) {
     k_yield();
     // Make sure time advances in the simulator.
     #if defined(CONFIG_ARCH_POSIX)
     k_busy_wait(100);
     #endif
+}
+
+void port_task_sleep_ms(uint32_t msecs) {
+    k_msleep(msecs));
 }
 
 void port_boot_info(void) {

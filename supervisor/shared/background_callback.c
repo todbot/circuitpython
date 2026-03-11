@@ -63,7 +63,7 @@ void PLACE_IN_ITCM(background_callback_run_all)(void) {
     if (!background_callback_pending()) {
         // TEMPORARY to fix #10822
         #ifdef __ZEPHYR__
-        port_yield();
+        port_task_yield();
         #endif
         return;
     }
@@ -93,7 +93,7 @@ void PLACE_IN_ITCM(background_callback_run_all)(void) {
     CALLBACK_CRITICAL_END;
     // TEMPORARY to fix #10822
     #ifdef __ZEPHYR__
-    port_yield();
+    port_task_yield();
     #endif
 }
 

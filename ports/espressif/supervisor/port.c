@@ -404,8 +404,8 @@ void reset_port(void) {
     watchdog_reset();
     #endif
 
-    // Yield so the idle task can run and do any IDF cleanup needed.
-    port_yield();
+    // Yield so the idle task, at priority 0, can run and do any IDF cleanup needed.
+    port_task_sleep_ms(4);
 }
 
 void reset_to_bootloader(void) {
@@ -483,8 +483,13 @@ void port_wake_main_task_from_isr(void) {
     }
 }
 
-void port_yield(void) {
-    vTaskDelay(4);
+// Yield to other tasks at the same priority.
+void port_task_yield(void) {
+    vTaskDelay(0);
+}
+
+void port_task_sleep_ms(uint32_t msecs) {
+    vTaskDelay(pdMS_TO_TICKS(msecs));
 }
 
 void sleep_timer_cb(void *arg) {

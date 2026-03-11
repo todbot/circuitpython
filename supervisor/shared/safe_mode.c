@@ -84,7 +84,7 @@ safe_mode_t wait_for_safe_mode_reset(void) {
         }
         // TEMPORARY to fix #10822
         #ifdef __ZEPHYR__
-        port_yield();
+        port_task_yield();
         #endif
         diff = supervisor_ticks_ms64() - start_ticks;
     }

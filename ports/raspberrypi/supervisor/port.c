@@ -600,7 +600,7 @@ __attribute__((used)) void __not_in_flash_func(isr_hardfault)(void) {
     }
 }
 
-void port_yield(void) {
+void port_task_yield(void) {
     #if CIRCUITPY_CYW43
     cyw43_arch_poll();
     #endif
