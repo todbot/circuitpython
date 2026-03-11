@@ -177,7 +177,7 @@ audioio_get_buffer_result_t audioio_wavefile_get_buffer(audioio_wavefile_obj_t *
         channel = 0;
     }
 
-    // Early out: rate == 1.0, use original fixed-speed implementation 
+    // Early out: rate == 1.0, use original fixed-speed implementation
     if (self->phase_inc == WAVEFILE_PHASE_UNITY) {
         uint32_t channel_read_count = self->left_read_count;
         if (channel == 1) {
@@ -251,7 +251,7 @@ audioio_get_buffer_result_t audioio_wavefile_get_buffer(audioio_wavefile_obj_t *
         return self->bytes_remaining == 0 ? GET_BUFFER_DONE : GET_BUFFER_MORE_DATA;
     }
 
-    // Resampled path: rate != 1.0 
+    // Resampled path: rate != 1.0
     // Uses self->buffer as persistent source data from file,
     // and self->second_buffer as resampled output.
 
@@ -307,8 +307,8 @@ audioio_get_buffer_result_t audioio_wavefile_get_buffer(audioio_wavefile_obj_t *
 
             // Nearest-neighbor: copy one frame from source to output
             memcpy(out_buf + out_pos * bytes_per_frame,
-                   src_buf + src_frame * bytes_per_frame,
-                   bytes_per_frame);
+                src_buf + src_frame * bytes_per_frame,
+                bytes_per_frame);
             out_pos++;
             self->phase_accum += self->phase_inc;
         }
