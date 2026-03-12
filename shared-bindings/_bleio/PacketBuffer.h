@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "shared-bindings/_bleio/Characteristic.h"
 #include "common-hal/_bleio/PacketBuffer.h"
 
 extern const mp_obj_type_t bleio_packet_buffer_type;

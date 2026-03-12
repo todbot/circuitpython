@@ -132,6 +132,7 @@ void common_hal_busio_i2c_deinit(busio_i2c_obj_t *self) {
     xSemaphoreGive(self->xSemaphore);
     vSemaphoreDelete(self->xSemaphore);
     self->xSemaphore = NULL;
+    self->has_lock = false;
 
     common_hal_reset_pin(self->sda_pin);
     common_hal_reset_pin(self->scl_pin);
@@ -165,6 +166,9 @@ bool common_hal_busio_i2c_has_lock(busio_i2c_obj_t *self) {
 }
 
 void common_hal_busio_i2c_unlock(busio_i2c_obj_t *self) {
+    if (common_hal_busio_i2c_deinited(self)) {
+        return;
+    }
     xSemaphoreGive(self->xSemaphore);
     self->has_lock = false;
 }

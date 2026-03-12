@@ -491,7 +491,7 @@ msgstr "pow() με 3 παραμέτρους δεν υποστηρίζεται"
 msgid "AP could not be started"
 msgstr "AP δεν μπόρεσε να εκκινηθεί"
 
-#: shared-bindings/_bleio/Address.c shared-bindings/ipaddress/IPv4Address.c
+#: shared-bindings/ipaddress/IPv4Address.c
 #, c-format
 msgid "Address must be %d bytes long"
 msgstr "Η διεύθυνση πρέπει να είναι %d bytes μεγάλη"
@@ -598,7 +598,7 @@ msgstr "Τρέχει ήδη"
 msgid "Already scanning for wifi networks"
 msgstr "Ήδη γίνεται σάρωση για δίκτυα wifi"
 
-#: shared-module/os/getenv.c
+#: supervisor/shared/settings.c
 #, c-format
 msgid "An error occurred while retrieving '%s':\n"
 msgstr "Παρουσιάστηκε σφάλμα κατά την ανάκτηση '%s':\n"
@@ -690,11 +690,6 @@ msgstr "Και RX και TX απαιτούνται για έλεγχο flow"
 msgid "Brightness not adjustable"
 msgstr "H φωτεινότητα δεν μπορεί να προσαρμοστεί"
 
-#: shared-bindings/_bleio/UUID.c
-#, c-format
-msgid "Buffer + offset too small %d %d %d"
-msgstr "Buffer + offset είναι πολύ μικρά %d %d %d"
-
 #: ports/raspberrypi/bindings/rp2pio/StateMachine.c
 msgid "Buffer elements must be 4 bytes long or less"
 msgstr "Στοιχεία του buffer πρέπει να είναι το πολύ 4 bytes"
@@ -736,10 +731,6 @@ msgstr "Buffer πολύ μικρός"
 #, c-format
 msgid "Bus pin %d is already in use"
 msgstr "Bus pin %d είναι ήδη σε χρήση"
-
-#: shared-bindings/_bleio/UUID.c
-msgid "Byte buffer must be 16 bytes."
-msgstr "Byte buffer πρέπει να είναι 16 bytes."
 
 #: shared-bindings/aesio/aes.c
 msgid "CBC blocks must be multiples of 16 bytes"
@@ -1055,12 +1046,18 @@ msgstr ""
 msgid "Failed to buffer the sample"
 msgstr ""
 
+#: ports/zephyr-cp/common-hal/_bleio/Adapter.c
+msgid "Failed to connect"
+msgstr ""
+
 #: ports/espressif/common-hal/_bleio/Adapter.c
 #: ports/nordic/common-hal/_bleio/Adapter.c
+#: ports/zephyr-cp/common-hal/_bleio/Adapter.c
 msgid "Failed to connect: internal error"
 msgstr ""
 
 #: ports/nordic/common-hal/_bleio/Adapter.c
+#: ports/zephyr-cp/common-hal/_bleio/Adapter.c
 msgid "Failed to connect: timeout"
 msgstr ""
 
@@ -1118,7 +1115,6 @@ msgid "File exists"
 msgstr ""
 
 #: shared-bindings/supervisor/__init__.c shared-module/lvfontio/OnDiskFont.c
-#: shared-module/os/getenv.c
 msgid "File not found"
 msgstr ""
 
@@ -1269,7 +1265,7 @@ msgstr ""
 msgid "Internal define error"
 msgstr ""
 
-#: shared-bindings/pwmio/PWMOut.c shared-module/os/getenv.c
+#: shared-bindings/pwmio/PWMOut.c supervisor/shared/settings.c
 msgid "Internal error"
 msgstr ""
 
@@ -1358,6 +1354,10 @@ msgstr ""
 msgid "Invalid ROS domain ID"
 msgstr ""
 
+#: ports/zephyr-cp/common-hal/_bleio/Adapter.c
+msgid "Invalid advertising data"
+msgstr ""
+
 #: ports/espressif/common-hal/espidf/__init__.c py/moderrno.c
 msgid "Invalid argument"
 msgstr ""
@@ -1366,17 +1366,12 @@ msgstr ""
 msgid "Invalid bits per value"
 msgstr ""
 
-#: shared-module/os/getenv.c
-#, c-format
-msgid "Invalid byte %.*s"
-msgstr ""
-
 #: ports/atmel-samd/common-hal/imagecapture/ParallelImageCapture.c
 #, c-format
 msgid "Invalid data_pins[%d]"
 msgstr ""
 
-#: shared-module/msgpack/__init__.c
+#: shared-module/msgpack/__init__.c supervisor/shared/settings.c
 msgid "Invalid format"
 msgstr ""
 
@@ -1407,16 +1402,12 @@ msgstr ""
 msgid "Invalid state"
 msgstr ""
 
-#: shared-module/os/getenv.c
+#: supervisor/shared/settings.c
 msgid "Invalid unicode escape"
 msgstr ""
 
 #: shared-bindings/aesio/aes.c
 msgid "Key must be 16, 24, or 32 bytes long"
-msgstr ""
-
-#: shared-module/os/getenv.c
-msgid "Key not found"
 msgstr ""
 
 #: shared-module/is31fl3741/FrameBuffer.c
@@ -2101,8 +2092,11 @@ msgstr ""
 
 #: ports/espressif/common-hal/socketpool/SocketPool.c
 #: ports/raspberrypi/common-hal/socketpool/SocketPool.c
-#: ports/zephyr-cp/common-hal/socketpool/SocketPool.c
 msgid "SocketPool can only be used with wifi.radio"
+msgstr ""
+
+#: ports/zephyr-cp/common-hal/socketpool/SocketPool.c
+msgid "SocketPool can only be used with wifi.radio or hostnetwork.HostNetwork"
 msgstr ""
 
 #: shared-bindings/aesio/aes.c
@@ -2276,10 +2270,6 @@ msgstr ""
 
 #: shared-module/usb_hid/Device.c
 msgid "USB error"
-msgstr ""
-
-#: shared-bindings/_bleio/UUID.c
-msgid "UUID integer value must be 0-0xffff"
 msgstr ""
 
 #: shared-bindings/_bleio/UUID.c
@@ -3422,10 +3412,6 @@ msgstr ""
 
 #: extmod/ulab/code/scipy/optimize/optimize.c
 msgid "initial values must be iterable"
-msgstr ""
-
-#: shared-bindings/_bleio/Characteristic.c shared-bindings/_bleio/Descriptor.c
-msgid "initial_value length is wrong"
 msgstr ""
 
 #: py/compile.c
@@ -4613,6 +4599,13 @@ msgstr ""
 #: extmod/ulab/code/scipy/signal/signal.c
 msgid "zi must be of shape (n_section, 2)"
 msgstr ""
+
+#, c-format
+#~ msgid "Buffer + offset too small %d %d %d"
+#~ msgstr "Buffer + offset είναι πολύ μικρά %d %d %d"
+
+#~ msgid "Byte buffer must be 16 bytes."
+#~ msgstr "Byte buffer πρέπει να είναι 16 bytes."
 
 #~ msgid "%q moved from %q to %q"
 #~ msgstr "%q μετακινήθηκε από το %q στο %q"

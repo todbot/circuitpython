@@ -82,7 +82,6 @@ safe_mode_t wait_for_safe_mode_reset(void) {
             boot_in_safe_mode = true;
             break;
         }
-        port_yield();
         diff = supervisor_ticks_ms64() - start_ticks;
     }
     #if CIRCUITPY_STATUS_LED

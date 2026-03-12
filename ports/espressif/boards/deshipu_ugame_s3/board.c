@@ -80,7 +80,7 @@ void board_init(void) {
         MP_OBJ_FROM_PTR(&pin_GPIO9), // TFT_DC Command or data
         MP_OBJ_FROM_PTR(&pin_GPIO10), // TFT_CS Chip select
         MP_OBJ_FROM_PTR(&pin_GPIO13), // TFT_RESET Reset
-        80000000L, // Baudrate
+        48000000L, // Baudrate
         0, // Polarity
         0); // Phase
 

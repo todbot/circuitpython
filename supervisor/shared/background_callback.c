@@ -61,7 +61,6 @@ static int background_prevention_count;
 void PLACE_IN_ITCM(background_callback_run_all)(void) {
     port_background_task();
     if (!background_callback_pending()) {
-        port_yield();
         return;
     }
     CALLBACK_CRITICAL_BEGIN;
@@ -88,7 +87,6 @@ void PLACE_IN_ITCM(background_callback_run_all)(void) {
     }
     --background_prevention_count;
     CALLBACK_CRITICAL_END;
-    port_yield();
 }
 
 void background_callback_prevent(void) {
