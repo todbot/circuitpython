@@ -114,6 +114,7 @@ msgid "%q contains duplicate pins"
 msgstr "%q содержит пины дупликаты"
 
 #: ports/atmel-samd/common-hal/sdioio/SDCard.c
+#: ports/espressif/common-hal/qspibus/QSPIBus.c
 msgid "%q failure: %d"
 msgstr "%q сбой: %d"
 
@@ -881,7 +882,7 @@ msgstr "Координатные массивы имеют разные длин
 msgid "Coordinate arrays types have different sizes"
 msgstr "Типы массивов координат имеют разные размеры"
 
-#: shared-module/usb/core/Device.c
+#: shared-module/usb/core/Device.c ports/espressif/common-hal/qspibus/QSPIBus.c
 msgid "Could not allocate DMA capable buffer"
 msgstr ""
 
@@ -987,6 +988,7 @@ msgstr "ECB работает только с 16 байтами за раз"
 
 #: ports/espressif/common-hal/busio/SPI.c
 #: ports/espressif/common-hal/canio/CAN.c
+#: ports/espressif/common-hal/qspibus/QSPIBus.c
 msgid "ESP-IDF memory allocation failed"
 msgstr "Ошибка выделения памяти ESP-IDF"
 
@@ -1280,7 +1282,8 @@ msgstr "Внутренний звуковой буфер слишком мал"
 msgid "Internal define error"
 msgstr "Внутренняя ошибка определения"
 
-#: shared-bindings/pwmio/PWMOut.c supervisor/shared/settings.c
+#: ports/espressif/common-hal/qspibus/QSPIBus.c shared-bindings/pwmio/PWMOut.c
+#: supervisor/shared/settings.c
 msgid "Internal error"
 msgstr "Внутренняя ошибка"
 
@@ -1557,7 +1560,7 @@ msgstr "Изображение памяти"
 #: ports/stm/common-hal/busio/UART.c shared-bindings/fourwire/FourWire.c
 #: shared-bindings/i2cdisplaybus/I2CDisplayBus.c
 #: shared-bindings/paralleldisplaybus/ParallelBus.c
-#: shared-module/bitbangio/SPI.c
+#: shared-bindings/qspibus/QSPIBus.c shared-module/bitbangio/SPI.c
 msgid "No %q pin"
 msgstr "Нет пина %q"
 
@@ -1790,6 +1793,7 @@ msgid "Operation or feature not supported"
 msgstr "Операция или функция, не поддерживаемые"
 
 #: ports/espressif/common-hal/espidf/__init__.c
+#: ports/espressif/common-hal/qspibus/QSPIBus.c
 msgid "Operation timed out"
 msgstr "Истекло время ожидания операции"
 
