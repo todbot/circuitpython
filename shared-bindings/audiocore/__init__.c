@@ -14,6 +14,7 @@
 #include "shared-bindings/audiocore/__init__.h"
 #include "shared-bindings/audiocore/RawSample.h"
 #include "shared-bindings/audiocore/WaveFile.h"
+#include "shared-bindings/audiocore/SpeedChanger.h"
 #include "shared-bindings/util.h"
 // #include "shared-bindings/audiomixer/Mixer.h"
 
@@ -83,6 +84,7 @@ static const mp_rom_map_elem_t audiocore_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_audiocore) },
     { MP_ROM_QSTR(MP_QSTR_RawSample), MP_ROM_PTR(&audioio_rawsample_type) },
     { MP_ROM_QSTR(MP_QSTR_WaveFile), MP_ROM_PTR(&audioio_wavefile_type) },
+    { MP_ROM_QSTR(MP_QSTR_SpeedChanger), MP_ROM_PTR(&audiocore_speedchanger_type) },
     #if CIRCUITPY_AUDIOCORE_DEBUG
     { MP_ROM_QSTR(MP_QSTR_get_buffer), MP_ROM_PTR(&audiocore_get_buffer_obj) },
     { MP_ROM_QSTR(MP_QSTR_reset_buffer), MP_ROM_PTR(&audiocore_reset_buffer_obj) },
