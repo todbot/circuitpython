@@ -201,6 +201,9 @@ endif
 ifeq ($(CIRCUITPY_DISPLAYIO),1)
 SRC_PATTERNS += displayio/%
 endif
+ifeq ($(CIRCUITPY_DOTCLOCKFRAMEBUFFER),1)
+SRC_PATTERNS += dotclockframebuffer/%
+endif
 ifeq ($(CIRCUITPY_DUALBANK),1)
 SRC_PATTERNS += dualbank/%
 endif
@@ -227,9 +230,6 @@ SRC_PATTERNS += floppyio/%
 endif
 ifeq ($(CIRCUITPY_FOURWIRE),1)
 SRC_PATTERNS += fourwire/%
-endif
-ifeq ($(CIRCUITPY_QSPIBUS),1)
-SRC_PATTERNS += qspibus/%
 endif
 ifeq ($(CIRCUITPY_FRAMEBUFFERIO),1)
 SRC_PATTERNS += framebufferio/%
@@ -357,8 +357,8 @@ endif
 ifeq ($(CIRCUITPY_RGBMATRIX),1)
 SRC_PATTERNS += rgbmatrix/%
 endif
-ifeq ($(CIRCUITPY_DOTCLOCKFRAMEBUFFER),1)
-SRC_PATTERNS += dotclockframebuffer/%
+ifeq ($(CIRCUITPY_QSPIBUS),1)
+SRC_PATTERNS += qspibus/%
 endif
 ifeq ($(CIRCUITPY_RP2PIO),1)
 SRC_PATTERNS += rp2pio/%

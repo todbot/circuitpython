@@ -6,6 +6,7 @@
 
 #include "shared-bindings/busdisplay/BusDisplay.h"
 
+#include "py/mphal.h"
 #include "py/runtime.h"
 #if CIRCUITPY_FOURWIRE
 #include "shared-bindings/fourwire/FourWire.h"
@@ -16,6 +17,7 @@
 #if CIRCUITPY_PARALLELDISPLAYBUS
 #include "shared-bindings/paralleldisplaybus/ParallelBus.h"
 #endif
+#include "shared/runtime/interrupt_char.h"
 #include "shared-bindings/microcontroller/Pin.h"
 #include "shared-bindings/time/__init__.h"
 #include "shared-module/displayio/__init__.h"
@@ -73,6 +75,9 @@ void common_hal_busdisplay_busdisplay_construct(busdisplay_busdisplay_obj_t *sel
         uint8_t *data = cmd + 2;
         while (!displayio_display_bus_begin_transaction(&self->bus)) {
             RUN_BACKGROUND_TASKS;
+            if (mp_hal_is_interrupted()) {
+                mp_raise_RuntimeError_varg(MP_ERROR_TEXT("%q init failed"), MP_QSTR_display);
+            }
         }
         if (self->bus.data_as_commands) {
             uint8_t full_command[data_size + 1];
@@ -288,6 +293,7 @@ static bool _refresh_area(busdisplay_busdisplay_obj_t *self, const displayio_are
 
         displayio_display_bus_set_region_to_update(&self->bus, &self->core, &subrectangle);
 
+        // Can't acquire display bus; skip the rest of the data.
         if (!displayio_display_bus_begin_transaction(&self->bus)) {
             return false;
         }
