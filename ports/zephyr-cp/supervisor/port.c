@@ -175,7 +175,7 @@ void port_task_yield(void) {
 }
 
 void port_task_sleep_ms(uint32_t msecs) {
-    k_msleep(msecs));
+    k_msleep(msecs);
 }
 
 void port_boot_info(void) {

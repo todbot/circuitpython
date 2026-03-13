@@ -28,7 +28,6 @@
 
 // https://www.taterli.com/wp-content/uploads/2017/05/Physical-Layer-Simplified-SpecificationV6.0.pdf
 // specifies timeouts for read (100 ms), write (250 ms), erase (depends on size), and other operations.
-// But the document also suggests allowing 500 ms even if a shorter timeout is specified.
 #define CMD_TIMEOUT_MS (250)
 #define SPI_TIMEOUT_MS (250)
 // Init ready timeout.

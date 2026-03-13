@@ -114,6 +114,7 @@ msgid "%q contains duplicate pins"
 msgstr "%q περιέχει διπλότυπα pins"
 
 #: ports/atmel-samd/common-hal/sdioio/SDCard.c
+#: ports/espressif/common-hal/qspibus/QSPIBus.c
 msgid "%q failure: %d"
 msgstr "%q αποτυχία: %d"
 
@@ -878,7 +879,7 @@ msgstr ""
 msgid "Coordinate arrays types have different sizes"
 msgstr ""
 
-#: shared-module/usb/core/Device.c
+#: shared-module/usb/core/Device.c ports/espressif/common-hal/qspibus/QSPIBus.c
 msgid "Could not allocate DMA capable buffer"
 msgstr ""
 
@@ -984,6 +985,7 @@ msgstr "ECB δουλεύει μόνο σε 16 bytes κάθε φορά"
 
 #: ports/espressif/common-hal/busio/SPI.c
 #: ports/espressif/common-hal/canio/CAN.c
+#: ports/espressif/common-hal/qspibus/QSPIBus.c
 msgid "ESP-IDF memory allocation failed"
 msgstr "ESP-IDF δέσμευση μνήμης απέτυχε"
 
@@ -1265,7 +1267,8 @@ msgstr ""
 msgid "Internal define error"
 msgstr ""
 
-#: shared-bindings/pwmio/PWMOut.c supervisor/shared/settings.c
+#: ports/espressif/common-hal/qspibus/QSPIBus.c shared-bindings/pwmio/PWMOut.c
+#: supervisor/shared/settings.c
 msgid "Internal error"
 msgstr ""
 
@@ -1540,7 +1543,7 @@ msgstr ""
 #: ports/stm/common-hal/busio/UART.c shared-bindings/fourwire/FourWire.c
 #: shared-bindings/i2cdisplaybus/I2CDisplayBus.c
 #: shared-bindings/paralleldisplaybus/ParallelBus.c
-#: shared-module/bitbangio/SPI.c
+#: shared-bindings/qspibus/QSPIBus.c shared-module/bitbangio/SPI.c
 msgid "No %q pin"
 msgstr ""
 
@@ -1769,6 +1772,7 @@ msgid "Operation or feature not supported"
 msgstr ""
 
 #: ports/espressif/common-hal/espidf/__init__.c
+#: ports/espressif/common-hal/qspibus/QSPIBus.c
 msgid "Operation timed out"
 msgstr ""
 
