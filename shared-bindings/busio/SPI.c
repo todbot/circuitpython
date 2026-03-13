@@ -18,8 +18,8 @@
 #include "shared-bindings/util.h"
 #include "shared/runtime/buffer_helper.h"
 #include "shared/runtime/context_manager_helpers.h"
+#include "shared/runtime/interrupt_char.h"
 #include "supervisor/shared/tick.h"
-
 
 //| class SPI:
 //|     """A 3-4 wire serial protocol
@@ -499,7 +499,8 @@ busio_spi_obj_t *validate_obj_is_spi_bus(mp_obj_t obj, qstr arg_name) {
 // The default implementation is to busy-wait while running the background tasks. espressif is different.
 bool common_hal_busio_spi_wait_for_lock(busio_spi_obj_t *self, uint32_t timeout_ms) {
     uint64_t deadline = supervisor_ticks_ms64() + timeout_ms;
-    while (supervisor_ticks_ms64() < deadline) {
+    while (supervisor_ticks_ms64() < deadline &&
+           !mp_hal_is_interrupted()) {
         if (common_hal_busio_spi_try_lock(self)) {
             return true;
         }

@@ -16,6 +16,7 @@
 #include "supervisor/shared/tick.h"
 
 #include "py/mperrno.h"
+#include "py/mphal.h"
 
 #if 0
 #define DEBUG_PRINT(...) ((void)mp_printf(&mp_plat_print,##__VA_ARGS__))
@@ -23,13 +24,16 @@
 #define DEBUG_PRINT(...) ((void)0)
 #endif
 
+// https://nodeloop.org/guides/sd-card-spi-init-guide/ is an excellent source of info for SPI card use.
+
 // https://www.taterli.com/wp-content/uploads/2017/05/Physical-Layer-Simplified-SpecificationV6.0.pdf
 // specifies timeouts for read (100 ms), write (250 ms), erase (depends on size), and other operations.
 // But the document also suggests allowing 500 ms even if a shorter timeout is specified.
-// So let's allow a nice long time, but don't wait in a tight loop: allow background tasks to run.
-#define CMD_TIMEOUT_MS (500)
-#define TIMEOUT_MS (500)
-#define SPI_TIMEOUT_MS (10000)
+#define CMD_TIMEOUT_MS (250)
+#define SPI_TIMEOUT_MS (250)
+// Init ready timeout.
+#define READY_TIMEOUT_MS (300)
+
 
 #define R1_IDLE_STATE (1 << 0)
 #define R1_ILLEGAL_COMMAND (1 << 2)
@@ -84,11 +88,10 @@ static void lock_bus_or_throw(sdcardio_sdcard_obj_t *self) {
 }
 
 static void clock_card(sdcardio_sdcard_obj_t *self, int bytes) {
-    uint8_t buf[] = {0xff};
+    uint8_t buf[bytes];
+    memset(buf, 0xff, bytes);
     common_hal_digitalio_digitalinout_set_value(&self->cs, true);
-    for (int i = 0; i < bytes; i++) {
-        common_hal_busio_spi_write(self->bus, buf, 1);
-    }
+    common_hal_busio_spi_write(self->bus, buf, bytes);
 }
 
 static void extraclock_and_unlock_bus(sdcardio_sdcard_obj_t *self) {
@@ -124,19 +127,16 @@ static int32_t wait_for_masked_response(sdcardio_sdcard_obj_t *self, uint8_t mas
         if (((b & mask) == response) ^ not_match) {
             return b;
         }
-        RUN_BACKGROUND_TASKS;
     }
     return -1;
 }
 
 // Wait for the given response byte.
 static bool wait_for_response(sdcardio_sdcard_obj_t *self, uint8_t response) {
-    return wait_for_masked_response(self, 0xff, response, false, TIMEOUT_MS) != -1;
+    return wait_for_masked_response(self, 0xff, response, false, CMD_TIMEOUT_MS) != -1;
 }
 
-#define READY_TIMEOUT_MS (300)
-
-// Wait for 0xff, with a shorter timeout.
+// Wait for 0xff, with a specific timeout.
 static bool wait_for_ready(sdcardio_sdcard_obj_t *self) {
     return wait_for_masked_response(self, 0xff, 0xff, false, READY_TIMEOUT_MS) != -1;
 }
@@ -232,7 +232,6 @@ static mp_rom_error_text_t init_card_v1(sdcardio_sdcard_obj_t *self) {
         if (cmd(self, 41, 0, NULL, 0, true, true) == 0) {
             return NULL;
         }
-        RUN_BACKGROUND_TASKS;
     }
     return MP_ERROR_TEXT("timeout waiting for v1 card");
 }
@@ -251,12 +250,13 @@ static mp_rom_error_text_t init_card_v2(sdcardio_sdcard_obj_t *self) {
             }
             return NULL;
         }
-        RUN_BACKGROUND_TASKS;
     }
     return MP_ERROR_TEXT("timeout waiting for v2 card");
 }
 
 static mp_rom_error_text_t init_card(sdcardio_sdcard_obj_t *self) {
+    // https://nodeloop.org/guides/sd-card-spi-init-guide/ recommends at least 74 bit clocks
+    // and says 80 bit clocks(10*8) is common. Value below is bytes, not bits.
     clock_card(self, 10);
 
     common_hal_digitalio_digitalinout_set_value(&self->cs, false);
@@ -476,7 +476,6 @@ static int _write(sdcardio_sdcard_obj_t *self, uint8_t token, void *buf, size_t 
     uint64_t deadline = supervisor_ticks_ms64() + CMD_TIMEOUT_MS;
     while (supervisor_ticks_ms64() < deadline) {
         common_hal_busio_spi_read(self->bus, cmd, 1, 0xff);
-        DEBUG_PRINT("i=%02d cmd[0] = 0x%02x\n", i, cmd[0]);
         if ((cmd[0] & 0b00010001) == 0b00000001) {
             if ((cmd[0] & 0x1f) != 0x5) {
                 return -MP_EIO;
@@ -484,13 +483,12 @@ static int _write(sdcardio_sdcard_obj_t *self, uint8_t token, void *buf, size_t 
                 break;
             }
         }
-        RUN_BACKGROUND_TASKS;
     }
 
     // Wait for the write to finish
 
     // Wait for a non-zero value.
-    if (wait_for_masked_response(self, 0xff /*mask*/, 0, true /*not_match*/, TIMEOUT_MS) == -1) {
+    if (wait_for_masked_response(self, 0xff /*mask*/, 0, true /*not_match*/, CMD_TIMEOUT_MS) == -1) {
         return -MP_EIO;
     }
 
