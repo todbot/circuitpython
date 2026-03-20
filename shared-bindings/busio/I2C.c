@@ -112,7 +112,7 @@ static void check_lock(busio_i2c_obj_t *self) {
     }
 }
 
-//|     def probe(self, address: int) -> List[int]:
+//|     def probe(self, address: int) -> bool:
 //|         """Check if a device at the specified address responds.
 //|
 //|         :param int address: 7-bit device address
