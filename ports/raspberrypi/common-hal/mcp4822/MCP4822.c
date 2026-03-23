@@ -4,7 +4,7 @@
 //
 // SPDX-License-Identifier: MIT
 //
-// MCP4822 dual-channel 12-bit SPI DAC driver for the MTM Workshop Computer.
+// MCP4822 dual-channel 12-bit SPI DAC audio output.
 // Uses PIO + DMA for non-blocking audio playback, mirroring audiobusio.I2SOut.
 
 #include <stdint.h>
@@ -15,7 +15,8 @@
 #include "py/gc.h"
 #include "py/mperrno.h"
 #include "py/runtime.h"
-#include "boards/mtm_computer/module/DACOut.h"
+#include "common-hal/mcp4822/MCP4822.h"
+#include "shared-bindings/mcp4822/MCP4822.h"
 #include "shared-bindings/microcontroller/Pin.h"
 #include "shared-module/audiocore/__init__.h"
 #include "bindings/rp2pio/StateMachine.h"
@@ -29,16 +30,14 @@
 //   SET pins (N)      = MOSI through CS — for CS control & command-bit injection
 //   SIDE-SET pin (1)  = SCK   — serial clock
 //
-// On the MTM Workshop Computer: MOSI=GP19, CS=GP21, SCK=GP18.
-// The SET group spans GP19..GP21 (3 pins).  GP20 is unused and driven low.
-//
-// SET PINS bit mapping (bit0=MOSI/GP19, bit1=GP20, bit2=CS/GP21):
-//   0 = CS low,  MOSI low    1 = CS low,  MOSI high    4 = CS high, MOSI low
+// SET PINS bit mapping (bit0=MOSI, ..., bit N=CS):
+//   0 = CS low,  MOSI low    1 = CS low,  MOSI high
+//   (1 << cs_bit_pos) = CS high, MOSI low
 //
 // SIDE-SET (1 pin, SCK): side 0 = SCK low, side 1 = SCK high
 //
 // MCP4822 16-bit command word:
-//   [15]    channel (0=A, 1=B)   [14] don't care   [13] gain (1=1x)
+//   [15]    channel (0=A, 1=B)   [14] don't care   [13] gain (1=1x, 0=2x)
 //   [12]    output enable (1)    [11:0] 12-bit data
 //
 // DMA feeds unsigned 16-bit audio samples.  RP2040 narrow-write replication
@@ -46,8 +45,8 @@
 // giving mono→stereo for free.
 //
 // The PIO pulls 32 bits, then sends two SPI transactions:
-//   Channel A: cmd nibble 0b0011, then all 16 sample bits from upper half-word
-//   Channel B: cmd nibble 0b1011, then all 16 sample bits from lower half-word
+//   Channel A: cmd nibble, then all 16 sample bits from upper half-word
+//   Channel B: cmd nibble, then all 16 sample bits from lower half-word
 // The MCP4822 captures exactly 16 bits per CS frame (4 cmd + 12 data),
 // so only the top 12 of the 16 sample bits become DAC data.  The bottom
 // 4 sample bits clock out harmlessly after the DAC has latched.
@@ -66,11 +65,7 @@ static const uint16_t mcp4822_pio_program[] = {
     //  1: mov x, osr         side 0   ; Save for pull-noblock fallback
     0xA027,
 
-    // ── Channel A: command nibble 0b0011 ──────────────────────────────────
-    // Send 4 cmd bits via SET, then all 16 sample bits via OUT.
-    // MCP4822 captures exactly 16 bits per CS frame (4 cmd + 12 data);
-    // the extra 4 clocks shift out the LSBs which the DAC ignores.
-    // This gives correct 16→12 bit scaling (top 12 bits become DAC data).
+    // ── Channel A: command nibble 0b0011 (1x gain) ────────────────────────
     //  2: set pins, 0        side 0   ; CS low, MOSI=0 (bit15=0: channel A)
     0xE000,
     //  3: nop                side 1   ; SCK high — latch bit 15
@@ -79,7 +74,7 @@ static const uint16_t mcp4822_pio_program[] = {
     0xE000,
     //  5: nop                side 1   ; SCK high
     0xB042,
-    //  6: set pins, 1        side 0   ; MOSI=1 (bit13=1: gain 1x)
+    //  6: set pins, 1        side 0   ; MOSI=1 (bit13=1: gain 1x)  [patched for 2x]
     0xE001,
     //  7: nop                side 1   ; SCK high
     0xB042,
@@ -96,7 +91,7 @@ static const uint16_t mcp4822_pio_program[] = {
     // 13: set pins, 4        side 0   ; CS high — DAC A latches
     0xE004,
 
-    // ── Channel B: command nibble 0b1011 ──────────────────────────────────
+    // ── Channel B: command nibble 0b1011 (1x gain) ────────────────────────
     // 14: set pins, 1        side 0   ; CS low, MOSI=1 (bit15=1: channel B)
     0xE001,
     // 15: nop                side 1   ; SCK high
@@ -105,7 +100,7 @@ static const uint16_t mcp4822_pio_program[] = {
     0xE000,
     // 17: nop                side 1   ; SCK high
     0xB042,
-    // 18: set pins, 1        side 0   ; MOSI=1 (bit13=1: gain 1x)
+    // 18: set pins, 1        side 0   ; MOSI=1 (bit13=1: gain 1x)  [patched for 2x]
     0xE001,
     // 19: nop                side 1   ; SCK high
     0xB042,
@@ -127,7 +122,6 @@ static const uint16_t mcp4822_pio_program[] = {
 // Per channel: 8(4 cmd bits × 2 clks) + 1(set y) + 32(16 bits × 2 clks) + 1(cs high) = 42
 #define MCP4822_CLOCKS_PER_SAMPLE 86
 
-
 // MCP4822 gain bit (bit 13) position in the PIO program:
 //   Instruction 6  = channel A gain bit
 //   Instruction 18 = channel B gain bit
@@ -138,15 +132,19 @@ static const uint16_t mcp4822_pio_program[] = {
 #define MCP4822_PIO_GAIN_1X 0xE001  // set pins, 1
 #define MCP4822_PIO_GAIN_2X 0xE000  // set pins, 0
 
-void common_hal_mtm_hardware_dacout_construct(mtm_hardware_dacout_obj_t *self,
+void mcp4822_reset(void) {
+}
+
+// Caller validates that pins are free.
+void common_hal_mcp4822_mcp4822_construct(mcp4822_mcp4822_obj_t *self,
     const mcu_pin_obj_t *clock, const mcu_pin_obj_t *mosi,
     const mcu_pin_obj_t *cs, uint8_t gain) {
 
-    // SET pins span from MOSI to CS.  MOSI must have a lower GPIO number
-    // than CS, with at most 4 pins between them (SET count max is 5).
+    // The SET pin group spans from MOSI to CS.
+    // MOSI must have a lower GPIO number than CS, gap at most 4.
     if (cs->number <= mosi->number || (cs->number - mosi->number) > 4) {
         mp_raise_ValueError(
-            MP_COMPRESSED_ROM_TEXT("cs pin must be 1-4 positions above mosi pin"));
+            MP_ERROR_TEXT("cs pin must be 1-4 positions above mosi pin"));
     }
 
     uint8_t set_count = cs->number - mosi->number + 1;
@@ -197,26 +195,26 @@ void common_hal_mtm_hardware_dacout_construct(mtm_hardware_dacout_obj_t *self,
     audio_dma_init(&self->dma);
 }
 
-bool common_hal_mtm_hardware_dacout_deinited(mtm_hardware_dacout_obj_t *self) {
+bool common_hal_mcp4822_mcp4822_deinited(mcp4822_mcp4822_obj_t *self) {
     return common_hal_rp2pio_statemachine_deinited(&self->state_machine);
 }
 
-void common_hal_mtm_hardware_dacout_deinit(mtm_hardware_dacout_obj_t *self) {
-    if (common_hal_mtm_hardware_dacout_deinited(self)) {
+void common_hal_mcp4822_mcp4822_deinit(mcp4822_mcp4822_obj_t *self) {
+    if (common_hal_mcp4822_mcp4822_deinited(self)) {
         return;
     }
-    if (common_hal_mtm_hardware_dacout_get_playing(self)) {
-        common_hal_mtm_hardware_dacout_stop(self);
+    if (common_hal_mcp4822_mcp4822_get_playing(self)) {
+        common_hal_mcp4822_mcp4822_stop(self);
     }
     common_hal_rp2pio_statemachine_deinit(&self->state_machine);
     audio_dma_deinit(&self->dma);
 }
 
-void common_hal_mtm_hardware_dacout_play(mtm_hardware_dacout_obj_t *self,
+void common_hal_mcp4822_mcp4822_play(mcp4822_mcp4822_obj_t *self,
     mp_obj_t sample, bool loop) {
 
-    if (common_hal_mtm_hardware_dacout_get_playing(self)) {
-        common_hal_mtm_hardware_dacout_stop(self);
+    if (common_hal_mcp4822_mcp4822_get_playing(self)) {
+        common_hal_mcp4822_mcp4822_stop(self);
     }
 
     uint8_t bits_per_sample = audiosample_get_bits_per_sample(sample);
@@ -227,7 +225,7 @@ void common_hal_mtm_hardware_dacout_play(mtm_hardware_dacout_obj_t *self,
     uint32_t sample_rate = audiosample_get_sample_rate(sample);
     uint8_t channel_count = audiosample_get_channel_count(sample);
     if (channel_count > 2) {
-        mp_raise_ValueError(MP_COMPRESSED_ROM_TEXT("Too many channels in sample."));
+        mp_raise_ValueError(MP_ERROR_TEXT("Too many channels in sample."));
     }
 
     // PIO clock = sample_rate × clocks_per_sample
@@ -236,10 +234,6 @@ void common_hal_mtm_hardware_dacout_play(mtm_hardware_dacout_obj_t *self,
         (uint32_t)sample_rate * MCP4822_CLOCKS_PER_SAMPLE);
     common_hal_rp2pio_statemachine_restart(&self->state_machine);
 
-    // DMA feeds unsigned 16-bit samples.  The PIO discards the top 4 bits
-    // of each 16-bit half and uses the remaining 12 as DAC data.
-    // RP2040 narrow-write replication: 16-bit DMA write → same value in
-    // both 32-bit FIFO halves → mono-to-stereo for free.
     audio_dma_result result = audio_dma_setup_playback(
         &self->dma,
         sample,
@@ -253,41 +247,41 @@ void common_hal_mtm_hardware_dacout_play(mtm_hardware_dacout_obj_t *self,
         false);             // swap_channel
 
     if (result == AUDIO_DMA_DMA_BUSY) {
-        common_hal_mtm_hardware_dacout_stop(self);
-        mp_raise_RuntimeError(MP_COMPRESSED_ROM_TEXT("No DMA channel found"));
+        common_hal_mcp4822_mcp4822_stop(self);
+        mp_raise_RuntimeError(MP_ERROR_TEXT("No DMA channel found"));
     } else if (result == AUDIO_DMA_MEMORY_ERROR) {
-        common_hal_mtm_hardware_dacout_stop(self);
-        mp_raise_RuntimeError(MP_COMPRESSED_ROM_TEXT("Unable to allocate buffers for signed conversion"));
+        common_hal_mcp4822_mcp4822_stop(self);
+        mp_raise_RuntimeError(MP_ERROR_TEXT("Unable to allocate buffers for signed conversion"));
     } else if (result == AUDIO_DMA_SOURCE_ERROR) {
-        common_hal_mtm_hardware_dacout_stop(self);
-        mp_raise_RuntimeError(MP_COMPRESSED_ROM_TEXT("Audio source error"));
+        common_hal_mcp4822_mcp4822_stop(self);
+        mp_raise_RuntimeError(MP_ERROR_TEXT("Audio source error"));
     }
 
     self->playing = true;
 }
 
-void common_hal_mtm_hardware_dacout_pause(mtm_hardware_dacout_obj_t *self) {
+void common_hal_mcp4822_mcp4822_pause(mcp4822_mcp4822_obj_t *self) {
     audio_dma_pause(&self->dma);
 }
 
-void common_hal_mtm_hardware_dacout_resume(mtm_hardware_dacout_obj_t *self) {
+void common_hal_mcp4822_mcp4822_resume(mcp4822_mcp4822_obj_t *self) {
     audio_dma_resume(&self->dma);
 }
 
-bool common_hal_mtm_hardware_dacout_get_paused(mtm_hardware_dacout_obj_t *self) {
+bool common_hal_mcp4822_mcp4822_get_paused(mcp4822_mcp4822_obj_t *self) {
     return audio_dma_get_paused(&self->dma);
 }
 
-void common_hal_mtm_hardware_dacout_stop(mtm_hardware_dacout_obj_t *self) {
+void common_hal_mcp4822_mcp4822_stop(mcp4822_mcp4822_obj_t *self) {
     audio_dma_stop(&self->dma);
     common_hal_rp2pio_statemachine_stop(&self->state_machine);
     self->playing = false;
 }
 
-bool common_hal_mtm_hardware_dacout_get_playing(mtm_hardware_dacout_obj_t *self) {
+bool common_hal_mcp4822_mcp4822_get_playing(mcp4822_mcp4822_obj_t *self) {
     bool playing = audio_dma_get_playing(&self->dma);
     if (!playing && self->playing) {
-        common_hal_mtm_hardware_dacout_stop(self);
+        common_hal_mcp4822_mcp4822_stop(self);
     }
     return playing;
 }
