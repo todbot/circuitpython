@@ -21,7 +21,7 @@ typedef struct {
 
 void common_hal_mtm_hardware_dacout_construct(mtm_hardware_dacout_obj_t *self,
     const mcu_pin_obj_t *clock, const mcu_pin_obj_t *mosi,
-    const mcu_pin_obj_t *cs);
+    const mcu_pin_obj_t *cs, uint8_t gain);
 
 void common_hal_mtm_hardware_dacout_deinit(mtm_hardware_dacout_obj_t *self);
 bool common_hal_mtm_hardware_dacout_deinited(mtm_hardware_dacout_obj_t *self);

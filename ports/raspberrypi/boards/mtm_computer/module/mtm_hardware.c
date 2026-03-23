@@ -29,12 +29,15 @@
 //|         clock: microcontroller.Pin,
 //|         mosi: microcontroller.Pin,
 //|         cs: microcontroller.Pin,
+//|         *,
+//|         gain: int = 1,
 //|     ) -> None:
 //|         """Create a DACOut object associated with the given SPI pins.
 //|
 //|         :param ~microcontroller.Pin clock: The SPI clock (SCK) pin
 //|         :param ~microcontroller.Pin mosi: The SPI data (SDI/MOSI) pin
 //|         :param ~microcontroller.Pin cs: The chip select (CS) pin
+//|         :param int gain: DAC output gain, 1 for 1x (0-2.048V) or 2 for 2x (0-4.096V). Default 1.
 //|
 //|         Simple 8ksps 440 Hz sine wave::
 //|
@@ -72,11 +75,12 @@
 //|         ...
 //|
 static mp_obj_t mtm_hardware_dacout_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
-    enum { ARG_clock, ARG_mosi, ARG_cs };
+    enum { ARG_clock, ARG_mosi, ARG_cs, ARG_gain };
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_clock, MP_ARG_OBJ | MP_ARG_KW_ONLY | MP_ARG_REQUIRED },
         { MP_QSTR_mosi,  MP_ARG_OBJ | MP_ARG_KW_ONLY | MP_ARG_REQUIRED },
         { MP_QSTR_cs,    MP_ARG_OBJ | MP_ARG_KW_ONLY | MP_ARG_REQUIRED },
+        { MP_QSTR_gain,  MP_ARG_INT | MP_ARG_KW_ONLY, {.u_int = 1} },
     };
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
     mp_arg_parse_all_kw_array(n_args, n_kw, all_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
@@ -85,8 +89,13 @@ static mp_obj_t mtm_hardware_dacout_make_new(const mp_obj_type_t *type, size_t n
     const mcu_pin_obj_t *mosi = validate_obj_is_free_pin(args[ARG_mosi].u_obj, MP_QSTR_mosi);
     const mcu_pin_obj_t *cs = validate_obj_is_free_pin(args[ARG_cs].u_obj, MP_QSTR_cs);
 
+    mp_int_t gain = args[ARG_gain].u_int;
+    if (gain != 1 && gain != 2) {
+        mp_raise_ValueError(MP_COMPRESSED_ROM_TEXT("gain must be 1 or 2"));
+    }
+
     mtm_hardware_dacout_obj_t *self = mp_obj_malloc_with_finaliser(mtm_hardware_dacout_obj_t, &mtm_hardware_dacout_type);
-    common_hal_mtm_hardware_dacout_construct(self, clock, mosi, cs);
+    common_hal_mtm_hardware_dacout_construct(self, clock, mosi, cs, (uint8_t)gain);
 
     return MP_OBJ_FROM_PTR(self);
 }
