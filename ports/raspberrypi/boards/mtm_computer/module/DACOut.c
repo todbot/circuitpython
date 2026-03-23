@@ -128,9 +128,19 @@ static const uint16_t mcp4822_pio_program[] = {
 #define MCP4822_CLOCKS_PER_SAMPLE 86
 
 
+// MCP4822 gain bit (bit 13) position in the PIO program:
+//   Instruction 6  = channel A gain bit
+//   Instruction 18 = channel B gain bit
+// 1x gain: set pins, 1 (0xE001) — bit 13 = 1
+// 2x gain: set pins, 0 (0xE000) — bit 13 = 0
+#define MCP4822_PIO_GAIN_INSTR_A 6
+#define MCP4822_PIO_GAIN_INSTR_B 18
+#define MCP4822_PIO_GAIN_1X 0xE001  // set pins, 1
+#define MCP4822_PIO_GAIN_2X 0xE000  // set pins, 0
+
 void common_hal_mtm_hardware_dacout_construct(mtm_hardware_dacout_obj_t *self,
     const mcu_pin_obj_t *clock, const mcu_pin_obj_t *mosi,
-    const mcu_pin_obj_t *cs) {
+    const mcu_pin_obj_t *cs, uint8_t gain) {
 
     // SET pins span from MOSI to CS.  MOSI must have a lower GPIO number
     // than CS, with at most 4 pins between them (SET count max is 5).
@@ -141,6 +151,13 @@ void common_hal_mtm_hardware_dacout_construct(mtm_hardware_dacout_obj_t *self,
 
     uint8_t set_count = cs->number - mosi->number + 1;
 
+    // Build a mutable copy of the PIO program and patch the gain bit
+    uint16_t program[MP_ARRAY_SIZE(mcp4822_pio_program)];
+    memcpy(program, mcp4822_pio_program, sizeof(mcp4822_pio_program));
+    uint16_t gain_instr = (gain == 2) ? MCP4822_PIO_GAIN_2X : MCP4822_PIO_GAIN_1X;
+    program[MCP4822_PIO_GAIN_INSTR_A] = gain_instr;
+    program[MCP4822_PIO_GAIN_INSTR_B] = gain_instr;
+
     // Initial SET pin state: CS high (bit at CS position), others low
     uint32_t cs_bit_position = cs->number - mosi->number;
     pio_pinmask32_t initial_set_state = PIO_PINMASK32_FROM_VALUE(1u << cs_bit_position);
@@ -148,7 +165,7 @@ void common_hal_mtm_hardware_dacout_construct(mtm_hardware_dacout_obj_t *self,
 
     common_hal_rp2pio_statemachine_construct(
         &self->state_machine,
-        mcp4822_pio_program, MP_ARRAY_SIZE(mcp4822_pio_program),
+        program, MP_ARRAY_SIZE(mcp4822_pio_program),
         44100 * MCP4822_CLOCKS_PER_SAMPLE,          // Initial frequency; play() adjusts
         NULL, 0,                                     // No init program
         NULL, 0,                                     // No may_exec
