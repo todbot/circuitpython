@@ -11,11 +11,4 @@ EXTERNAL_FLASH_DEVICES = "W25Q16JVxQ"
 CIRCUITPY_AUDIOEFFECTS = 1
 CIRCUITPY_IMAGECAPTURE = 0
 CIRCUITPY_PICODVI = 0
-<<<<<<< HEAD
 CIRCUITPY_MCP4822 = 1
-=======
-
-SRC_C += \
-	boards/$(BOARD)/module/mtm_hardware.c \
-	boards/$(BOARD)/module/DACOut.c
->>>>>>> d8bbe2a87f (mtm_computer: Add DAC audio out module)
