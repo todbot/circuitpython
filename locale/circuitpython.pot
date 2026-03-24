@@ -1297,6 +1297,7 @@ msgstr ""
 msgid "Invalid %q"
 msgstr ""
 
+#: ports/raspberrypi/common-hal/mcp4822/MCP4822.c
 #: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2350.c
 #: shared-module/aurora_epaper/aurora_framebuffer.c
 msgid "Invalid %q and %q"
@@ -3038,10 +3039,6 @@ msgstr ""
 
 #: extmod/ulab/code/numpy/numerical.c
 msgid "cross is defined for 1D arrays of length 3"
-msgstr ""
-
-#: ports/raspberrypi/common-hal/mcp4822/MCP4822.c
-msgid "cs pin must be 1-4 positions above mosi pin"
 msgstr ""
 
 #: extmod/ulab/code/scipy/optimize/optimize.c
