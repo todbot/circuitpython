@@ -126,6 +126,7 @@ msgstr "%q의 %q는 %q가 아니라 %q 유형이어야 합니다"
 
 #: ports/espressif/common-hal/espulp/ULP.c
 #: ports/espressif/common-hal/mipidsi/Bus.c
+#: ports/espressif/common-hal/qspibus/QSPIBus.c
 #: ports/mimxrt10xx/common-hal/audiobusio/__init__.c
 #: ports/mimxrt10xx/common-hal/usb_host/Port.c
 #: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2040.c
@@ -148,6 +149,7 @@ msgstr "%q 인덱스는 %s 가 아닌 정수 여야합니다"
 
 #: ports/analog/common-hal/busio/SPI.c ports/analog/common-hal/busio/UART.c
 #: shared-bindings/digitalio/DigitalInOutProtocol.c
+#: shared-module/busdisplay/BusDisplay.c
 msgid "%q init failed"
 msgstr "%q 초기화 실패"
 
@@ -179,8 +181,8 @@ msgstr "%q 길이는 >= %d이어야 합니다"
 msgid "%q must be %d"
 msgstr "%q는 %d이어야 합니다"
 
-#: py/argcheck.c shared-bindings/busdisplay/BusDisplay.c
-#: shared-bindings/displayio/Bitmap.c
+#: ports/zephyr-cp/bindings/zephyr_display/Display.c py/argcheck.c
+#: shared-bindings/busdisplay/BusDisplay.c shared-bindings/displayio/Bitmap.c
 #: shared-bindings/framebufferio/FramebufferDisplay.c
 #: shared-bindings/is31fl3741/FrameBuffer.c
 #: shared-bindings/rgbmatrix/RGBMatrix.c
@@ -489,6 +491,7 @@ msgstr "*x는 할당 대상이어야 합니다"
 msgid ", in %q\n"
 msgstr ", 에서 %q\n"
 
+#: ports/zephyr-cp/bindings/zephyr_display/Display.c
 #: shared-bindings/busdisplay/BusDisplay.c
 #: shared-bindings/epaperdisplay/EPaperDisplay.c
 #: shared-bindings/framebufferio/FramebufferDisplay.c
@@ -690,6 +693,7 @@ msgstr ""
 msgid "Baudrate not supported by peripheral"
 msgstr "주변 기기에서 전송 속도가 지원되지 않습니다"
 
+#: ports/zephyr-cp/common-hal/zephyr_display/Display.c
 #: shared-module/busdisplay/BusDisplay.c
 #: shared-module/framebufferio/FramebufferDisplay.c
 msgid "Below minimum frame rate"
@@ -712,6 +716,7 @@ msgstr "부팅 장치는 첫 번째(인터페이스 #0)여야 합니다."
 msgid "Both RX and TX required for flow control"
 msgstr "플로우 제어에 RX와 TX가 모두 필요합니다"
 
+#: ports/zephyr-cp/bindings/zephyr_display/Display.c
 #: shared-bindings/busdisplay/BusDisplay.c
 #: shared-bindings/framebufferio/FramebufferDisplay.c
 msgid "Brightness not adjustable"
@@ -902,7 +907,7 @@ msgstr "좌표 배열의 길이가 다릅니다"
 msgid "Coordinate arrays types have different sizes"
 msgstr "좌표 배열 유형은 크기가 다릅니다"
 
-#: shared-module/usb/core/Device.c ports/espressif/common-hal/qspibus/QSPIBus.c
+#: ports/espressif/common-hal/qspibus/QSPIBus.c shared-module/usb/core/Device.c
 msgid "Could not allocate DMA capable buffer"
 msgstr ""
 
@@ -1072,10 +1077,6 @@ msgstr "wifi 검색 메모리 할당에 실패했습니다"
 msgid "Failed to buffer the sample"
 msgstr "샘플 버퍼링에 실패했습니다"
 
-#: ports/zephyr-cp/common-hal/_bleio/Adapter.c
-msgid "Failed to connect"
-msgstr ""
-
 #: ports/espressif/common-hal/_bleio/Adapter.c
 #: ports/nordic/common-hal/_bleio/Adapter.c
 #: ports/zephyr-cp/common-hal/_bleio/Adapter.c
@@ -1196,6 +1197,7 @@ msgstr "GNSS 초기화"
 msgid "Generic Failure"
 msgstr "일반 오류"
 
+#: ports/zephyr-cp/bindings/zephyr_display/Display.c
 #: shared-bindings/framebufferio/FramebufferDisplay.c
 #: shared-module/busdisplay/BusDisplay.c
 #: shared-module/framebufferio/FramebufferDisplay.c
@@ -3311,10 +3313,6 @@ msgstr "float이 너무 큽니다"
 msgid "float unsupported"
 msgstr ""
 
-#: shared-bindings/_stage/Text.c
-msgid "font must be 2048 bytes long"
-msgstr ""
-
 #: extmod/moddeflate.c
 msgid "format"
 msgstr ""
@@ -3394,10 +3392,6 @@ msgstr ""
 
 #: py/objgenerator.c py/runtime.c
 msgid "generator raised StopIteration"
-msgstr ""
-
-#: shared-bindings/_stage/Layer.c
-msgid "graphic must be 2048 bytes long"
 msgstr ""
 
 #: extmod/modhashlib.c
@@ -4119,10 +4113,6 @@ msgstr ""
 #: py/modstruct.c
 #, c-format
 msgid "pack expected %d items for packing (got %d)"
-msgstr ""
-
-#: shared-bindings/_stage/Layer.c shared-bindings/_stage/Text.c
-msgid "palette must be 32 bytes long"
 msgstr ""
 
 #: py/emitinlinerv32.c
