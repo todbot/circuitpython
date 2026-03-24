@@ -143,8 +143,7 @@ void common_hal_mcp4822_mcp4822_construct(mcp4822_mcp4822_obj_t *self,
     // The SET pin group spans from MOSI to CS.
     // MOSI must have a lower GPIO number than CS, gap at most 4.
     if (cs->number <= mosi->number || (cs->number - mosi->number) > 4) {
-        mp_raise_ValueError(
-            MP_ERROR_TEXT("cs pin must be 1-4 positions above mosi pin"));
+        mp_raise_ValueError_varg(MP_ERROR_TEXT("Invalid %q and %q"), MP_QSTR_CS, MP_QSTR_MOSI);
     }
 
     uint8_t set_count = cs->number - mosi->number + 1;
