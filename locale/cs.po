@@ -124,6 +124,7 @@ msgstr "%q v %q musí být typu %q, ne %q"
 
 #: ports/espressif/common-hal/espulp/ULP.c
 #: ports/espressif/common-hal/mipidsi/Bus.c
+#: ports/espressif/common-hal/qspibus/QSPIBus.c
 #: ports/mimxrt10xx/common-hal/audiobusio/__init__.c
 #: ports/mimxrt10xx/common-hal/usb_host/Port.c
 #: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2040.c
@@ -146,6 +147,7 @@ msgstr "Indexy %q musí být celá čísla, nikoli %s"
 
 #: ports/analog/common-hal/busio/SPI.c ports/analog/common-hal/busio/UART.c
 #: shared-bindings/digitalio/DigitalInOutProtocol.c
+#: shared-module/busdisplay/BusDisplay.c
 msgid "%q init failed"
 msgstr "Inicializace %q selhala"
 
@@ -177,8 +179,8 @@ msgstr "Délka %q musí být >= %d"
 msgid "%q must be %d"
 msgstr "%q musí být %d"
 
-#: py/argcheck.c shared-bindings/busdisplay/BusDisplay.c
-#: shared-bindings/displayio/Bitmap.c
+#: ports/zephyr-cp/bindings/zephyr_display/Display.c py/argcheck.c
+#: shared-bindings/busdisplay/BusDisplay.c shared-bindings/displayio/Bitmap.c
 #: shared-bindings/framebufferio/FramebufferDisplay.c
 #: shared-bindings/is31fl3741/FrameBuffer.c
 #: shared-bindings/rgbmatrix/RGBMatrix.c
@@ -470,6 +472,7 @@ msgstr "∗x musí být cíl přiřazení"
 msgid ", in %q\n"
 msgstr ", v% q\n"
 
+#: ports/zephyr-cp/bindings/zephyr_display/Display.c
 #: shared-bindings/busdisplay/BusDisplay.c
 #: shared-bindings/epaperdisplay/EPaperDisplay.c
 #: shared-bindings/framebufferio/FramebufferDisplay.c
@@ -660,6 +663,7 @@ msgstr ""
 msgid "Baudrate not supported by peripheral"
 msgstr "Baudrate není podporován periférií"
 
+#: ports/zephyr-cp/common-hal/zephyr_display/Display.c
 #: shared-module/busdisplay/BusDisplay.c
 #: shared-module/framebufferio/FramebufferDisplay.c
 msgid "Below minimum frame rate"
@@ -682,6 +686,7 @@ msgstr "Bootovací zařízení musí být první (rozhraní #0)."
 msgid "Both RX and TX required for flow control"
 msgstr "RX a TX jsou vyžadovány pro kontrolu toku"
 
+#: ports/zephyr-cp/bindings/zephyr_display/Display.c
 #: shared-bindings/busdisplay/BusDisplay.c
 #: shared-bindings/framebufferio/FramebufferDisplay.c
 msgid "Brightness not adjustable"
@@ -873,7 +878,7 @@ msgstr "Pole souřadnic mají různé délky"
 msgid "Coordinate arrays types have different sizes"
 msgstr ""
 
-#: shared-module/usb/core/Device.c ports/espressif/common-hal/qspibus/QSPIBus.c
+#: ports/espressif/common-hal/qspibus/QSPIBus.c shared-module/usb/core/Device.c
 msgid "Could not allocate DMA capable buffer"
 msgstr ""
 
@@ -1040,10 +1045,6 @@ msgstr "Nepodařilo se alokovat paměť pro wifi scan"
 msgid "Failed to buffer the sample"
 msgstr "Nepodařilo se nabufferovat sample"
 
-#: ports/zephyr-cp/common-hal/_bleio/Adapter.c
-msgid "Failed to connect"
-msgstr ""
-
 #: ports/espressif/common-hal/_bleio/Adapter.c
 #: ports/nordic/common-hal/_bleio/Adapter.c
 #: ports/zephyr-cp/common-hal/_bleio/Adapter.c
@@ -1163,6 +1164,7 @@ msgstr "Inicializace GNSS"
 msgid "Generic Failure"
 msgstr "Základní chyba"
 
+#: ports/zephyr-cp/bindings/zephyr_display/Display.c
 #: shared-bindings/framebufferio/FramebufferDisplay.c
 #: shared-module/busdisplay/BusDisplay.c
 #: shared-module/framebufferio/FramebufferDisplay.c
@@ -3264,10 +3266,6 @@ msgstr ""
 msgid "float unsupported"
 msgstr "float není podporován"
 
-#: shared-bindings/_stage/Text.c
-msgid "font must be 2048 bytes long"
-msgstr ""
-
 #: extmod/moddeflate.c
 msgid "format"
 msgstr ""
@@ -3348,10 +3346,6 @@ msgstr ""
 #: py/objgenerator.c py/runtime.c
 msgid "generator raised StopIteration"
 msgstr "generátor způsobil StopIteration"
-
-#: shared-bindings/_stage/Layer.c
-msgid "graphic must be 2048 bytes long"
-msgstr ""
 
 #: extmod/modhashlib.c
 msgid "hash is final"
@@ -4072,10 +4066,6 @@ msgstr ""
 #: py/modstruct.c
 #, c-format
 msgid "pack expected %d items for packing (got %d)"
-msgstr ""
-
-#: shared-bindings/_stage/Layer.c shared-bindings/_stage/Text.c
-msgid "palette must be 32 bytes long"
 msgstr ""
 
 #: py/emitinlinerv32.c
