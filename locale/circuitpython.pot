@@ -3310,10 +3310,6 @@ msgstr ""
 msgid "function takes %d positional arguments but %d were given"
 msgstr ""
 
-#: shared-bindings/mcp4822/MCP4822.c
-msgid "gain must be 1 or 2"
-msgstr ""
-
 #: py/objgenerator.c
 msgid "generator already executing"
 msgstr ""
