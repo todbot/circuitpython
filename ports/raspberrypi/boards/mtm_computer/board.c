@@ -20,7 +20,7 @@ static mp_obj_t board_dac_factory(void) {
         &pin_GPIO18,   // clock (SCK)
         &pin_GPIO19,   // mosi (SDI)
         &pin_GPIO21,   // cs
-        2);            // gain 2x
+        1);            // gain 1x
     return MP_OBJ_FROM_PTR(dac);
 }
 MP_DEFINE_CONST_FUN_OBJ_0(board_dac_obj, board_dac_factory);
