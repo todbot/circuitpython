@@ -31,4 +31,10 @@ static mp_obj_t board_dac_factory(void) {
 }
 MP_DEFINE_CONST_FUN_OBJ_0(board_dac_obj, board_dac_factory);
 
+void board_deinit(void) {
+    if (board_dac_singleton != MP_OBJ_NULL) {
+        common_hal_mcp4822_mcp4822_deinit(MP_OBJ_TO_PTR(board_dac_singleton));
+        board_dac_singleton = MP_OBJ_NULL;
+    }
+}
 // Use the MP_WEAK supervisor/shared/board.c versions of routines not defined here.
