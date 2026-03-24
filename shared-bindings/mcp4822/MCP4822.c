@@ -81,11 +81,7 @@ static mp_obj_t mcp4822_mcp4822_make_new(const mp_obj_type_t *type, size_t n_arg
     const mcu_pin_obj_t *clock = validate_obj_is_free_pin(args[ARG_clock].u_obj, MP_QSTR_clock);
     const mcu_pin_obj_t *mosi = validate_obj_is_free_pin(args[ARG_mosi].u_obj, MP_QSTR_mosi);
     const mcu_pin_obj_t *cs = validate_obj_is_free_pin(args[ARG_cs].u_obj, MP_QSTR_cs);
-
-    mp_int_t gain = args[ARG_gain].u_int;
-    if (gain != 1 && gain != 2) {
-        mp_raise_ValueError(MP_ERROR_TEXT("gain must be 1 or 2"));
-    }
+    const mp_int_t gain = mp_arg_validate_int_range(args[ARG_gain].u_int, 1, 2, MP_QSTR_gain);
 
     mcp4822_mcp4822_obj_t *self = mp_obj_malloc_with_finaliser(mcp4822_mcp4822_obj_t, &mcp4822_mcp4822_type);
     common_hal_mcp4822_mcp4822_construct(self, clock, mosi, cs, (uint8_t)gain);
