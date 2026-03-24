@@ -64,6 +64,7 @@ locale = false
 lvfontio = true # Zephyr board has busio
 math = false
 max3421e = false
+mcp4822 = false
 mdns = false
 memorymap = false
 memorymonitor = false
