@@ -687,6 +687,7 @@ SRC_SHARED_MODULE_ALL = \
 	atexit/__init__.c \
 	audiocore/RawSample.c \
 	audiocore/WaveFile.c \
+	audiocore/SpeedChanger.c \
 	audiocore/__init__.c \
 	audiodelays/Echo.c \
 	audiodelays/Chorus.c \
