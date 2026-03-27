@@ -110,3 +110,6 @@ enum {
 
 void mp_hal_get_mac(int idx, uint8_t buf[6]);
 #endif
+
+// Global variable to control compile-only mode.
+extern bool mp_compile_only;

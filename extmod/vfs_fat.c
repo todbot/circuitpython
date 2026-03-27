@@ -58,7 +58,7 @@
 
 // CIRCUITPY-CHANGE
 // Factoring this common call saves about 90 bytes.
-static NORETURN void mp_raise_OSError_fresult(FRESULT res) {
+static MP_NORETURN void mp_raise_OSError_fresult(FRESULT res) {
     mp_raise_OSError(fresult_to_errno_table[res]);
 }
 
@@ -454,77 +454,6 @@ static mp_obj_t vfs_fat_umount(mp_obj_t self_in) {
     return mp_const_none;
 }
 static MP_DEFINE_CONST_FUN_OBJ_1(fat_vfs_umount_obj, vfs_fat_umount);
-
-// CIRCUITPY-CHANGE
-static mp_obj_t vfs_fat_utime(mp_obj_t vfs_in, mp_obj_t path_in, mp_obj_t times_in) {
-    mp_obj_fat_vfs_t *self = MP_OBJ_TO_PTR(vfs_in);
-    const char *path = mp_obj_str_get_str(path_in);
-    if (!mp_obj_is_tuple_compatible(times_in)) {
-        mp_raise_type_arg(&mp_type_TypeError, times_in);
-    }
-
-    mp_obj_t *otimes;
-    mp_obj_get_array_fixed_n(times_in, 2, &otimes);
-
-    // Validate that both elements of the tuple are int and discard the second one
-    int time[2];
-    time[0] = mp_obj_get_int(otimes[0]);
-    time[1] = mp_obj_get_int(otimes[1]);
-    timeutils_struct_time_t tm;
-    timeutils_seconds_since_epoch_to_struct_time(time[0], &tm);
-
-    FILINFO fno;
-    fno.fdate = (WORD)(((tm.tm_year - 1980) * 512U) | tm.tm_mon * 32U | tm.tm_mday);
-    fno.ftime = (WORD)(tm.tm_hour * 2048U | tm.tm_min * 32U | tm.tm_sec / 2U);
-    FRESULT res = f_utime(&self->fatfs, path, &fno);
-    if (res != FR_OK) {
-        mp_raise_OSError_fresult(res);
-    }
-
-    return mp_const_none;
-}
-static MP_DEFINE_CONST_FUN_OBJ_3(fat_vfs_utime_obj, vfs_fat_utime);
-
-static mp_obj_t vfs_fat_getreadonly(mp_obj_t self_in) {
-    fs_user_mount_t *self = MP_OBJ_TO_PTR(self_in);
-    return mp_obj_new_bool(!filesystem_is_writable_by_python(self));
-}
-static MP_DEFINE_CONST_FUN_OBJ_1(fat_vfs_getreadonly_obj, vfs_fat_getreadonly);
-
-static MP_PROPERTY_GETTER(fat_vfs_readonly_obj,
-    (mp_obj_t)&fat_vfs_getreadonly_obj);
-
-#if MICROPY_FATFS_USE_LABEL
-static mp_obj_t vfs_fat_getlabel(mp_obj_t self_in) {
-    fs_user_mount_t *self = MP_OBJ_TO_PTR(self_in);
-    char working_buf[12];
-    FRESULT res = f_getlabel(&self->fatfs, working_buf, NULL);
-    if (res != FR_OK) {
-        mp_raise_OSError_fresult(res);
-    }
-    return mp_obj_new_str(working_buf, strlen(working_buf));
-}
-static MP_DEFINE_CONST_FUN_OBJ_1(fat_vfs_getlabel_obj, vfs_fat_getlabel);
-
-static mp_obj_t vfs_fat_setlabel(mp_obj_t self_in, mp_obj_t label_in) {
-    fs_user_mount_t *self = MP_OBJ_TO_PTR(self_in);
-    verify_fs_writable(self);
-    const char *label_str = mp_obj_str_get_str(label_in);
-    FRESULT res = f_setlabel(&self->fatfs, label_str);
-    if (res != FR_OK) {
-        if (res == FR_WRITE_PROTECTED) {
-            mp_raise_msg(&mp_type_OSError, MP_ERROR_TEXT("Read-only filesystem"));
-        }
-        mp_raise_OSError_fresult(res);
-    }
-    return mp_const_none;
-}
-static MP_DEFINE_CONST_FUN_OBJ_2(fat_vfs_setlabel_obj, vfs_fat_setlabel);
-
-static MP_PROPERTY_GETSET(fat_vfs_label_obj,
-    (mp_obj_t)&fat_vfs_getlabel_obj,
-    (mp_obj_t)&fat_vfs_setlabel_obj);
-#endif
 
 static const mp_rom_map_elem_t fat_vfs_locals_dict_table[] = {
     // CIRCUITPY-CHANGE: correct name

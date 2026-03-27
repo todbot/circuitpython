@@ -1202,7 +1202,7 @@ size_t gc_get_max_new_split(void) {
     return port_heap_get_largest_free_size();
 }
 
-void NORETURN nlr_jump_fail(void *val) {
+void MP_NORETURN nlr_jump_fail(void *val) {
     reset_into_safe_mode(SAFE_MODE_NLR_JUMP_FAIL);
     while (true) {
     }
@@ -1213,7 +1213,7 @@ bool vm_is_running(void) {
 }
 
 #ifndef NDEBUG
-static void NORETURN __fatal_error(const char *msg) {
+static void MP_NORETURN __fatal_error(const char *msg) {
     #if CIRCUITPY_DEBUG == 0
     reset_into_safe_mode(SAFE_MODE_HARD_FAULT);
     #endif
