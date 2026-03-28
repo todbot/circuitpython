@@ -31,7 +31,7 @@ static mp_obj_t fp_to_rate(uint32_t rate_fp) {
 //|     Uses nearest-neighbor resampling with a fixed-point phase accumulator
 //|     for CPU-efficient variable-speed playback."""
 //|
-//|     def __init__(self, source: audiosample, rate: float = 1.0) -> None:
+//|     def __init__(self, source: circuitpython_typing.AudioSample, rate: float = 1.0) -> None:
 //|         """Create a SpeedChanger that wraps ``source``.
 //|
 //|         :param audiosample source: The audio source to resample.
