@@ -20,6 +20,8 @@
 // Disable native _Float16 handling for host builds.
 #define MICROPY_FLOAT_USE_NATIVE_FLT16 (0)
 
+#define MICROPY_NLR_THUMB_USE_LONG_JUMP (1)
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // This also includes mpconfigboard.h.
