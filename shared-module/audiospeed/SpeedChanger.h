@@ -26,10 +26,10 @@ typedef struct {
     uint32_t rate_fp; // 16.16 fixed-point rate
     bool source_done;  // source returned DONE on last get_buffer
     bool source_exhausted; // source DONE and we consumed all of it
-} audiotools_speedchanger_obj_t;
+} audiospeed_speedchanger_obj_t;
 
-void audiotools_speedchanger_reset_buffer(audiotools_speedchanger_obj_t *self,
+void audiospeed_speedchanger_reset_buffer(audiospeed_speedchanger_obj_t *self,
     bool single_channel_output, uint8_t channel);
-audioio_get_buffer_result_t audiotools_speedchanger_get_buffer(audiotools_speedchanger_obj_t *self,
+audioio_get_buffer_result_t audiospeed_speedchanger_get_buffer(audiospeed_speedchanger_obj_t *self,
     bool single_channel_output, uint8_t channel,
     uint8_t **buffer, uint32_t *buffer_length);

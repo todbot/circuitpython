@@ -146,8 +146,8 @@ endif
 ifeq ($(CIRCUITPY_AUDIOMP3),1)
 SRC_PATTERNS += audiomp3/%
 endif
-ifeq ($(CIRCUITPY_AUDIOTOOLS),1)
-SRC_PATTERNS += audiotools/%
+ifeq ($(CIRCUITPY_AUDIOSPEED),1)
+SRC_PATTERNS += audiospeed/%
 endif
 ifeq ($(CIRCUITPY_AURORA_EPAPER),1)
 SRC_PATTERNS += aurora_epaper/%
@@ -691,8 +691,8 @@ SRC_SHARED_MODULE_ALL = \
 	audiocore/RawSample.c \
 	audiocore/WaveFile.c \
 	audiocore/__init__.c \
-	audiotools/SpeedChanger.c \
-	audiotools/__init__.c \
+	audiospeed/SpeedChanger.c \
+	audiospeed/__init__.c \
 	audiodelays/Echo.c \
 	audiodelays/Chorus.c \
 	audiodelays/PitchShift.c \

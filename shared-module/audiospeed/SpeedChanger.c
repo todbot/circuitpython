@@ -4,7 +4,7 @@
 //
 // SPDX-License-Identifier: MIT
 
-#include "shared-bindings/audiotools/SpeedChanger.h"
+#include "shared-bindings/audiospeed/SpeedChanger.h"
 
 #include <string.h>
 #include "py/runtime.h"
@@ -15,7 +15,7 @@
 
 #define OUTPUT_BUFFER_FRAMES 128
 
-void common_hal_audiotools_speedchanger_construct(audiotools_speedchanger_obj_t *self,
+void common_hal_audiospeed_speedchanger_construct(audiospeed_speedchanger_obj_t *self,
     mp_obj_t source, uint32_t rate_fp) {
     audiosample_base_t *src_base = audiosample_check(source);
 
@@ -45,22 +45,22 @@ void common_hal_audiotools_speedchanger_construct(audiotools_speedchanger_obj_t 
     }
 }
 
-void common_hal_audiotools_speedchanger_deinit(audiotools_speedchanger_obj_t *self) {
+void common_hal_audiospeed_speedchanger_deinit(audiospeed_speedchanger_obj_t *self) {
     self->output_buffer = NULL;
     self->source = MP_OBJ_NULL;
     audiosample_mark_deinit(&self->base);
 }
 
-void common_hal_audiotools_speedchanger_set_rate(audiotools_speedchanger_obj_t *self, uint32_t rate_fp) {
+void common_hal_audiospeed_speedchanger_set_rate(audiospeed_speedchanger_obj_t *self, uint32_t rate_fp) {
     self->rate_fp = rate_fp;
 }
 
-uint32_t common_hal_audiotools_speedchanger_get_rate(audiotools_speedchanger_obj_t *self) {
+uint32_t common_hal_audiospeed_speedchanger_get_rate(audiospeed_speedchanger_obj_t *self) {
     return self->rate_fp;
 }
 
 // Fetch the next buffer from the source. Returns false if no data available.
-static bool fetch_source_buffer(audiotools_speedchanger_obj_t *self) {
+static bool fetch_source_buffer(audiospeed_speedchanger_obj_t *self) {
     if (self->source_exhausted) {
         return false;
     }
@@ -85,7 +85,7 @@ static bool fetch_source_buffer(audiotools_speedchanger_obj_t *self) {
     return true;
 }
 
-void audiotools_speedchanger_reset_buffer(audiotools_speedchanger_obj_t *self,
+void audiospeed_speedchanger_reset_buffer(audiospeed_speedchanger_obj_t *self,
     bool single_channel_output, uint8_t channel) {
     if (single_channel_output && channel == 1) {
         return;
@@ -99,7 +99,7 @@ void audiotools_speedchanger_reset_buffer(audiotools_speedchanger_obj_t *self,
     self->source_exhausted = false;
 }
 
-audioio_get_buffer_result_t audiotools_speedchanger_get_buffer(audiotools_speedchanger_obj_t *self,
+audioio_get_buffer_result_t audiospeed_speedchanger_get_buffer(audiospeed_speedchanger_obj_t *self,
     bool single_channel_output, uint8_t channel,
     uint8_t **buffer, uint32_t *buffer_length) {
 

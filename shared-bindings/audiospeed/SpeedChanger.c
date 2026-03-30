@@ -9,10 +9,10 @@
 #include "shared/runtime/context_manager_helpers.h"
 #include "py/objproperty.h"
 #include "py/runtime.h"
-#include "shared-bindings/audiotools/SpeedChanger.h"
+#include "shared-bindings/audiospeed/SpeedChanger.h"
 #include "shared-bindings/audiocore/__init__.h"
 #include "shared-bindings/util.h"
-#include "shared-module/audiotools/SpeedChanger.h"
+#include "shared-module/audiospeed/SpeedChanger.h"
 
 // Convert a Python float to 16.16 fixed-point rate
 static uint32_t rate_to_fp(mp_obj_t rate_obj) {
@@ -42,11 +42,11 @@ static mp_obj_t fp_to_rate(uint32_t rate_fp) {
 //|
 //|           import board
 //|           import audiocore
-//|           import audiotools
+//|           import audiospeed
 //|           import audioio
 //|
 //|           wav = audiocore.WaveFile("drum.wav")
-//|           fast = audiotools.SpeedChanger(wav, rate=1.5)
+//|           fast = audiospeed.SpeedChanger(wav, rate=1.5)
 //|           audio = audioio.AudioOut(board.A0)
 //|           audio.play(fast)
 //|
@@ -56,7 +56,7 @@ static mp_obj_t fp_to_rate(uint32_t rate_fp) {
 //|         """
 //|         ...
 //|
-static mp_obj_t audiotools_speedchanger_make_new(const mp_obj_type_t *type,
+static mp_obj_t audiospeed_speedchanger_make_new(const mp_obj_type_t *type,
     size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     enum { ARG_source, ARG_rate };
     static const mp_arg_t allowed_args[] = {
@@ -75,8 +75,8 @@ static mp_obj_t audiotools_speedchanger_make_new(const mp_obj_type_t *type,
         rate_fp = rate_to_fp(args[ARG_rate].u_obj);
     }
 
-    audiotools_speedchanger_obj_t *self = mp_obj_malloc(audiotools_speedchanger_obj_t, &audiotools_speedchanger_type);
-    common_hal_audiotools_speedchanger_construct(self, source, rate_fp);
+    audiospeed_speedchanger_obj_t *self = mp_obj_malloc(audiospeed_speedchanger_obj_t, &audiospeed_speedchanger_type);
+    common_hal_audiospeed_speedchanger_construct(self, source, rate_fp);
     return MP_OBJ_FROM_PTR(self);
 }
 
@@ -84,55 +84,55 @@ static mp_obj_t audiotools_speedchanger_make_new(const mp_obj_type_t *type,
 //|         """Deinitialises the SpeedChanger and releases all memory resources for reuse."""
 //|         ...
 //|
-static mp_obj_t audiotools_speedchanger_deinit(mp_obj_t self_in) {
-    audiotools_speedchanger_obj_t *self = MP_OBJ_TO_PTR(self_in);
-    common_hal_audiotools_speedchanger_deinit(self);
+static mp_obj_t audiospeed_speedchanger_deinit(mp_obj_t self_in) {
+    audiospeed_speedchanger_obj_t *self = MP_OBJ_TO_PTR(self_in);
+    common_hal_audiospeed_speedchanger_deinit(self);
     return mp_const_none;
 }
-static MP_DEFINE_CONST_FUN_OBJ_1(audiotools_speedchanger_deinit_obj, audiotools_speedchanger_deinit);
+static MP_DEFINE_CONST_FUN_OBJ_1(audiospeed_speedchanger_deinit_obj, audiospeed_speedchanger_deinit);
 
 //|     rate: float
 //|     """Playback speed multiplier. Can be changed during playback."""
 //|
-static mp_obj_t audiotools_speedchanger_obj_get_rate(mp_obj_t self_in) {
-    audiotools_speedchanger_obj_t *self = MP_OBJ_TO_PTR(self_in);
+static mp_obj_t audiospeed_speedchanger_obj_get_rate(mp_obj_t self_in) {
+    audiospeed_speedchanger_obj_t *self = MP_OBJ_TO_PTR(self_in);
     audiosample_check_for_deinit(&self->base);
-    return fp_to_rate(common_hal_audiotools_speedchanger_get_rate(self));
+    return fp_to_rate(common_hal_audiospeed_speedchanger_get_rate(self));
 }
-MP_DEFINE_CONST_FUN_OBJ_1(audiotools_speedchanger_get_rate_obj, audiotools_speedchanger_obj_get_rate);
+MP_DEFINE_CONST_FUN_OBJ_1(audiospeed_speedchanger_get_rate_obj, audiospeed_speedchanger_obj_get_rate);
 
-static mp_obj_t audiotools_speedchanger_obj_set_rate(mp_obj_t self_in, mp_obj_t rate_obj) {
-    audiotools_speedchanger_obj_t *self = MP_OBJ_TO_PTR(self_in);
+static mp_obj_t audiospeed_speedchanger_obj_set_rate(mp_obj_t self_in, mp_obj_t rate_obj) {
+    audiospeed_speedchanger_obj_t *self = MP_OBJ_TO_PTR(self_in);
     audiosample_check_for_deinit(&self->base);
-    common_hal_audiotools_speedchanger_set_rate(self, rate_to_fp(rate_obj));
+    common_hal_audiospeed_speedchanger_set_rate(self, rate_to_fp(rate_obj));
     return mp_const_none;
 }
-MP_DEFINE_CONST_FUN_OBJ_2(audiotools_speedchanger_set_rate_obj, audiotools_speedchanger_obj_set_rate);
+MP_DEFINE_CONST_FUN_OBJ_2(audiospeed_speedchanger_set_rate_obj, audiospeed_speedchanger_obj_set_rate);
 
-MP_PROPERTY_GETSET(audiotools_speedchanger_rate_obj,
-    (mp_obj_t)&audiotools_speedchanger_get_rate_obj,
-    (mp_obj_t)&audiotools_speedchanger_set_rate_obj);
+MP_PROPERTY_GETSET(audiospeed_speedchanger_rate_obj,
+    (mp_obj_t)&audiospeed_speedchanger_get_rate_obj,
+    (mp_obj_t)&audiospeed_speedchanger_set_rate_obj);
 
-static const mp_rom_map_elem_t audiotools_speedchanger_locals_dict_table[] = {
-    { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&audiotools_speedchanger_deinit_obj) },
+static const mp_rom_map_elem_t audiospeed_speedchanger_locals_dict_table[] = {
+    { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&audiospeed_speedchanger_deinit_obj) },
     { MP_ROM_QSTR(MP_QSTR___enter__), MP_ROM_PTR(&default___enter___obj) },
     { MP_ROM_QSTR(MP_QSTR___exit__), MP_ROM_PTR(&default___exit___obj) },
-    { MP_ROM_QSTR(MP_QSTR_rate), MP_ROM_PTR(&audiotools_speedchanger_rate_obj) },
+    { MP_ROM_QSTR(MP_QSTR_rate), MP_ROM_PTR(&audiospeed_speedchanger_rate_obj) },
     AUDIOSAMPLE_FIELDS,
 };
-static MP_DEFINE_CONST_DICT(audiotools_speedchanger_locals_dict, audiotools_speedchanger_locals_dict_table);
+static MP_DEFINE_CONST_DICT(audiospeed_speedchanger_locals_dict, audiospeed_speedchanger_locals_dict_table);
 
-static const audiosample_p_t audiotools_speedchanger_proto = {
+static const audiosample_p_t audiospeed_speedchanger_proto = {
     MP_PROTO_IMPLEMENT(MP_QSTR_protocol_audiosample)
-    .reset_buffer = (audiosample_reset_buffer_fun)audiotools_speedchanger_reset_buffer,
-    .get_buffer = (audiosample_get_buffer_fun)audiotools_speedchanger_get_buffer,
+    .reset_buffer = (audiosample_reset_buffer_fun)audiospeed_speedchanger_reset_buffer,
+    .get_buffer = (audiosample_get_buffer_fun)audiospeed_speedchanger_get_buffer,
 };
 
 MP_DEFINE_CONST_OBJ_TYPE(
-    audiotools_speedchanger_type,
+    audiospeed_speedchanger_type,
     MP_QSTR_SpeedChanger,
     MP_TYPE_FLAG_HAS_SPECIAL_ACCESSORS,
-    make_new, audiotools_speedchanger_make_new,
-    locals_dict, &audiotools_speedchanger_locals_dict,
-    protocol, &audiotools_speedchanger_proto
+    make_new, audiospeed_speedchanger_make_new,
+    locals_dict, &audiospeed_speedchanger_locals_dict,
+    protocol, &audiospeed_speedchanger_proto
     );
