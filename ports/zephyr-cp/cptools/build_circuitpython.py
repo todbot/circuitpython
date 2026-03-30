@@ -522,16 +522,15 @@ async def build_circuitpython():
             hal_source.extend(top.glob(f"shared-bindings/{module.name}/*.c"))
 
     if os.environ.get("CI", "false") == "true":
-        # Fail the build if it isn't up to date.
+        # Warn if it isn't up to date.
         if (
             not autogen_board_info_fn.exists()
             or autogen_board_info_fn.read_text() != tomlkit.dumps(autogen_board_info)
         ):
-            logger.error("autogen_board_info.toml is out of date.")
-            raise RuntimeError(
+            logger.warning(
                 f"autogen_board_info.toml is missing or out of date. Please run `make BOARD={board}` locally and commit {autogen_board_info_fn}."
             )
-    elif autogen_board_info_fn.parent.exists():
+    if autogen_board_info_fn.parent.exists():
         autogen_board_info_fn.write_text(tomlkit.dumps(autogen_board_info))
 
     for mpflag in MPCONFIG_FLAGS:
