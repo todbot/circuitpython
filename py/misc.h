@@ -35,9 +35,23 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stddef.h>
+#if __cplusplus // Required on at least one compiler to get ULLONG_MAX
+#include <climits>
+#else
+#include <limits.h>
+#endif
 
 typedef unsigned char byte;
 typedef unsigned int uint;
+
+#ifndef __has_builtin
+#define __has_builtin(x) (0)
+#endif
+#ifndef __has_feature
+// This macro is supported by Clang and gcc>=14
+#define __has_feature(x) (0)
+#endif
+
 
 /** generic ops *************************************************/
 

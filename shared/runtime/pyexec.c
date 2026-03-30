@@ -482,7 +482,8 @@ static int pyexec_friendly_repl_process_char(int c) {
             mp_hal_stdout_tx_str(MICROPY_FULL_VERSION_INFO);
             mp_hal_stdout_tx_str("\r\n");
             #if MICROPY_PY_BUILTINS_HELP
-            mp_hal_stdout_tx_str("Type \"help()\" for more information.\r\n");
+            // CIRCUITPY-CHANGE: don't print help info
+            // mp_hal_stdout_tx_str("Type \"help()\" for more information.\r\n");
             #endif
             goto input_restart;
         } else if (ret == CHAR_CTRL_C) {

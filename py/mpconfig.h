@@ -2387,7 +2387,7 @@ typedef time_t mp_timestamp_t;
 #endif // INT_FMT
 
 #if !MICROPY_PREVIEW_VERSION_2
-#define MP_NORETURN MP_NORETURN
+#define NORETURN MP_NORETURN
 #endif
 
 // Modifier for weak functions

@@ -289,7 +289,7 @@ static inline void *mp_obj_malloc_helper_dyn(size_t num_bytes, const mp_obj_type
 
 #define nlr_raise(o)                            (mp_raise_dyn(o))
 #define mp_raise_type_arg(type, arg)            (mp_raise_dyn(mp_obj_new_exception_arg1_dyn((type), (arg))))
-// CIRCUITPY-CHANGE: use str
+// CIRCUITPY-CHANGE: use mp_raise_msg_str
 #define mp_raise_msg(type, msg)                 (mp_fun_table.raise_msg_str((type), (msg)))
 #define mp_raise_OSError(er)                    (mp_raise_OSError_dyn(er))
 #define mp_raise_NotImplementedError(msg)       (mp_raise_msg(&mp_type_NotImplementedError, (msg)))

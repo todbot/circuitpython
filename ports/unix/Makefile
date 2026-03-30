@@ -210,6 +210,7 @@ ifeq ($(MICROPY_PY_JNI),1)
 CFLAGS += -I/usr/lib/jvm/java-7-openjdk-amd64/include -DMICROPY_PY_JNI=1
 endif
 
+# CIRCUITPY-CHANGE: CircuitPython-specific files.
 # source files
 SRC_C += \
 	main.c \
@@ -219,15 +220,13 @@ SRC_C += \
 	input.c \
 	alloc.c \
 	fatfs_port.c \
-	mpbthciport.c \
-	mpbtstackport_common.c \
-	mpbtstackport_h4.c \
-	mpbtstackport_usb.c \
-	mpnimbleport.c \
-	modtermios.c \
-	modsocket.c \
-	modffi.c \
-	modjni.c \
+	shared-module/os/__init__.c \
+	supervisor/shared/settings.c \
+	supervisor/stub/filesystem.c \
+	supervisor/stub/safe_mode.c \
+	supervisor/stub/stack.c \
+	supervisor/shared/translate/translate.c \
+	$(SRC_MOD) \
 	$(wildcard $(VARIANT_DIR)/*.c)
 
 # CIRCUITPY-CHANGE
