@@ -288,6 +288,9 @@ endif
 ifeq ($(CIRCUITPY_MAX3421E),1)
 SRC_PATTERNS += max3421e/%
 endif
+ifeq ($(CIRCUITPY_MCP4822),1)
+SRC_PATTERNS += mcp4822/%
+endif
 ifeq ($(CIRCUITPY_MDNS),1)
 SRC_PATTERNS += mdns/%
 endif
@@ -532,6 +535,8 @@ SRC_COMMON_HAL_ALL = \
 	i2ctarget/I2CTarget.c \
 	i2ctarget/__init__.c \
 	max3421e/Max3421E.c \
+	mcp4822/__init__.c \
+	mcp4822/MCP4822.c \
 	memorymap/__init__.c \
 	memorymap/AddressRange.c \
 	microcontroller/__init__.c \
