@@ -893,4 +893,9 @@ MP_DEFINE_CONST_DICT(board_module_globals, board_module_globals_table);
     board_info["flash_count"] = len(flashes)
     board_info["rotaryio"] = bool(ioports)
     board_info["usb_num_endpoint_pairs"] = usb_num_endpoint_pairs
+
+    # Detect NVM partition from the device tree.
+    nvm_node = device_tree.label2node.get("nvm_partition")
+    board_info["nvm"] = nvm_node is not None
+
     return board_info
