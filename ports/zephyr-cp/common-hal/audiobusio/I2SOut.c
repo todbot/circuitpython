@@ -131,6 +131,7 @@ static void audio_thread_func(void *self_in, void *unused1, void *unused2) {
         int ret = i2s_write(self->i2s_dev, next_buffer, self->block_size);
         if (ret < 0) {
             printk("i2s_write failed: %d\n", ret);
+            k_mem_slab_free(&self->mem_slab, next_buffer);
             // Error writing, stop playback
             self->playing = false;
             break;
@@ -210,6 +211,7 @@ void common_hal_audiobusio_i2sout_play(audiobusio_i2sout_obj_t *self,
         ret = i2s_write(self->i2s_dev, buf, block_size);
         if (ret < 0) {
             printk("i2s_write failed: %d\n", ret);
+            k_mem_slab_free(&self->mem_slab, buf);
             common_hal_audiobusio_i2sout_stop(self);
             raise_zephyr_error(ret);
         }
