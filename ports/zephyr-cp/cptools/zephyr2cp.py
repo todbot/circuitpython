@@ -433,7 +433,7 @@ def find_ram_regions(device_tree):
 
 
 @cpbuild.run_in_thread
-def zephyr_dts_to_cp_board(board_id, portdir, builddir, zephyrbuilddir):  # noqa: C901
+def zephyr_dts_to_cp_board(board_id, portdir, builddir, zephyrbuilddir, mpconfigboard=None):  # noqa: C901
     board_dir = builddir / "board"
     # Auto generate board files from device tree.
 
@@ -486,6 +486,8 @@ def zephyr_dts_to_cp_board(board_id, portdir, builddir, zephyrbuilddir):  # noqa
     soc_name = board_yaml["socs"][0]["name"]
     board_info["soc"] = soc_name
     board_name = board_yaml["full_name"]
+    if mpconfigboard and "NAME" in mpconfigboard:
+        board_name = mpconfigboard["NAME"]
     board_info["name"] = board_name
     # board_id_yaml = zephyr_board_dir / (zephyr_board_dir.name + ".yaml")
     # board_id_yaml = yaml.safe_load(board_id_yaml.read_text())
