@@ -21,7 +21,7 @@ ifeq ($(DEBUG),1)
 WEST_CMAKE_ARGS += -Dzephyr-cp_EXTRA_CONF_FILE=$(DEBUG_CONF_FILE)
 endif
 
-.PHONY: $(BUILD)/zephyr-cp/zephyr/zephyr.elf flash recover debug debug-jlink debugserver attach run run-sim clean menuconfig all clean-all test fetch-port-submodules
+.PHONY: $(BUILD)/zephyr-cp/zephyr/zephyr.elf flash recover debug debug-jlink debugserver attach run run-sim clean menuconfig all clean-all sim clean-sim test fetch-port-submodules
 
 $(BUILD)/zephyr-cp/zephyr/zephyr.elf:
 	python cptools/pre_zephyr_build_prep.py $(BOARD)
@@ -86,6 +86,13 @@ all:
 
 clean-all:
 	rm -rf build build-*
+
+# Build all sim boards concurrently using the same jobserver as `make all`.
+sim:
+	+python cptools/build_all_boards.py --vendor native --continue-on-error
+
+clean-sim:
+	rm -rf $(wildcard build-native_*)
 
 test: build-native_native_sim/zephyr-cp/zephyr/zephyr.exe
 	pytest cptools/tests
