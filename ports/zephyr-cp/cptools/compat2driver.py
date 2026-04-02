@@ -1042,6 +1042,7 @@ COMPAT_TO_DRIVER = {
     "st_stm32_i2s": "i2s",
     "st_stm32_sai": "i2s",
     "vnd_i2s": "i2s",
+    "zephyr_i2s_sdl": "i2s",
     #
     # i3c
     "adi_max32_i3c": "i3c",

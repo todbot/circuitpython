@@ -68,7 +68,7 @@ run-sim:
 		echo "Populating build-native_native_sim/flash.bin from ./CIRCUITPY"; \
 		mcopy -s -i build-native_native_sim/flash.bin CIRCUITPY/* ::; \
 	fi
-	build-native_native_sim/firmware.exe --flash=build-native_native_sim/flash.bin --flash_rm -wait_uart -rt
+	build-native_native_sim/firmware.exe --flash=build-native_native_sim/flash.bin --flash_rm -wait_uart -rt --i2s_capture=build-native_native_sim/i2s_capture.wav
 
 menuconfig:
 	west build $(WEST_SHIELD_ARGS) --sysbuild -d $(BUILD) -t menuconfig -- $(WEST_CMAKE_ARGS)
