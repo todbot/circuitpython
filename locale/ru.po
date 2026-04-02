@@ -2472,6 +2472,7 @@ msgstr "Неподдерживаемый тип сокета"
 msgid "Update failed"
 msgstr "Обновление не удалось"
 
+#: ports/zephyr-cp/common-hal/audiobusio/I2SOut.c
 #: ports/zephyr-cp/common-hal/busio/I2C.c
 #: ports/zephyr-cp/common-hal/busio/SPI.c
 #: ports/zephyr-cp/common-hal/busio/UART.c

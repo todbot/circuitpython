@@ -2439,6 +2439,7 @@ msgstr ""
 msgid "Update failed"
 msgstr ""
 
+#: ports/zephyr-cp/common-hal/audiobusio/I2SOut.c
 #: ports/zephyr-cp/common-hal/busio/I2C.c
 #: ports/zephyr-cp/common-hal/busio/SPI.c
 #: ports/zephyr-cp/common-hal/busio/UART.c
