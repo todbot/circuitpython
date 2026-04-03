@@ -70,6 +70,7 @@
 #error MICROPY_ENABLE_FINALISER requires MICROPY_ENABLE_GC
 #endif
 
+// CIRCUITPY-CHANGE: Add selective collect support to malloc to optimize GC for large buffers
 #if MICROPY_ENABLE_SELECTIVE_COLLECT
 #error MICROPY_ENABLE_SELECTIVE_COLLECT requires MICROPY_ENABLE_GC
 #endif
@@ -125,32 +126,35 @@ void *m_malloc_helper(size_t num_bytes, uint8_t flags) {
 }
 
 void *m_malloc(size_t num_bytes) {
-    // CIRCUITPY-CHANGE
+    // CIRCUITPY-CHANGE: use helper
     return m_malloc_helper(num_bytes, M_MALLOC_RAISE_ERROR | M_MALLOC_COLLECT);
 }
 
 void *m_malloc_maybe(size_t num_bytes) {
-    // CIRCUITPY-CHANGE
+    // CIRCUITPY-CHANGE: use helper
     return m_malloc_helper(num_bytes, M_MALLOC_COLLECT);
 }
 
 #if MICROPY_ENABLE_FINALISER
 void *m_malloc_with_finaliser(size_t num_bytes) {
-    // CIRCUITPY-CHANGE
+    // CIRCUITPY-CHANGE: use helper
     return m_malloc_helper(num_bytes, M_MALLOC_COLLECT | M_MALLOC_WITH_FINALISER);
+}
 #endif
 
 void *m_malloc0(size_t num_bytes) {
-    // CIRCUITPY-CHANGE
-    return m_malloc_helper(num_bytes, M_MALLOC_ENSURE_ZEROED | M_MALLOC_RAISE_ERROR | M_MALLOC_COLLECT);
+    // CIRCUITPY-CHANGE: use helper
+    return m_malloc_helper(num_bytes,
+     (MICROPY_GC_CONSERVATIVE_CLEAR ? 0 : M_MALLOC_ENSURE_ZEROED)
+     | M_MALLOC_RAISE_ERROR | M_MALLOC_COLLECT);
 }
 
-// CIRCUITPY-CHANGE: selective collect
+// CIRCUITPY-CHANGE: add selective collect
 void *m_malloc_without_collect(size_t num_bytes) {
     return m_malloc_helper(num_bytes, M_MALLOC_RAISE_ERROR);
 }
 
-// CIRCUITPY-CHANGE: selective collect
+// CIRCUITPY-CHANGE: add selective collect
 void *m_malloc_maybe_without_collect(size_t num_bytes) {
 
     return m_malloc_helper(num_bytes, 0);

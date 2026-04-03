@@ -226,9 +226,13 @@ typedef enum {
 
 // Helper to compute `num * (10.0 ** dec_exp)`
 mp_large_float_t mp_decimal_exp(mp_large_float_t num, int dec_exp) {
+    // CIRCUITPY-CHANGE: ignore float equal warning
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wfloat-equal"
     if (dec_exp == 0 || num == (mp_large_float_t)(0.0)) {
         return num;
     }
+    #pragma GCC diagnostic pop
 
     #if MICROPY_FLOAT_FORMAT_IMPL == MICROPY_FLOAT_FORMAT_IMPL_EXACT
 

@@ -300,7 +300,7 @@ static void memoryview_attr(mp_obj_t self_in, qstr attr, mp_obj_t *dest) {
         mp_obj_array_t *self = MP_OBJ_TO_PTR(self_in);
         dest[0] = MP_OBJ_NEW_SMALL_INT(mp_binary_get_size('@', self->typecode & TYPECODE_MASK, NULL));
     }
-    // CIRCUITPY-CHANGE: prevent warning
+    // CIRCUITPY-CHANGE: add MICROPY_CPYTHON_COMPAT
     #if MICROPY_PY_BUILTINS_BYTES_HEX || MICROPY_CPYTHON_COMPAT
     else {
         // Need to forward to locals dict.
@@ -500,35 +500,37 @@ static mp_obj_t array_extend(mp_obj_t self_in, mp_obj_t arg_in) {
         return mp_const_none;
     }
 
-        // convert byte count to element count
-        size_t len = arg_bufinfo.len / sz;
+    size_t sz = mp_binary_get_size('@', self->typecode, NULL);
 
-        // make sure we have enough room to extend
-        // TODO: alloc policy; at the moment we go conservative
-        if (self->free < len) {
-            self->items = m_renew(byte, self->items, (self->len + self->free) * sz, (self->len + len) * sz);
-            self->free = 0;
-        } else {
-            self->free -= len;
+    // convert byte count to element count
+    size_t len = arg_bufinfo.len / sz;
+
+    // make sure we have enough room to extend
+    // TODO: alloc policy; at the moment we go conservative
+    if (self->free < len) {
+        self->items = m_renew(byte, self->items, (self->len + self->free) * sz, (self->len + len) * sz);
+        self->free = 0;
+
+        if (self_in == arg_in) {
+            // Get arg_bufinfo again in case self->items has moved
+            //
+            // (Note not possible to handle case that arg_in is a memoryview into self)
+            mp_get_buffer_raise(arg_in, &arg_bufinfo, MP_BUFFER_READ);
         }
-
-        // extend
-        mp_seq_copy((byte *)self->items + self->len * sz, arg_bufinfo.buf, len * sz, byte);
-        self->len += len;
     } else {
-        // Otherwise argument must be an iterable of items to append
-        mp_obj_t iterable = mp_getiter(arg_in, NULL);
-        mp_obj_t item;
-        while ((item = mp_iternext(iterable)) != MP_OBJ_STOP_ITERATION) {
-            array_append(self_in, item);
-        }
+        self->free -= len;
     }
+
+    // extend
+    mp_seq_copy((byte *)self->items + self->len * sz, arg_bufinfo.buf, len * sz, byte);
+    self->len += len;
+
     return mp_const_none;
 }
 MP_DEFINE_CONST_FUN_OBJ_2(mp_obj_array_extend_obj, array_extend);
 #endif
 
-// CIRCUITPY-CHANGE: buffer_finder used belo
+// CIRCUITPY-CHANGE: buffer_finder used below
 #if MICROPY_PY_BUILTINS_BYTEARRAY && MICROPY_CPYTHON_COMPAT
 static mp_obj_t buffer_finder(size_t n_args, const mp_obj_t *args, int direction, bool is_index) {
     mp_check_self(mp_obj_is_type(args[0], &mp_type_bytearray));
@@ -564,12 +566,9 @@ static mp_obj_t buffer_finder(size_t n_args, const mp_obj_t *args, int direction
         } else {
             return MP_OBJ_NEW_SMALL_INT(-1);
         }
-    } else {
-        self->free -= len;
     }
     return MP_OBJ_NEW_SMALL_INT(p - (const byte *)haystack_bufinfo.buf);
 }
-
 // CIRCUITPY-CHANGE: provides find, rfind, index
 static mp_obj_t buffer_find(size_t n_args, const mp_obj_t *args) {
     return buffer_finder(n_args, args, 1, false);

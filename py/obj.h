@@ -871,7 +871,7 @@ extern const mp_obj_type_t mp_type_bytearray;
 extern const mp_obj_type_t mp_type_memoryview;
 extern const mp_obj_type_t mp_type_float;
 extern const mp_obj_type_t mp_type_complex;
-// CIRCUITPY-CHANGE
+// CIRCUITPY-CHANGE: add traceback support
 extern const mp_obj_type_t mp_type_traceback;
 extern const mp_obj_type_t mp_type_tuple;
 extern const mp_obj_type_t mp_type_list;
@@ -933,7 +933,7 @@ extern const mp_obj_type_t mp_type_ImportError;
 extern const mp_obj_type_t mp_type_IndentationError;
 extern const mp_obj_type_t mp_type_IndexError;
 extern const mp_obj_type_t mp_type_KeyboardInterrupt;
-// CIRCUITPY-CHANGE
+// CIRCUITPY-CHANGE: add ReloadException
 extern const mp_obj_type_t mp_type_ReloadException;
 extern const mp_obj_type_t mp_type_KeyError;
 extern const mp_obj_type_t mp_type_LookupError;
@@ -941,9 +941,9 @@ extern const mp_obj_type_t mp_type_MemoryError;
 extern const mp_obj_type_t mp_type_NameError;
 extern const mp_obj_type_t mp_type_NotImplementedError;
 extern const mp_obj_type_t mp_type_OSError;
-// CIRCUITPY-CHANGE
+// CIRCUITPY-CHANGE: add ConnectionError
 extern const mp_obj_type_t mp_type_ConnectionError;
-// CIRCUITPY-CHANGE
+// CIRCUITPY-CHANGE: add BrokenPipeError
 extern const mp_obj_type_t mp_type_BrokenPipeError;
 extern const mp_obj_type_t mp_type_OverflowError;
 extern const mp_obj_type_t mp_type_RuntimeError;
@@ -951,6 +951,8 @@ extern const mp_obj_type_t mp_type_StopAsyncIteration;
 extern const mp_obj_type_t mp_type_StopIteration;
 extern const mp_obj_type_t mp_type_SyntaxError;
 extern const mp_obj_type_t mp_type_SystemExit;
+// CIRCUITPY-CHANGE: add TimeoutError
+extern const mp_obj_type_t mp_type_TimeoutError;
 extern const mp_obj_type_t mp_type_TypeError;
 extern const mp_obj_type_t mp_type_UnicodeError;
 extern const mp_obj_type_t mp_type_ValueError;
@@ -1075,10 +1077,10 @@ mp_obj_t mp_obj_new_str_from_utf8_vstr(vstr_t *vstr); // input data must be vali
 #endif
 mp_obj_t mp_obj_new_bytes_from_vstr(vstr_t *vstr);
 mp_obj_t mp_obj_new_bytes(const byte *data, size_t len);
-// CIRCUITPY-CHANGE
+// CIRCUITPY-CHANGE: new routine
 mp_obj_t mp_obj_new_bytes_of_zeros(size_t len);
 mp_obj_t mp_obj_new_bytearray(size_t n, const void *items);
-// CIRCUITPY-CHANGE
+// CIRCUITPY-CHANGE: new routine
 mp_obj_t mp_obj_new_bytearray_of_zeros(size_t n);
 mp_obj_t mp_obj_new_bytearray_by_ref(size_t n, void *items);
 #if MICROPY_PY_BUILTINS_FLOAT
@@ -1114,7 +1116,7 @@ mp_obj_t mp_obj_new_memoryview(byte typecode, size_t nitems, void *items);
 
 const mp_obj_type_t *mp_obj_get_type(mp_const_obj_t o_in);
 const char *mp_obj_get_type_str(mp_const_obj_t o_in);
-// CIRCUITPY-CHANGE
+// CIRCUITPY-CHANGE: new routine
 #define mp_obj_get_type_qstr(o_in) (mp_obj_get_type((o_in))->name)
 bool mp_obj_is_subclass_fast(mp_const_obj_t object, mp_const_obj_t classinfo); // arguments should be type objects
 mp_obj_t mp_obj_cast_to_native_base(mp_obj_t self_in, mp_const_obj_t native_type);
@@ -1122,7 +1124,7 @@ mp_obj_t mp_obj_cast_to_native_base(mp_obj_t self_in, mp_const_obj_t native_type
 void mp_obj_print_helper(const mp_print_t *print, mp_obj_t o_in, mp_print_kind_t kind);
 void mp_obj_print(mp_obj_t o, mp_print_kind_t kind);
 void mp_obj_print_exception(const mp_print_t *print, mp_obj_t exc);
-// CIRCUITPY-CHANGE
+// CIRCUITPY-CHANGE: new routine
 void mp_obj_print_exception_with_limit(const mp_print_t *print, mp_obj_t exc, mp_int_t limit);
 
 bool mp_obj_is_true(mp_obj_t arg);
@@ -1187,7 +1189,7 @@ bool mp_obj_exception_match(mp_obj_t exc, mp_const_obj_t exc_type);
 void mp_obj_exception_clear_traceback(mp_obj_t self_in);
 void mp_obj_exception_add_traceback(mp_obj_t self_in, qstr file, size_t line, qstr block);
 void mp_obj_exception_get_traceback(mp_obj_t self_in, size_t *n, size_t **values);
-// CIRCUITPY-CHANGE
+// CIRCUITPY-CHANGE: new routine
 mp_obj_t mp_obj_exception_get_traceback_obj(mp_obj_t self_in);
 mp_obj_t mp_obj_exception_get_value(mp_obj_t self_in);
 mp_obj_t mp_obj_exception_make_new(const mp_obj_type_t *type_in, size_t n_args, size_t n_kw, const mp_obj_t *args);
@@ -1264,7 +1266,7 @@ void mp_obj_tuple_del(mp_obj_t self_in);
 mp_int_t mp_obj_tuple_hash(mp_obj_t self_in);
 
 // list
-// CIRCUITPY-CHANGE
+// CIRCUITPY-CHANGE: public routine
 mp_obj_t mp_obj_list_clear(mp_obj_t self_in);
 mp_obj_t mp_obj_list_append(mp_obj_t self_in, mp_obj_t arg);
 mp_obj_t mp_obj_list_remove(mp_obj_t self_in, mp_obj_t value);
@@ -1360,7 +1362,7 @@ typedef struct _mp_rom_obj_static_class_method_t {
 } mp_rom_obj_static_class_method_t;
 
 // property
-// CIRCUITPY-CHANGE
+// CIRCUITPY-CHANGE: extra args
 const mp_obj_t *mp_obj_property_get(mp_obj_t self_in, size_t *n_proxy);
 
 // sequence helpers

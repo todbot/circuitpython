@@ -2384,7 +2384,6 @@ typedef time_t mp_timestamp_t;
 #ifndef MP_NORETURN
 #define MP_NORETURN __attribute__((noreturn))
 #endif
-#endif // INT_FMT
 
 #if !MICROPY_PREVIEW_VERSION_2
 #define NORETURN MP_NORETURN
@@ -2433,6 +2432,11 @@ typedef time_t mp_timestamp_t;
 // unlikely. Section names are `.text.unlikely` for use in linker scripts.
 #ifndef MP_COLD
 #define MP_COLD __attribute__((cold))
+#endif
+
+// CIRCUITPY-CHANGE: avoid undefined warnings
+#ifndef MICROPY_HAL_HAS_STDIO_MODE_SWITCH
+#define MICROPY_HAL_HAS_STDIO_MODE_SWITCH (0)
 #endif
 
 // To annotate that code is unreachable

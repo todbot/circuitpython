@@ -35,7 +35,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stddef.h>
-#if __cplusplus // Required on at least one compiler to get ULLONG_MAX
+// CIRCUITPY-CHANGE: #ifdef instead of #if
+#ifdef __cplusplus // Required on at least one compiler to get ULLONG_MAX
 #include <climits>
 #else
 #include <limits.h>
@@ -84,7 +85,8 @@ typedef unsigned int uint;
 #if defined(_MSC_VER) || defined(__cplusplus)
 #define MP_STATIC_ASSERT_NONCONSTEXPR(cond) ((void)1)
 #else
-// CIRCUITPY-CHANGE: defined()#if defined(__clang__)
+// CIRCUITPY-CHANGE: defined()
+#if defined(__clang__)
 #pragma GCC diagnostic ignored "-Wgnu-folding-constant"
 #endif
 #define MP_STATIC_ASSERT_NONCONSTEXPR(cond) ((void)sizeof(char[1 - 2 * !(cond)]))
@@ -456,8 +458,6 @@ static inline uint32_t mp_popcount(uint32_t x) {
 #define mp_clzll(x) __builtin_clzll(x)
 #define mp_ctz(x) __builtin_ctz(x)
 #define mp_check(x) (x)
-// CIRCUITPY-CHANGE: defined()
-#if defined __has_builtin
 #if __has_builtin(__builtin_popcount)
 #define mp_popcount(x) __builtin_popcount(x)
 #else

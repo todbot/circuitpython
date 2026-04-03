@@ -208,6 +208,7 @@ mp_obj_t mp_module_get_builtin(qstr module_name, bool extensible) {
         // the old behaviour of the u-prefix being used to force a built-in
         // import.
         // CIRCUITPY-CHANGE: Don't look for `ufoo`.
+        #endif
         return MP_OBJ_NULL;
     }
 

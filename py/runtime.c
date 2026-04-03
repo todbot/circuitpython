@@ -1929,6 +1929,8 @@ MP_COLD MP_NORETURN void mp_raise_NotImplementedError(mp_rom_error_text_t msg) {
     mp_raise_msg(&mp_type_NotImplementedError, msg);
 }
 
+#endif
+
 // CIRCUITPY-CHANGE: added
 MP_COLD MP_NORETURN void mp_raise_NotImplementedError_varg(mp_rom_error_text_t fmt, ...) {
     va_list argptr;

@@ -221,7 +221,7 @@ static mp_obj_t list_subscr(mp_obj_t self_in, mp_obj_t index, mp_obj_t value) {
     if (value == MP_OBJ_NULL) {
         // delete
         // CIRCUITPY-CHANGE: handle subclassing
-        mp_obj_t args[2] = {MP_OBJ_FROM_PTR(self), index};
+        mp_obj_t args[2] = {MP_OBJ_FROM_PTR(self_in), index};
         list_pop(2, args);
         return mp_const_none;
     } else if (value == MP_OBJ_SENTINEL) {
@@ -276,12 +276,11 @@ static mp_obj_t list_extend(mp_obj_t self_in, mp_obj_t arg_in) {
 }
 
 // CIRCUITPY-CHANGE: provide version for C use outside this file
-inline mp_obj_t mp_obj_list_pop(mp_obj_list_t *self_in, size_t index) {
+inline mp_obj_t mp_obj_list_pop(mp_obj_list_t *self, size_t index) {
     if (self->len == 0) {
         // CIRCUITPY-CHANGE: more specific mp_raise
         mp_raise_IndexError_varg(MP_ERROR_TEXT("pop from empty %q"), MP_QSTR_list);
     }
-    size_t index = mp_get_index(self->base.type, self->len, n_args == 1 ? MP_OBJ_NEW_SMALL_INT(-1) : args[1], false);
     mp_obj_t ret = self->items[index];
     self->len -= 1;
     memmove(self->items + index, self->items + index + 1, (self->len - index) * sizeof(mp_obj_t));

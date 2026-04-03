@@ -311,7 +311,8 @@ void asm_xtensa_l32r(asm_xtensa_t *as, mp_uint_t reg, mp_uint_t label);
 #define ASM_XTENSA_REG_TEMPORARY ASM_XTENSA_REG_A6
 #define ASM_XTENSA_REG_TEMPORARY_WIN ASM_XTENSA_REG_A12
 
-#if GENERIC_ASM_API
+// CIRCUITPY-CHANGE: prevent #if warning
+#if defined(GENERIC_ASM_API) && GENERIC_ASM_API
 
 // The following macros provide a (mostly) arch-independent API to
 // generate native code, and are used by the native emitter.

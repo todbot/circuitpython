@@ -17,6 +17,10 @@
 // Always 1: defined in circuitpy_mpconfig.mk
 // #define CIRCUITPY (1)
 
+#ifndef MP_SSIZE_MAX
+#define MP_SSIZE_MAX (0x7fffffff)
+#endif
+
 // REPR_C encodes qstrs, 31-bit ints, and 30-bit floats in a single 32-bit word.
 #ifndef MICROPY_OBJ_REPR
 #define MICROPY_OBJ_REPR            (MICROPY_OBJ_REPR_C)
@@ -303,12 +307,10 @@ typedef long mp_off_t;
 
 #ifdef LONGINT_IMPL_MPZ
 #define MICROPY_LONGINT_IMPL (MICROPY_LONGINT_IMPL_MPZ)
-#define MP_SSIZE_MAX (0x7fffffff)
 #endif
 
 #ifdef LONGINT_IMPL_LONGLONG
 #define MICROPY_LONGINT_IMPL (MICROPY_LONGINT_IMPL_LONGLONG)
-#define MP_SSIZE_MAX (0x7fffffff)
 #endif
 
 #ifndef MICROPY_PY_REVERSE_SPECIAL_METHODS
