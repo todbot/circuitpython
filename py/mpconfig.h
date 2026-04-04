@@ -2434,11 +2434,6 @@ typedef time_t mp_timestamp_t;
 #define MP_COLD __attribute__((cold))
 #endif
 
-// CIRCUITPY-CHANGE: avoid undefined warnings
-#ifndef MICROPY_HAL_HAS_STDIO_MODE_SWITCH
-#define MICROPY_HAL_HAS_STDIO_MODE_SWITCH (0)
-#endif
-
 // To annotate that code is unreachable
 #ifndef MP_UNREACHABLE
 #if defined(__GNUC__)

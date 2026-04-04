@@ -50,7 +50,7 @@ INC += -I$(BUILD)
 # compiler settings
 CWARN = -Wall -Werror
 // CIRCUITPY-CHANGE: add  -Wno-missing-field-initializers
-CWARN += -Wextra -Wno-unused-parameter -Wpointer-arith -Wdouble-promotion -Wfloat-conversion
+CWARN += -Wextra -Wno-unused-parameter -Wpointer-arith -Wdouble-promotion -Wfloat-conversion -Wno-missing-field-initializers
 CFLAGS += $(INC) $(CWARN) -std=gnu99 -DUNIX $(COPT) -I$(VARIANT_DIR) $(CFLAGS_EXTRA)
 
 # Force the use of 64-bits for file sizes in C library functions on 32-bit platforms.

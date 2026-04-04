@@ -269,14 +269,18 @@ static inline int convert_pyexec_result(int ret) {
 }
 
 static int do_file(const char *file) {
-    return convert_pyexec_result(pyexec_file(file));
+    // CIRCUITPY-CHANGE: pyexec_file result arg
+    pyexec_result_t pyexec_result;
+    return convert_pyexec_result(pyexec_file(file, &pyexec_result));
 }
 
 static int do_str(const char *str) {
     vstr_t vstr;
     vstr.buf = (char *)str;
     vstr.len = strlen(str);
-    int ret = pyexec_vstr(&vstr, true);
+    // CIRCUITPY-CHANGE: pyexec_vstr result arg
+    pyexec_result_t pyexec_result;
+    int ret = pyexec_vstr(&vstr, true, &pyexec_result);
     return convert_pyexec_result(ret);
 }
 

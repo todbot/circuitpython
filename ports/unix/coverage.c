@@ -185,6 +185,8 @@ static void pairheap_test(size_t nops, int *ops) {
     mp_printf(&mp_plat_print, "\n");
 }
 
+// CIRCUITPY-CHANGE: not turned on in CircuitPython
+#if MICROPY_SCHEDULER_STATIC_NODES
 static mp_sched_node_t mp_coverage_sched_node;
 static bool coverage_sched_function_continue;
 
@@ -196,6 +198,7 @@ static void coverage_sched_function(mp_sched_node_t *node) {
         mp_sched_schedule_node(&mp_coverage_sched_node, coverage_sched_function);
     }
 }
+#endif
 
 // function to run extra tests for things that can't be checked by scripts
 static mp_obj_t extra_coverage(void) {
@@ -589,6 +592,22 @@ static mp_obj_t extra_coverage(void) {
             mp_obj_print_exception(&mp_plat_print, MP_OBJ_FROM_PTR(nlr.ret_val));
         }
 
+        // mp_obj_get_uint from a non-int object (should raise exception)
+        if (nlr_push(&nlr) == 0) {
+            mp_obj_get_uint(mp_const_none);
+            nlr_pop();
+        } else {
+            mp_obj_print_exception(&mp_plat_print, MP_OBJ_FROM_PTR(nlr.ret_val));
+        }
+
+        // mp_obj_int_get_ll from a non-int object (should raise exception)
+        if (nlr_push(&nlr) == 0) {
+            mp_obj_get_ll(mp_const_none);
+            nlr_pop();
+        } else {
+            mp_obj_print_exception(&mp_plat_print, MP_OBJ_FROM_PTR(nlr.ret_val));
+        }
+
         // call mp_obj_new_exception_args (it's a part of the public C API and not used in the core)
         mp_obj_print_exception(&mp_plat_print, mp_obj_new_exception_args(&mp_type_ValueError, 0, NULL));
     }
@@ -596,26 +615,6 @@ static mp_obj_t extra_coverage(void) {
     // warning
     {
         mp_emitter_warning(MP_PASS_CODE_SIZE, "test");
-    }
-
-    // format float
-    {
-        mp_printf(&mp_plat_print, "# format float\n");
-
-        // format with inadequate buffer size
-        char buf[5];
-        mp_format_float(1, buf, sizeof(buf), 'g', 0, '+');
-        mp_printf(&mp_plat_print, "%s\n", buf);
-
-        // format with just enough buffer so that precision must be
-        // set from 0 to 1 twice
-        char buf2[8];
-        mp_format_float(1, buf2, sizeof(buf2), 'g', 0, '+');
-        mp_printf(&mp_plat_print, "%s\n", buf2);
-
-        // format where precision is trimmed to avoid buffer overflow
-        mp_format_float(1, buf2, sizeof(buf2), 'e', 0, '+');
-        mp_printf(&mp_plat_print, "%s\n", buf2);
     }
 
     // binary
@@ -641,14 +640,26 @@ static mp_obj_t extra_coverage(void) {
         fun_bc.context = &context;
         fun_bc.child_table = NULL;
         fun_bc.bytecode = (const byte *)"\x01"; // just needed for n_state
+        #if MICROPY_PY_SYS_SETTRACE
+        struct _mp_raw_code_t rc = {};
+        fun_bc.rc = &rc;
+        #endif
         mp_code_state_t *code_state = m_new_obj_var(mp_code_state_t, state, mp_obj_t, 1);
         code_state->fun_bc = &fun_bc;
         code_state->ip = (const byte *)"\x00"; // just needed for an invalid opcode
         code_state->sp = &code_state->state[0];
         code_state->exc_sp_idx = 0;
         code_state->old_globals = NULL;
+        #if MICROPY_STACKLESS
+        code_state->prev = NULL;
+        #endif
+        #if MICROPY_PY_SYS_SETTRACE
+        code_state->prev_state = NULL;
+        code_state->frame = NULL;
+        #endif
+
         mp_vm_return_kind_t ret = mp_execute_bytecode(code_state, MP_OBJ_NULL);
-        mp_printf(&mp_plat_print, "%d %d\n", ret, mp_obj_get_type(code_state->state[0]) == &mp_type_NotImplementedError);
+        mp_printf(&mp_plat_print, "%d %d\n", (int)ret, mp_obj_get_type(code_state->state[0]) == &mp_type_NotImplementedError);
     }
 
     // scheduler
@@ -705,9 +716,25 @@ static mp_obj_t extra_coverage(void) {
             mp_obj_print_exception(&mp_plat_print, MP_OBJ_FROM_PTR(nlr.ret_val));
         }
         mp_handle_pending(true);
+
+        // CIRCUITPY-CHANGE: not turned on in CircuitPython
+        #if MICROPY_SCHEDULER_STATIC_NODES
+        coverage_sched_function_continue = true;
+        mp_sched_schedule_node(&mp_coverage_sched_node, coverage_sched_function);
+        for (int i = 0; i < 3; ++i) {
+            mp_printf(&mp_plat_print, "loop\n");
+            mp_handle_pending(true);
+        }
+        // Clear this flag to prevent the function scheduling itself again
+        coverage_sched_function_continue = false;
+        // Will only run the first time through this loop, then not scheduled again
+        for (int i = 0; i < 3; ++i) {
+            mp_handle_pending(true);
+        }
+        #endif
     }
 
-    // CIRCUITPY-CHANGE: ringbuf is different
+    // CIRCUITPY-CHANGE: ringbuf is quite different
     // ringbuf
     {
         #define RINGBUF_SIZE 99
@@ -719,7 +746,7 @@ static mp_obj_t extra_coverage(void) {
         mp_printf(&mp_plat_print, "# ringbuf\n");
 
         // Single-byte put/get with empty ringbuf.
-        mp_printf(&mp_plat_print, "%d %d\n", (int)ringbuf_free(&ringbuf), (int)ringbuf_num_filled(&ringbuf));
+        mp_printf(&mp_plat_print, "%d %d\n", (int)ringbuf_num_empty(&ringbuf), (int)ringbuf_num_filled(&ringbuf));
         ringbuf_put(&ringbuf, 22);
         mp_printf(&mp_plat_print, "%d %d\n", (int)ringbuf_num_empty(&ringbuf), (int)ringbuf_num_filled(&ringbuf));
         mp_printf(&mp_plat_print, "%d\n", ringbuf_get(&ringbuf));

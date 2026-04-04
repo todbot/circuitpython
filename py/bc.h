@@ -304,7 +304,7 @@ static inline void mp_module_context_alloc_tables(mp_module_context_t *context, 
     size_t nq = (n_qstr * sizeof(qstr_short_t) + sizeof(mp_uint_t) - 1) / sizeof(mp_uint_t);
     size_t no = n_obj;
     // CIRCUITPY-CHANGE
-    mp_uint_t *mem = m_malloc_items(nq + no);
+    mp_uint_t *mem = (mp_uint_t *)m_malloc_items(nq + no);
     context->constants.qstr_table = (qstr_short_t *)mem;
     context->constants.obj_table = (mp_obj_t *)(mem + nq);
     #else
