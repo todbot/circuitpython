@@ -248,6 +248,34 @@ CONNECTORS = {
         "D1",
         "D0",
     ],
+    "raspberrypi,pico-header": [
+        "GP0",
+        "GP1",
+        "GP2",
+        "GP3",
+        "GP4",
+        "GP5",
+        "GP6",
+        "GP7",
+        "GP8",
+        "GP9",
+        "GP10",
+        "GP11",
+        "GP12",
+        "GP13",
+        "GP14",
+        "GP15",
+        "GP16",
+        "GP17",
+        "GP18",
+        "GP19",
+        "GP20",
+        "GP21",
+        "GP22",
+        ["GP26_A0", "GP26", "A0"],
+        ["GP27_A1", "GP27", "A1"],
+        ["GP28_A2", "GP28", "A2"],
+    ],
 }
 
 EXCEPTIONAL_DRIVERS = ["entropy", "gpio", "led"]
@@ -594,7 +622,11 @@ def zephyr_dts_to_cp_board(board_id, portdir, builddir, zephyrbuilddir):  # noqa
                     num = int.from_bytes(gpio_map.value[offset + 4 : offset + 8], "big")
                     if (label, num) not in board_names:
                         board_names[(label, num)] = []
-                    board_names[(label, num)].append(connector_pins[i])
+                    pin_entry = connector_pins[i]
+                    if isinstance(pin_entry, list):
+                        board_names[(label, num)].extend(pin_entry)
+                    else:
+                        board_names[(label, num)].append(pin_entry)
                     i += 1
         if "gpio-leds" in compatible:
             for led in node.nodes:

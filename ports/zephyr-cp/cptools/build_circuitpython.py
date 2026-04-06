@@ -288,6 +288,8 @@ def determine_enabled_modules(board_info, portdir, srcdir):
     network_enabled = board_info.get("wifi", False) or board_info.get("hostnetwork", False)
 
     if network_enabled:
+        enabled_modules.add("ipaddress")
+        module_reasons["ipaddress"] = "Zephyr networking enabled"
         enabled_modules.add("socketpool")
         module_reasons["socketpool"] = "Zephyr networking enabled"
         enabled_modules.add("hashlib")
