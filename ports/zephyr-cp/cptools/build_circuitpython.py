@@ -60,6 +60,7 @@ DEFAULT_MODULES = [
     "errno",
     "io",
     "math",
+    "msgpack",
 ]
 # Flags that don't match with with a *bindings module. Some used by adafruit_requests
 MPCONFIG_FLAGS = ["array", "errno", "io", "json", "math"]
