@@ -23,6 +23,7 @@ MANUAL_COMPAT_TO_DRIVER = {
     "nordic_nrf_twi": "i2c",
     "nordic_nrf_spim": "spi",
     "nordic_nrf_spi": "spi",
+    "nordic_nrf_i2s": "i2s",
 }
 
 # These are controllers, not the flash devices themselves.
@@ -33,6 +34,8 @@ BLOCKED_FLASH_COMPAT = (
 )
 
 BUSIO_CLASSES = {"serial": "UART", "i2c": "I2C", "spi": "SPI"}
+
+AUDIOBUSIO_CLASSES = {"i2s": "I2SOut"}
 
 CONNECTORS = {
     "mikro-bus": [
@@ -439,6 +442,7 @@ def zephyr_dts_to_cp_board(board_id, portdir, builddir, zephyrbuilddir):  # noqa
         "usb_device": False,
         "_bleio": False,
         "hostnetwork": board_id in ["native_sim"],
+        "audiobusio": False,
     }
 
     config_bt_enabled = False
@@ -573,6 +577,13 @@ def zephyr_dts_to_cp_board(board_id, portdir, builddir, zephyrbuilddir):  # noqa
                 board_info["wifi"] = True
             elif driver == "bluetooth/hci":
                 ble_hardware_present = True
+            elif driver in AUDIOBUSIO_CLASSES:
+                # audiobusio driver (i2s, audio/dmic)
+                board_info["audiobusio"] = True
+                logger.info(f"Supported audiobusio driver: {driver}")
+                if driver not in active_zephyr_devices:
+                    active_zephyr_devices[driver] = []
+                active_zephyr_devices[driver].append(node.labels)
             elif driver in EXCEPTIONAL_DRIVERS:
                 pass
             elif driver in BUSIO_CLASSES:
@@ -705,15 +716,25 @@ def zephyr_dts_to_cp_board(board_id, portdir, builddir, zephyrbuilddir):  # noqa
     zephyr_binding_headers = []
     zephyr_binding_objects = []
     zephyr_binding_labels = []
+    i2sout_instance_names = []
     for driver, instances in active_zephyr_devices.items():
-        driverclass = BUSIO_CLASSES[driver]
-        zephyr_binding_headers.append(f'#include "shared-bindings/busio/{driverclass}.h"')
+        # Determine if this is busio or audiobusio
+        if driver in BUSIO_CLASSES:
+            module = "busio"
+            driverclass = BUSIO_CLASSES[driver]
+        elif driver in AUDIOBUSIO_CLASSES:
+            module = "audiobusio"
+            driverclass = AUDIOBUSIO_CLASSES[driver]
+        else:
+            continue
 
-        # Designate a main bus such as board.I2C.
+        zephyr_binding_headers.append(f'#include "shared-bindings/{module}/{driverclass}.h"')
+
+        # Designate a main device such as board.I2C or board.I2S.
         if len(instances) == 1:
             instances[0].append(driverclass)
         else:
-            # Check to see if a main bus has already been designated
+            # Check to see if a main device has already been designated
             found_main = False
             for labels in instances:
                 for label in labels:
@@ -729,23 +750,28 @@ def zephyr_dts_to_cp_board(board_id, portdir, builddir, zephyrbuilddir):  # noqa
                     if found_main:
                         break
         for labels in instances:
-            instance_name = f"{driver}_{labels[0]}"
+            instance_name = f"{driver.replace('/', '_')}_{labels[0]}"
             c_function_name = f"_{instance_name}"
             singleton_ptr = f"{c_function_name}_singleton"
             function_object = f"{c_function_name}_obj"
-            busio_type = f"busio_{driverclass.lower()}"
+            obj_type = f"{module}_{driverclass.lower()}"
 
-            # UART needs a receiver buffer
+            # Handle special cases for different drivers
             if driver == "serial":
+                # UART needs a receiver buffer
                 buffer_decl = f"static byte {instance_name}_buffer[128];"
                 construct_call = f"common_hal_busio_uart_construct_from_device(&{instance_name}_obj, DEVICE_DT_GET(DT_NODELABEL({labels[0]})), 128, {instance_name}_buffer)"
             else:
+                # Default case (I2C, SPI, I2S)
                 buffer_decl = ""
-                construct_call = f"common_hal_busio_{driverclass.lower()}_construct_from_device(&{instance_name}_obj, DEVICE_DT_GET(DT_NODELABEL({labels[0]})))"
+                construct_call = f"common_hal_{module}_{driverclass.lower()}_construct_from_device(&{instance_name}_obj, DEVICE_DT_GET(DT_NODELABEL({labels[0]})))"
+
+            if driver == "i2s":
+                i2sout_instance_names.append(instance_name)
 
             zephyr_binding_objects.append(
                 f"""{buffer_decl}
-static {busio_type}_obj_t {instance_name}_obj;
+static {obj_type}_obj_t {instance_name}_obj;
 static mp_obj_t {singleton_ptr} = mp_const_none;
 static mp_obj_t {c_function_name}(void) {{
     if ({singleton_ptr} != mp_const_none) {{
@@ -763,6 +789,18 @@ static MP_DEFINE_CONST_FUN_OBJ_0({function_object}, {c_function_name});""".lstri
     zephyr_binding_headers = "\n".join(zephyr_binding_headers)
     zephyr_binding_objects = "\n".join(zephyr_binding_objects)
     zephyr_binding_labels = "\n".join(zephyr_binding_labels)
+
+    # Generate i2sout_reset() that stops all board I2SOut instances
+    if i2sout_instance_names:
+        stop_calls = "\n    ".join(
+            f"common_hal_audiobusio_i2sout_stop(&{name}_obj);" for name in i2sout_instance_names
+        )
+        i2sout_reset_func = f"""
+void i2sout_reset(void) {{
+    {stop_calls}
+}}"""
+    else:
+        i2sout_reset_func = ""
 
     zephyr_display_header = ""
     zephyr_display_object = ""
@@ -889,6 +927,7 @@ const size_t circuitpy_max_ram_size = {max_size};
 
 {zephyr_binding_objects}
 {zephyr_display_object}
+{i2sout_reset_func}
 
 static const mp_rom_map_elem_t mcu_pin_globals_table[] = {{
 {mcu_pin_mapping}
@@ -925,4 +964,9 @@ MP_DEFINE_CONST_DICT(board_module_globals, board_module_globals_table);
     board_info["flash_count"] = len(flashes)
     board_info["rotaryio"] = bool(ioports)
     board_info["usb_num_endpoint_pairs"] = usb_num_endpoint_pairs
+
+    # Detect NVM partition from the device tree.
+    nvm_node = device_tree.label2node.get("nvm_partition")
+    board_info["nvm"] = nvm_node is not None
+
     return board_info
