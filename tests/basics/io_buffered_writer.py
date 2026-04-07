@@ -1,7 +1,6 @@
 try:
     import io
 
-try:
     io.BytesIO
     io.BufferedWriter
 except (AttributeError, ImportError):

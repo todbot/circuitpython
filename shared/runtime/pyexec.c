@@ -118,7 +118,7 @@ static int parse_compile_execute(const void *source, mp_parse_input_kind_t input
                 // source is a lexer, parse and compile the script
                 qstr source_name = lex->source_name;
                 // CIRCUITPY-CHANGE
-                #if MICROPY_PY___FILE__
+                #if MICROPY_MODULE___FILE__
                 if (input_kind == MP_PARSE_FILE_INPUT) {
                     mp_store_global(MP_QSTR___file__, MP_OBJ_NEW_QSTR(source_name));
                 }

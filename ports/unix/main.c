@@ -768,7 +768,14 @@ MP_NOINLINE int main_(int argc, char **argv) {
     #endif
 
     // printf("total bytes = %d\n", m_get_total_bytes_allocated());
-    return ret & 0xff;
+
+    // CIRCUITPY-CHANGE: handle PYEXEC_EXCEPTION
+    if (ret & PYEXEC_EXCEPTION) {
+        // Return exit status code 1 so the invoker knows there was an uncaught exception.
+        return 1;
+    } else {
+        return ret & 0xff;
+    }
 }
 
 void nlr_jump_fail(void *val) {
