@@ -14,7 +14,7 @@ for x in (
 
 # CIRCUITPY-CHANGE
 # Unicode strings can be decoded
-print(binascii.unhexlify("313233344142434461626364"))
+print(unhexlify("313233344142434461626364"))
 
 try:
     a = unhexlify(b"0")  # odd buffer length
