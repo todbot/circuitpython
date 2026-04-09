@@ -25,7 +25,7 @@ MP_DEFINE_CONST_OBJ_TYPE(
     MP_QSTR_display,
     MP_TYPE_FLAG_HAS_SPECIAL_ACCESSORS | ~MP_TYPE_FLAG_BINDS_SELF,
     locals_dict, &lut_update_dict
-);
+    );
 
 static const mp_rom_map_elem_t board_module_globals_table[] = {
     CIRCUITPYTHON_BOARD_DICT_STANDARD_ITEMS

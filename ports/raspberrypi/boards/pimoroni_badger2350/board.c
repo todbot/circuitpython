@@ -41,7 +41,7 @@ static const uint8_t _sw_pin_nrs[] = {
 
 // Mask of all front button pins
 #define SW_MASK ((1 << SW_A_PIN) | (1 << SW_B_PIN) | (1 << SW_C_PIN) | \
-                 (1 << SW_DOWN_PIN) | (1 << SW_UP_PIN))
+    (1 << SW_DOWN_PIN) | (1 << SW_UP_PIN))
 
 // This function runs BEFORE main() via constructor attribute!
 // This is the key to fast button state detection.
@@ -50,38 +50,38 @@ static const uint8_t _sw_pin_nrs[] = {
 static void preinit_button_state(void) {
     // Configure button pins as inputs with pull-downs using direct register access
     // This is faster than SDK functions and works before full init
-    
+
     for (size_t i = 0; i < sizeof(_sw_pin_nrs); i++) {
         uint8_t pin_nr = _sw_pin_nrs[i];
         // Set as input
         sio_hw->gpio_oe_clr = 1u << pin_nr;
         // enable pull-ups
-        pads_bank0_hw->io[pin_nr] = PADS_BANK0_GPIO0_IE_BITS | 
-                                       PADS_BANK0_GPIO0_PUE_BITS;
+        pads_bank0_hw->io[pin_nr] = PADS_BANK0_GPIO0_IE_BITS |
+            PADS_BANK0_GPIO0_PUE_BITS;
         // Set GPIO function
         iobank0_hw->io[pin_nr].ctrl = 5;  // SIO function
     }
-    
+
     // Small delay for pins to settle (just a few cycles)
     for (volatile int i = 0; i < 100; i++) {
         __asm volatile ("nop");
     }
-    
+
     // Capture button states NOW - before anything else runs
     reset_button_state = ~sio_hw->gpio_in & SW_MASK;
 }
 
 static mp_obj_t _get_reset_state(void) {
-   return mp_obj_new_int(reset_button_state);
+    return mp_obj_new_int(reset_button_state);
 }
-MP_DEFINE_CONST_FUN_OBJ_0(get_reset_state_obj,_get_reset_state);
+MP_DEFINE_CONST_FUN_OBJ_0(get_reset_state_obj, _get_reset_state);
 
 static mp_obj_t _on_reset_pressed(mp_obj_t pin_in) {
-   mcu_pin_obj_t *pin = MP_OBJ_TO_PTR(pin_in);
-   return mp_obj_new_bool(
-         (reset_button_state & (1<<pin->number)) != 0);
+    mcu_pin_obj_t *pin = MP_OBJ_TO_PTR(pin_in);
+    return mp_obj_new_bool(
+        (reset_button_state & (1 << pin->number)) != 0);
 }
-MP_DEFINE_CONST_FUN_OBJ_1(on_reset_pressed_obj,_on_reset_pressed);
+MP_DEFINE_CONST_FUN_OBJ_1(on_reset_pressed_obj, _on_reset_pressed);
 
 // The display uses an SSD1680 control chip.
 uint8_t _start_sequence[] = {
@@ -144,15 +144,15 @@ const uint8_t _refresh_sequence[] = {
 #define SPEED_OFFSET_3 124
 
 static mp_obj_t _set_update_speed(mp_obj_t speed_in) {
-   mp_int_t speed = mp_obj_get_int(speed_in);
-   uint8_t count = (uint8_t)3 - (uint8_t)(speed & 3);
-   _start_sequence[SPEED_OFFSET_1] = count;
-   _start_sequence[SPEED_OFFSET_2] = count;
-   _start_sequence[SPEED_OFFSET_3] = count;
-   return mp_const_none;
+    mp_int_t speed = mp_obj_get_int(speed_in);
+    uint8_t count = (uint8_t)3 - (uint8_t)(speed & 3);
+    _start_sequence[SPEED_OFFSET_1] = count;
+    _start_sequence[SPEED_OFFSET_2] = count;
+    _start_sequence[SPEED_OFFSET_3] = count;
+    return mp_const_none;
 }
 
-MP_DEFINE_CONST_FUN_OBJ_1(set_update_speed_obj,_set_update_speed);
+MP_DEFINE_CONST_FUN_OBJ_1(set_update_speed_obj, _set_update_speed);
 
 void board_init(void) {
     // Drive the I2C_POWER_EN pin high
