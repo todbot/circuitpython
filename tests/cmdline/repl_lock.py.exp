@@ -1,5 +1,5 @@
-MicroPython \.\+ version
-Type "help()" for more information.
+
+Adafruit CircuitPython \.\+ version
 >>> import micropython
 >>> micropython.heap_lock()
 >>> 1+1

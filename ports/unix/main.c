@@ -92,7 +92,8 @@ static void stderr_print_strn(void *env, const char *str, size_t len) {
 
 const mp_print_t mp_stderr_print = {NULL, stderr_print_strn};
 
-#define FORCED_EXIT (0x100)
+// CIRCUITPY-CHANGE: be consistent about using PYEXEC_FORCED_EXIT
+// #define FORCED_EXIT (0x100)
 // If exc is SystemExit, return value where FORCED_EXIT bit set,
 // and lower 8 bits are SystemExit value. For all other exceptions,
 // return 1.
@@ -105,7 +106,8 @@ static int handle_uncaught_exception(mp_obj_base_t *exc) {
         if (exit_val != mp_const_none && !mp_obj_get_int_maybe(exit_val, &val)) {
             val = 1;
         }
-        return FORCED_EXIT | (val & 255);
+        // CIRCUITPY-CHANGE: be consistent about using PYEXEC_FORCED_EXIT
+        return PYEXEC_FORCED_EXIT | (val & 255);
     }
 
     // Report all other exceptions
@@ -236,7 +238,8 @@ static int do_repl(void) {
 
         int ret = execute_from_lexer(LEX_SRC_STR, line, MP_PARSE_SINGLE_INPUT, true);
         free(line);
-        if (ret & FORCED_EXIT) {
+        // CIRCUITPY-CHANGE: be consistent about using PYEXEC_FORCED_EXIT
+        if (ret & PYEXEC_FORCED_EXIT) {
             return ret;
         }
     }
