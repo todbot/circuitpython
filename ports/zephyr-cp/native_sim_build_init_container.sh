@@ -4,7 +4,7 @@
 #
 # Usage (inside the container):
 #   cd ~/circuitpython/ports/zephyr-cp
-#   ./first_run.sh
+#   ./native_sim_build_init_container.sh
 #
 # Safe to re-run; west/pip/etc. are idempotent.
 set -euo pipefail
