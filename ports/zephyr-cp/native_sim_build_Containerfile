@@ -12,7 +12,10 @@ RUN dpkg --add-architecture i386 && apt-get update && apt-get install -y --no-in
         protobuf-compiler sudo \
     && rm -rf /var/lib/apt/lists/*
 
-RUN useradd -m -s /bin/bash dev \
+# Remove the default ubuntu:24.04 'ubuntu' user (UID 1000) so 'dev' can take
+# UID 1000 — required for --userns=keep-id to map host UID 1000 to 'dev'.
+RUN userdel -r ubuntu 2>/dev/null || true \
+ && useradd -m -u 1000 -s /bin/bash dev \
  && echo 'dev ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/dev \
  && chmod 440 /etc/sudoers.d/dev
 USER dev

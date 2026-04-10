@@ -9,10 +9,12 @@
 # Safe to re-run; west/pip/etc. are idempotent.
 set -euo pipefail
 
+git config --global --add safe.directory /home/dev/circuitpython
+
 cd "$(dirname "${BASH_SOURCE[0]}")"
 
 echo "==> west init"
-if [ ! -d ../../.west ]; then
+if [ ! -d .west ]; then
     west init -l zephyr-config
 else
     echo "    (already initialized, skipping)"
@@ -34,7 +36,6 @@ echo "==> west sdk install (x86_64-zephyr-elf)"
 west sdk install -t x86_64-zephyr-elf
 
 echo "==> fetch port submodules"
-git config --global --add safe.directory /home/dev/circuitpython
 python ../../tools/ci_fetch_deps.py zephyr-cp
 
 echo
