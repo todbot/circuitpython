@@ -145,8 +145,8 @@ void *m_malloc_with_finaliser(size_t num_bytes) {
 void *m_malloc0(size_t num_bytes) {
     // CIRCUITPY-CHANGE: use helper
     return m_malloc_helper(num_bytes,
-     (MICROPY_GC_CONSERVATIVE_CLEAR ? 0 : M_MALLOC_ENSURE_ZEROED)
-     | M_MALLOC_RAISE_ERROR | M_MALLOC_COLLECT);
+        (MICROPY_GC_CONSERVATIVE_CLEAR ? 0 : M_MALLOC_ENSURE_ZEROED)
+        | M_MALLOC_RAISE_ERROR | M_MALLOC_COLLECT);
 }
 
 // CIRCUITPY-CHANGE: add selective collect

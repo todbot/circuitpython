@@ -599,11 +599,11 @@ int mp_vprintf(const mp_print_t *print, const char *fmt, va_list args) {
                 }
                 // CIRCUITPY-CHANGE: include "0x" for 'p' and 'P'.
                 if (fmt_chr == 'p' || fmt_chr == 'P') {
-                   #if SUPPORT_INT_BASE_PREFIX
-                   chrs += mp_print_int(print, va_arg(args, unsigned long int), 0, 16, 'a', flags | PF_FLAG_SHOW_PREFIX, fill, width);   
-                   #else
-                   chrs += mp_print_strn(print, "0x", 2, flags, fill, width);
-                   #endif
+                    #if SUPPORT_INT_BASE_PREFIX
+                    chrs += mp_print_int(print, va_arg(args, unsigned long int), 0, 16, 'a', flags | PF_FLAG_SHOW_PREFIX, fill, width);
+                    #else
+                    chrs += mp_print_strn(print, "0x", 2, flags, fill, width);
+                    #endif
                 }
                 chrs += mp_print_int(print, val, fmt_chr == 'd', base, fmt_c, flags, fill, width);
                 break;

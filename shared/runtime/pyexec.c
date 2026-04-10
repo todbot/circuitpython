@@ -92,7 +92,7 @@ static int parse_compile_execute(const void *source, mp_parse_input_kind_t input
         // Also make it possible to determine if module_fun was set.
         mp_obj_t module_fun = NULL;
 
-       // CIRCUITPY-CHANGE: add atexit support
+        // CIRCUITPY-CHANGE: add atexit support
         #if CIRCUITPY_ATEXIT
         if (exec_flags & EXEC_FLAG_SOURCE_IS_ATEXIT) {
             atexit_callback_t *callback = (atexit_callback_t *)source;
@@ -148,7 +148,7 @@ static int parse_compile_execute(const void *source, mp_parse_input_kind_t input
         // CIRCUITPY-CHANGE: garbage collect after loading
         // If the code was loaded from a file, collect any garbage before running.
         if (input_kind == MP_PARSE_FILE_INPUT) {
-             gc_collect();
+            gc_collect();
         }
 
         // execute code
@@ -221,11 +221,11 @@ static int parse_compile_execute(const void *source, mp_parse_input_kind_t input
             ret = PYEXEC_FORCED_EXIT;
             #endif
             // CIRCUITPY-CHANGE: support DeepSleepRequest
-            #if CIRCUITPY_ALARM
+        #if CIRCUITPY_ALARM
         } else if (mp_obj_is_subclass_fast(MP_OBJ_FROM_PTR(exception_obj_type), MP_OBJ_FROM_PTR(&mp_type_DeepSleepRequest))) {
             ret = PYEXEC_DEEP_SLEEP;
-            #endif
-            // CIRCUITPY-CHANGE: supprt ReloadException
+        #endif
+            // CIRCUITPY-CHANGE: support ReloadException
         } else if (exception_obj == MP_OBJ_FROM_PTR(&MP_STATE_VM(mp_reload_exception))) {
             ret = PYEXEC_RELOAD;
         } else { // other exception
@@ -247,8 +247,7 @@ static int parse_compile_execute(const void *source, mp_parse_input_kind_t input
             #if CIRCUITPY_ALARM
             && ret != PYEXEC_DEEP_SLEEP
             #endif
-            )
-        {
+            ) {
             mp_obj_t return_value = (mp_obj_t)nlr.ret_val;
             result->exception = return_value;
             result->exception_line = -1;

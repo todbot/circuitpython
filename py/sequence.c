@@ -40,7 +40,7 @@ size_t mp_seq_multiply_len(size_t item_sz, size_t len) {
     if (mp_mul_mp_int_t_overflow(item_sz, len, &new_len)) {
         mp_raise_msg(&mp_type_OverflowError, MP_ERROR_TEXT("small int overflow"));
     }
-    return (size_t) new_len;
+    return (size_t)new_len;
 }
 
 // Implements backend of sequence * integer operation. Assumes elements are

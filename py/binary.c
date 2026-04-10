@@ -438,7 +438,7 @@ void mp_binary_set_val(char struct_type, char val_type, mp_obj_t val_in, byte *p
             val = fp_sp.i;
             break;
         }
-        // CIRCUITPY-CHANGE
+            // CIRCUITPY-CHANGE
         #if MICROPY_PY_DOUBLE_TYPECODE
         case 'd': {
             union {

@@ -36,5 +36,3 @@ for start, end, line_no in l:
     prev_end = end
 else:
     print("contiguous")
-
-

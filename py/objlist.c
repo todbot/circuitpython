@@ -173,8 +173,8 @@ static mp_obj_t list_binary_op(mp_binary_op_t op, mp_obj_t lhs, mp_obj_t rhs) {
 static mp_obj_t list_subscr(mp_obj_t self_in, mp_obj_t index, mp_obj_t value) {
     #if MICROPY_PY_BUILTINS_SLICE
     if (mp_obj_is_type(index, &mp_type_slice)) {
-    // CIRCUITPY-CHANGE: handle subclassing
-    mp_obj_list_t *self = native_list(self_in);
+        // CIRCUITPY-CHANGE: handle subclassing
+        mp_obj_list_t *self = native_list(self_in);
         mp_bound_slice_t slice;
         bool fast = mp_seq_get_fast_slice_indexes(self->len, index, &slice);
         if (value == MP_OBJ_SENTINEL) {

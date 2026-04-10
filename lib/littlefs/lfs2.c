@@ -643,7 +643,7 @@ static int lfs2_alloc_scan(lfs2_t *lfs2) {
     //
     // note we limit the lookahead buffer to at most the amount of blocks
     // checkpointed, this prevents the math in lfs2_alloc from underflowing
-    lfs2->lookahead.start = (lfs2->lookahead.start + lfs2->lookahead.next) 
+    lfs2->lookahead.start = (lfs2->lookahead.start + lfs2->lookahead.next)
             % lfs2->block_count;
     lfs2->lookahead.next = 0;
     lfs2->lookahead.size = lfs2_min(
@@ -5257,7 +5257,7 @@ static int lfs2_fs_grow_(lfs2_t *lfs2, lfs2_size_t block_count) {
         return 0;
     }
 
-    
+
 #ifndef LFS2_SHRINKNONRELOCATING
     // shrinking is not supported
     LFS2_ASSERT(block_count >= lfs2->block_count);

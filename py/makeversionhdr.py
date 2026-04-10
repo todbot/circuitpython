@@ -27,25 +27,6 @@ If you cloned from a fork, fetch the tags from adafruit/circuitpython as follows
     make fetch-tags"""
     )
 
-    with open(os.path.join(repo_path, "py", "mpconfig.h")) as f:
-        for line in f:
-            if line.startswith("#define MICROPY_VERSION_MAJOR "):
-                ver_major = int(line.strip().split()[2])
-            elif line.startswith("#define MICROPY_VERSION_MINOR "):
-                ver_minor = int(line.strip().split()[2])
-            elif line.startswith("#define MICROPY_VERSION_MICRO "):
-                ver_micro = int(line.strip().split()[2])
-            elif line.startswith("#define MICROPY_VERSION_PRERELEASE "):
-                ver_prerelease = int(line.strip().split()[2])
-                git_tag = "v%d.%d.%d%s" % (
-                    ver_major,
-                    ver_minor,
-                    ver_micro,
-                    "-preview" if ver_prerelease else "",
-                )
-                return git_tag
-    return None
-
 
 def make_version_header(repo_path, filename):
     # Get version info using git (required)
