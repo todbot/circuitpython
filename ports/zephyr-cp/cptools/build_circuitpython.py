@@ -61,6 +61,7 @@ DEFAULT_MODULES = [
     "io",
     "math",
     "msgpack",
+    "aesio",
 ]
 # Flags that don't match with with a *bindings module. Some used by adafruit_requests
 MPCONFIG_FLAGS = ["array", "errno", "io", "json", "math"]
@@ -404,6 +405,8 @@ async def build_circuitpython():
     circuitpython_flags.append(f"-DCIRCUITPY_CREATION_ID=0x{creation_id:08x}")
 
     enabled_modules, module_reasons = determine_enabled_modules(board_info, portdir, srcdir)
+    for m in mpconfigboard.get("DISABLED_MODULES", []):
+        enabled_modules.discard(m)
 
     web_workflow_enabled = board_info.get("wifi", False) or board_info.get("hostnetwork", False)
 
