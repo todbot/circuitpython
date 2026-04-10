@@ -46,7 +46,7 @@ extern void common_hal_mcu_enable_interrupts(void);
 #define MICROPY_PY_BLUETOOTH             (0)
 #define MICROPY_PY_LWIP_SLIP             (0)
 #define MICROPY_PY_OS_DUPTERM            (0)
-#define MICROPY_PYEXEC_COMPILE_ONLY   (0)
+#define MICROPY_PYEXEC_COMPILE_ONLY      (0)
 #define MICROPY_ROM_TEXT_COMPRESSION     (0)
 #define MICROPY_VFS_LFS1                 (0)
 #define MICROPY_VFS_LFS2                 (0)
@@ -198,21 +198,6 @@ extern void common_hal_mcu_enable_interrupts(void);
 // Track stack usage. Expose results via ustack module.
 #define MICROPY_MAX_STACK_USAGE       (0)
 
-#define UINT_FMT "%u"
-#define INT_FMT "%d"
-#ifdef __LP64__
-typedef long mp_int_t; // must be pointer size
-typedef unsigned long mp_uint_t; // must be pointer size
-#else
-// These are definitions for machines where sizeof(int) == sizeof(void*),
-// regardless of actual size.
-typedef int mp_int_t; // must be pointer size
-typedef unsigned int mp_uint_t; // must be pointer size
-#endif
-#if __GNUC__ >= 10 // on recent gcc versions we can check that this is so
-_Static_assert(sizeof(mp_int_t) == sizeof(void *));
-_Static_assert(sizeof(mp_uint_t) == sizeof(void *));
-#endif
 typedef long mp_off_t;
 
 #define MP_PLAT_PRINT_STRN(str, len) mp_hal_stdout_tx_strn_cooked(str, len)
