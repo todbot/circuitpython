@@ -46,7 +46,7 @@ extern void common_hal_mcu_enable_interrupts(void);
 #define MICROPY_PY_BLUETOOTH             (0)
 #define MICROPY_PY_LWIP_SLIP             (0)
 #define MICROPY_PY_OS_DUPTERM            (0)
-#define MICROPY_PY_PYEXEC_COMPILE_ONLY   (0)
+#define MICROPY_PYEXEC_COMPILE_ONLY   (0)
 #define MICROPY_ROM_TEXT_COMPRESSION     (0)
 #define MICROPY_VFS_LFS1                 (0)
 #define MICROPY_VFS_LFS2                 (0)

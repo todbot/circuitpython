@@ -615,7 +615,7 @@ MP_REGISTER_ROOT_POINTER(vstr_t * repl_line);
 #else // MICROPY_REPL_EVENT_DRIVEN
 
 // CIRCUITPY-CHANGE: avoid warnings
-#if defined(MICROPY_HAL_HAS_STDIO_MODE_SWITCH) && !MICROPY_HAL_HAS_STDIO_MODE_SWITCH
+#if !defined(MICROPY_HAL_HAS_STDIO_MODE_SWITCH) || !MICROPY_HAL_HAS_STDIO_MODE_SWITCH
 // If the port doesn't need any stdio mode switching calls then provide trivial ones.
 static inline void mp_hal_stdio_mode_raw(void) {
 }
