@@ -20,17 +20,15 @@ static const mp_rom_map_elem_t lut_update_table[] = {
 };
 MP_DEFINE_CONST_DICT(lut_update_dict, lut_update_table);
 
-MP_DEFINE_CONST_OBJ_TYPE(
-    display_type,
-    MP_QSTR_display,
-    MP_TYPE_FLAG_HAS_SPECIAL_ACCESSORS | ~MP_TYPE_FLAG_BINDS_SELF,
-    locals_dict, &lut_update_dict
-    );
+const mp_obj_module_t display_module = {
+    .base = { &mp_type_module },
+    .globals = (mp_obj_dict_t *)&lut_update_dict,
+};
 
 static const mp_rom_map_elem_t board_module_globals_table[] = {
     CIRCUITPYTHON_BOARD_DICT_STANDARD_ITEMS
 
-    { MP_ROM_QSTR(MP_QSTR_display), MP_ROM_PTR(&display_type) },
+    { MP_ROM_QSTR(MP_QSTR_display), MP_ROM_PTR(&display_module) },
 
     { MP_ROM_QSTR(MP_QSTR_GP0), MP_ROM_PTR(&pin_GPIO0) },
     { MP_ROM_QSTR(MP_QSTR_LED), MP_ROM_PTR(&pin_GPIO0) },
