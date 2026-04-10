@@ -112,6 +112,7 @@ msgid "%q contains duplicate pins"
 msgstr "%q yinelenen pinler içeriyor"
 
 #: ports/atmel-samd/common-hal/sdioio/SDCard.c
+#: ports/espressif/common-hal/qspibus/QSPIBus.c
 msgid "%q failure: %d"
 msgstr "%q hata: %d"
 
@@ -125,6 +126,7 @@ msgstr ""
 
 #: ports/espressif/common-hal/espulp/ULP.c
 #: ports/espressif/common-hal/mipidsi/Bus.c
+#: ports/espressif/common-hal/qspibus/QSPIBus.c
 #: ports/mimxrt10xx/common-hal/audiobusio/__init__.c
 #: ports/mimxrt10xx/common-hal/usb_host/Port.c
 #: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2040.c
@@ -147,6 +149,7 @@ msgstr "%q indeksleri integer olmalı, %s değil"
 
 #: ports/analog/common-hal/busio/SPI.c ports/analog/common-hal/busio/UART.c
 #: shared-bindings/digitalio/DigitalInOutProtocol.c
+#: shared-module/busdisplay/BusDisplay.c
 msgid "%q init failed"
 msgstr "%q init başarısız oldu"
 
@@ -178,8 +181,8 @@ msgstr "%q boyutu >= %d olmalıdır"
 msgid "%q must be %d"
 msgstr "%q, %d olmalıdır"
 
-#: py/argcheck.c shared-bindings/busdisplay/BusDisplay.c
-#: shared-bindings/displayio/Bitmap.c
+#: ports/zephyr-cp/bindings/zephyr_display/Display.c py/argcheck.c
+#: shared-bindings/busdisplay/BusDisplay.c shared-bindings/displayio/Bitmap.c
 #: shared-bindings/framebufferio/FramebufferDisplay.c
 #: shared-bindings/is31fl3741/FrameBuffer.c
 #: shared-bindings/rgbmatrix/RGBMatrix.c
@@ -471,6 +474,7 @@ msgstr "*x atama hedefi olmalıdır"
 msgid ", in %q\n"
 msgstr ", içinde %q\n"
 
+#: ports/zephyr-cp/bindings/zephyr_display/Display.c
 #: shared-bindings/busdisplay/BusDisplay.c
 #: shared-bindings/epaperdisplay/EPaperDisplay.c
 #: shared-bindings/framebufferio/FramebufferDisplay.c
@@ -634,6 +638,7 @@ msgstr "Ses dönüşümü implemente edilmedi"
 
 #: ports/raspberrypi/common-hal/audiobusio/I2SOut.c
 #: ports/raspberrypi/common-hal/audiopwmio/PWMAudioOut.c
+#: ports/raspberrypi/common-hal/mcp4822/MCP4822.c
 msgid "Audio source error"
 msgstr ""
 
@@ -661,6 +666,7 @@ msgstr ""
 msgid "Baudrate not supported by peripheral"
 msgstr "Baudhızı, çevre birimi tarafından desteklenmiyor"
 
+#: ports/zephyr-cp/common-hal/zephyr_display/Display.c
 #: shared-module/busdisplay/BusDisplay.c
 #: shared-module/framebufferio/FramebufferDisplay.c
 msgid "Below minimum frame rate"
@@ -683,6 +689,7 @@ msgstr ""
 msgid "Both RX and TX required for flow control"
 msgstr "Hem RX hem de TX akış kontrolü için gerekli"
 
+#: ports/zephyr-cp/bindings/zephyr_display/Display.c
 #: shared-bindings/busdisplay/BusDisplay.c
 #: shared-bindings/framebufferio/FramebufferDisplay.c
 msgid "Brightness not adjustable"
@@ -871,7 +878,7 @@ msgstr ""
 msgid "Coordinate arrays types have different sizes"
 msgstr ""
 
-#: shared-module/usb/core/Device.c
+#: ports/espressif/common-hal/qspibus/QSPIBus.c shared-module/usb/core/Device.c
 msgid "Could not allocate DMA capable buffer"
 msgstr ""
 
@@ -974,6 +981,7 @@ msgstr "ECB aynı anda yalnızca 16 baytla çalışır"
 
 #: ports/espressif/common-hal/busio/SPI.c
 #: ports/espressif/common-hal/canio/CAN.c
+#: ports/espressif/common-hal/qspibus/QSPIBus.c
 msgid "ESP-IDF memory allocation failed"
 msgstr ""
 
@@ -1034,10 +1042,6 @@ msgstr ""
 
 #: ports/stm/common-hal/audiopwmio/PWMAudioOut.c
 msgid "Failed to buffer the sample"
-msgstr ""
-
-#: ports/zephyr-cp/common-hal/_bleio/Adapter.c
-msgid "Failed to connect"
 msgstr ""
 
 #: ports/espressif/common-hal/_bleio/Adapter.c
@@ -1161,6 +1165,7 @@ msgstr "GNSS init"
 msgid "Generic Failure"
 msgstr ""
 
+#: ports/zephyr-cp/bindings/zephyr_display/Display.c
 #: shared-bindings/framebufferio/FramebufferDisplay.c
 #: shared-module/busdisplay/BusDisplay.c
 #: shared-module/framebufferio/FramebufferDisplay.c
@@ -1259,7 +1264,8 @@ msgstr "Dahili ses arabelleği çok küçük"
 msgid "Internal define error"
 msgstr "Dahili tanımlama hatası"
 
-#: shared-bindings/pwmio/PWMOut.c supervisor/shared/settings.c
+#: ports/espressif/common-hal/qspibus/QSPIBus.c shared-bindings/pwmio/PWMOut.c
+#: supervisor/shared/settings.c
 msgid "Internal error"
 msgstr "Dahili hata"
 
@@ -1315,6 +1321,7 @@ msgstr ""
 msgid "Invalid %q"
 msgstr "Geçersiz %q"
 
+#: ports/raspberrypi/common-hal/mcp4822/MCP4822.c
 #: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2350.c
 #: shared-module/aurora_epaper/aurora_framebuffer.c
 msgid "Invalid %q and %q"
@@ -1535,7 +1542,7 @@ msgstr ""
 #: ports/stm/common-hal/busio/UART.c shared-bindings/fourwire/FourWire.c
 #: shared-bindings/i2cdisplaybus/I2CDisplayBus.c
 #: shared-bindings/paralleldisplaybus/ParallelBus.c
-#: shared-module/bitbangio/SPI.c
+#: shared-bindings/qspibus/QSPIBus.c shared-module/bitbangio/SPI.c
 msgid "No %q pin"
 msgstr "%q pini yok"
 
@@ -1553,6 +1560,7 @@ msgstr ""
 #: ports/atmel-samd/common-hal/audioio/AudioOut.c
 #: ports/raspberrypi/common-hal/audiobusio/I2SOut.c
 #: ports/raspberrypi/common-hal/audiopwmio/PWMAudioOut.c
+#: ports/raspberrypi/common-hal/mcp4822/MCP4822.c
 msgid "No DMA channel found"
 msgstr ""
 
@@ -1667,7 +1675,7 @@ msgid "Not connected"
 msgstr ""
 
 #: shared-bindings/audiobusio/I2SOut.c shared-bindings/audioio/AudioOut.c
-#: shared-bindings/audiopwmio/PWMAudioOut.c
+#: shared-bindings/audiopwmio/PWMAudioOut.c shared-bindings/mcp4822/MCP4822.c
 msgid "Not playing"
 msgstr ""
 
@@ -1764,6 +1772,7 @@ msgid "Operation or feature not supported"
 msgstr ""
 
 #: ports/espressif/common-hal/espidf/__init__.c
+#: ports/espressif/common-hal/qspibus/QSPIBus.c
 msgid "Operation timed out"
 msgstr ""
 
@@ -2186,6 +2195,7 @@ msgid "Too many channels in sample"
 msgstr ""
 
 #: ports/raspberrypi/common-hal/audiobusio/I2SOut.c
+#: ports/raspberrypi/common-hal/mcp4822/MCP4822.c
 msgid "Too many channels in sample."
 msgstr ""
 
@@ -2284,6 +2294,7 @@ msgstr ""
 #: ports/atmel-samd/common-hal/audioio/AudioOut.c
 #: ports/raspberrypi/common-hal/audiobusio/I2SOut.c
 #: ports/raspberrypi/common-hal/audiopwmio/PWMAudioOut.c
+#: ports/raspberrypi/common-hal/mcp4822/MCP4822.c
 msgid "Unable to allocate buffers for signed conversion"
 msgstr ""
 
@@ -2424,6 +2435,7 @@ msgstr ""
 msgid "Update failed"
 msgstr ""
 
+#: ports/zephyr-cp/common-hal/audiobusio/I2SOut.c
 #: ports/zephyr-cp/common-hal/busio/I2C.c
 #: ports/zephyr-cp/common-hal/busio/SPI.c
 #: ports/zephyr-cp/common-hal/busio/UART.c
@@ -3255,10 +3267,6 @@ msgstr ""
 msgid "float unsupported"
 msgstr ""
 
-#: shared-bindings/_stage/Text.c
-msgid "font must be 2048 bytes long"
-msgstr ""
-
 #: extmod/moddeflate.c
 msgid "format"
 msgstr ""
@@ -3338,10 +3346,6 @@ msgstr ""
 
 #: py/objgenerator.c py/runtime.c
 msgid "generator raised StopIteration"
-msgstr ""
-
-#: shared-bindings/_stage/Layer.c
-msgid "graphic must be 2048 bytes long"
 msgstr ""
 
 #: extmod/modhashlib.c
@@ -4063,10 +4067,6 @@ msgstr ""
 #: py/modstruct.c
 #, c-format
 msgid "pack expected %d items for packing (got %d)"
-msgstr ""
-
-#: shared-bindings/_stage/Layer.c shared-bindings/_stage/Text.c
-msgid "palette must be 32 bytes long"
 msgstr ""
 
 #: py/emitinlinerv32.c

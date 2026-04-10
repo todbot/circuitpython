@@ -114,6 +114,7 @@ msgid "%q contains duplicate pins"
 msgstr "%q содержит пины дупликаты"
 
 #: ports/atmel-samd/common-hal/sdioio/SDCard.c
+#: ports/espressif/common-hal/qspibus/QSPIBus.c
 msgid "%q failure: %d"
 msgstr "%q сбой: %d"
 
@@ -127,6 +128,7 @@ msgstr "%q в %q должно быть типа %q, а не %q"
 
 #: ports/espressif/common-hal/espulp/ULP.c
 #: ports/espressif/common-hal/mipidsi/Bus.c
+#: ports/espressif/common-hal/qspibus/QSPIBus.c
 #: ports/mimxrt10xx/common-hal/audiobusio/__init__.c
 #: ports/mimxrt10xx/common-hal/usb_host/Port.c
 #: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2040.c
@@ -149,6 +151,7 @@ msgstr "Индексы %q должны быть целыми числами, а 
 
 #: ports/analog/common-hal/busio/SPI.c ports/analog/common-hal/busio/UART.c
 #: shared-bindings/digitalio/DigitalInOutProtocol.c
+#: shared-module/busdisplay/BusDisplay.c
 msgid "%q init failed"
 msgstr "Инициализация %q не удалась"
 
@@ -180,8 +183,8 @@ msgstr "Длинна %q должна быть >= %d"
 msgid "%q must be %d"
 msgstr "%q должно быть %d"
 
-#: py/argcheck.c shared-bindings/busdisplay/BusDisplay.c
-#: shared-bindings/displayio/Bitmap.c
+#: ports/zephyr-cp/bindings/zephyr_display/Display.c py/argcheck.c
+#: shared-bindings/busdisplay/BusDisplay.c shared-bindings/displayio/Bitmap.c
 #: shared-bindings/framebufferio/FramebufferDisplay.c
 #: shared-bindings/is31fl3741/FrameBuffer.c
 #: shared-bindings/rgbmatrix/RGBMatrix.c
@@ -473,6 +476,7 @@ msgstr "*x должно быть целью назначения"
 msgid ", in %q\n"
 msgstr ", в %q\n"
 
+#: ports/zephyr-cp/bindings/zephyr_display/Display.c
 #: shared-bindings/busdisplay/BusDisplay.c
 #: shared-bindings/epaperdisplay/EPaperDisplay.c
 #: shared-bindings/framebufferio/FramebufferDisplay.c
@@ -636,6 +640,7 @@ msgstr "Преобразование звука не реализовано"
 
 #: ports/raspberrypi/common-hal/audiobusio/I2SOut.c
 #: ports/raspberrypi/common-hal/audiopwmio/PWMAudioOut.c
+#: ports/raspberrypi/common-hal/mcp4822/MCP4822.c
 msgid "Audio source error"
 msgstr ""
 
@@ -663,6 +668,7 @@ msgstr ""
 msgid "Baudrate not supported by peripheral"
 msgstr "Скорость передачи данных не поддерживается периферийным устройством"
 
+#: ports/zephyr-cp/common-hal/zephyr_display/Display.c
 #: shared-module/busdisplay/BusDisplay.c
 #: shared-module/framebufferio/FramebufferDisplay.c
 msgid "Below minimum frame rate"
@@ -686,6 +692,7 @@ msgstr "Загрузочное устройство должно быть пер
 msgid "Both RX and TX required for flow control"
 msgstr "Для управления потоком требуется как RX так и TX"
 
+#: ports/zephyr-cp/bindings/zephyr_display/Display.c
 #: shared-bindings/busdisplay/BusDisplay.c
 #: shared-bindings/framebufferio/FramebufferDisplay.c
 msgid "Brightness not adjustable"
@@ -881,7 +888,7 @@ msgstr "Координатные массивы имеют разные длин
 msgid "Coordinate arrays types have different sizes"
 msgstr "Типы массивов координат имеют разные размеры"
 
-#: shared-module/usb/core/Device.c
+#: ports/espressif/common-hal/qspibus/QSPIBus.c shared-module/usb/core/Device.c
 msgid "Could not allocate DMA capable buffer"
 msgstr ""
 
@@ -987,6 +994,7 @@ msgstr "ECB работает только с 16 байтами за раз"
 
 #: ports/espressif/common-hal/busio/SPI.c
 #: ports/espressif/common-hal/canio/CAN.c
+#: ports/espressif/common-hal/qspibus/QSPIBus.c
 msgid "ESP-IDF memory allocation failed"
 msgstr "Ошибка выделения памяти ESP-IDF"
 
@@ -1050,10 +1058,6 @@ msgstr "Не удалось выделить память для сканиро�
 #: ports/stm/common-hal/audiopwmio/PWMAudioOut.c
 msgid "Failed to buffer the sample"
 msgstr "Не удалось выполнить буферизацию образца"
-
-#: ports/zephyr-cp/common-hal/_bleio/Adapter.c
-msgid "Failed to connect"
-msgstr ""
 
 #: ports/espressif/common-hal/_bleio/Adapter.c
 #: ports/nordic/common-hal/_bleio/Adapter.c
@@ -1178,6 +1182,7 @@ msgstr "Инициализация GNSS"
 msgid "Generic Failure"
 msgstr "Общий сбой"
 
+#: ports/zephyr-cp/bindings/zephyr_display/Display.c
 #: shared-bindings/framebufferio/FramebufferDisplay.c
 #: shared-module/busdisplay/BusDisplay.c
 #: shared-module/framebufferio/FramebufferDisplay.c
@@ -1280,7 +1285,8 @@ msgstr "Внутренний звуковой буфер слишком мал"
 msgid "Internal define error"
 msgstr "Внутренняя ошибка определения"
 
-#: shared-bindings/pwmio/PWMOut.c supervisor/shared/settings.c
+#: ports/espressif/common-hal/qspibus/QSPIBus.c shared-bindings/pwmio/PWMOut.c
+#: supervisor/shared/settings.c
 msgid "Internal error"
 msgstr "Внутренняя ошибка"
 
@@ -1336,6 +1342,7 @@ msgstr "Прерывается функцией выхода"
 msgid "Invalid %q"
 msgstr "Недопустимый %q"
 
+#: ports/raspberrypi/common-hal/mcp4822/MCP4822.c
 #: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2350.c
 #: shared-module/aurora_epaper/aurora_framebuffer.c
 msgid "Invalid %q and %q"
@@ -1557,7 +1564,7 @@ msgstr "Изображение памяти"
 #: ports/stm/common-hal/busio/UART.c shared-bindings/fourwire/FourWire.c
 #: shared-bindings/i2cdisplaybus/I2CDisplayBus.c
 #: shared-bindings/paralleldisplaybus/ParallelBus.c
-#: shared-module/bitbangio/SPI.c
+#: shared-bindings/qspibus/QSPIBus.c shared-module/bitbangio/SPI.c
 msgid "No %q pin"
 msgstr "Нет пина %q"
 
@@ -1575,6 +1582,7 @@ msgstr "DAC отсутствует на чипе"
 #: ports/atmel-samd/common-hal/audioio/AudioOut.c
 #: ports/raspberrypi/common-hal/audiobusio/I2SOut.c
 #: ports/raspberrypi/common-hal/audiopwmio/PWMAudioOut.c
+#: ports/raspberrypi/common-hal/mcp4822/MCP4822.c
 msgid "No DMA channel found"
 msgstr "Канал DMA не найден"
 
@@ -1689,7 +1697,7 @@ msgid "Not connected"
 msgstr "Не подключено"
 
 #: shared-bindings/audiobusio/I2SOut.c shared-bindings/audioio/AudioOut.c
-#: shared-bindings/audiopwmio/PWMAudioOut.c
+#: shared-bindings/audiopwmio/PWMAudioOut.c shared-bindings/mcp4822/MCP4822.c
 msgid "Not playing"
 msgstr "Не воспроизводится (Not playing)"
 
@@ -1790,6 +1798,7 @@ msgid "Operation or feature not supported"
 msgstr "Операция или функция, не поддерживаемые"
 
 #: ports/espressif/common-hal/espidf/__init__.c
+#: ports/espressif/common-hal/qspibus/QSPIBus.c
 msgid "Operation timed out"
 msgstr "Истекло время ожидания операции"
 
@@ -2220,6 +2229,7 @@ msgid "Too many channels in sample"
 msgstr "Слишком много каналов в выборке"
 
 #: ports/raspberrypi/common-hal/audiobusio/I2SOut.c
+#: ports/raspberrypi/common-hal/mcp4822/MCP4822.c
 msgid "Too many channels in sample."
 msgstr "Слишком много каналов в выборке."
 
@@ -2318,6 +2328,7 @@ msgstr "Невозможно получить доступ к невыровне
 #: ports/atmel-samd/common-hal/audioio/AudioOut.c
 #: ports/raspberrypi/common-hal/audiobusio/I2SOut.c
 #: ports/raspberrypi/common-hal/audiopwmio/PWMAudioOut.c
+#: ports/raspberrypi/common-hal/mcp4822/MCP4822.c
 msgid "Unable to allocate buffers for signed conversion"
 msgstr "Не удается выделить буферы для подписанного преобразования"
 
@@ -2461,6 +2472,7 @@ msgstr "Неподдерживаемый тип сокета"
 msgid "Update failed"
 msgstr "Обновление не удалось"
 
+#: ports/zephyr-cp/common-hal/audiobusio/I2SOut.c
 #: ports/zephyr-cp/common-hal/busio/I2C.c
 #: ports/zephyr-cp/common-hal/busio/SPI.c
 #: ports/zephyr-cp/common-hal/busio/UART.c
@@ -3314,10 +3326,6 @@ msgstr "Поплавок слишком большой"
 msgid "float unsupported"
 msgstr "Плавающий без поддержки"
 
-#: shared-bindings/_stage/Text.c
-msgid "font must be 2048 bytes long"
-msgstr "Длина шрифта должна составлять 2048 байт"
-
 #: extmod/moddeflate.c
 msgid "format"
 msgstr "формат"
@@ -3398,10 +3406,6 @@ msgstr "генератор проигнорировал Выход"
 #: py/objgenerator.c py/runtime.c
 msgid "generator raised StopIteration"
 msgstr "генератор поднят Остановить итерацию"
-
-#: shared-bindings/_stage/Layer.c
-msgid "graphic must be 2048 bytes long"
-msgstr "Длина рисунка должна составлять 2048 байт"
 
 #: extmod/modhashlib.c
 msgid "hash is final"
@@ -4132,10 +4136,6 @@ msgstr "переполнение преобразование длинного �
 msgid "pack expected %d items for packing (got %d)"
 msgstr "Упаковка ожидаемых %d товаров для упаковки (получил %d)"
 
-#: shared-bindings/_stage/Layer.c shared-bindings/_stage/Text.c
-msgid "palette must be 32 bytes long"
-msgstr "Длина палитры должна составлять 32 байта"
-
 #: py/emitinlinerv32.c
 msgid "parameters must be registers in sequence a0 to a3"
 msgstr ""
@@ -4666,6 +4666,15 @@ msgstr "zi должно быть типа float"
 #: extmod/ulab/code/scipy/signal/signal.c
 msgid "zi must be of shape (n_section, 2)"
 msgstr "zi должен иметь форму (n_section, 2)"
+
+#~ msgid "font must be 2048 bytes long"
+#~ msgstr "Длина шрифта должна составлять 2048 байт"
+
+#~ msgid "graphic must be 2048 bytes long"
+#~ msgstr "Длина рисунка должна составлять 2048 байт"
+
+#~ msgid "palette must be 32 bytes long"
+#~ msgstr "Длина палитры должна составлять 32 байта"
 
 #, c-format
 #~ msgid "Buffer + offset too small %d %d %d"

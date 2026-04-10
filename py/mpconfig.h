@@ -2407,6 +2407,12 @@ typedef time_t mp_timestamp_t;
 #define MP_INLINE inline MP_NO_INSTRUMENT
 #endif
 
+// CIRCUITPY-CHANGE
+// Modifier for functions whose return value should not be ignored
+#ifndef MP_WARN_UNUSED_RESULT
+#define MP_WARN_UNUSED_RESULT __attribute__((warn_unused_result))
+#endif
+
 // Modifier for functions which should be never inlined
 #ifndef MP_NOINLINE
 #define MP_NOINLINE __attribute__((noinline))

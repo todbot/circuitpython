@@ -92,9 +92,17 @@ void port_wake_main_task(void);
 void port_wake_main_task_from_isr(void);
 
 // Some ports may use real RTOS tasks besides the background task framework of
-// CircuitPython. Calling this will yield to other tasks and then return to the
-// CircuitPython task when others are done.
-void port_yield(void);
+// CircuitPython. Calling this will yield to other tasks at the same priority level
+// (or higher priority level if pre-emption is not immediate in the RTOS)
+// and then return to the CircuitPython task when others are done.
+// Note that this does NOT yield to lower priority tasks. Use port_task_sleep_ms() instead.
+void port_task_yield(void);
+
+// On ports using real RTOS tasks, yield to other tasks for at least msecs.
+// This will allow lower priority tasks to run.
+// On non-RTOS implementations, this just sleeps for msecs and will run CircuitPython
+// background tasks.
+void port_task_sleep_ms(uint32_t msecs);
 
 // Some ports want to add information to boot_out.txt.
 // A default weak implementation is provided that does nothing.

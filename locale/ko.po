@@ -112,6 +112,7 @@ msgid "%q contains duplicate pins"
 msgstr "%q에 중복된 핀이 포함"
 
 #: ports/atmel-samd/common-hal/sdioio/SDCard.c
+#: ports/espressif/common-hal/qspibus/QSPIBus.c
 msgid "%q failure: %d"
 msgstr "%q 실패: %d"
 
@@ -125,6 +126,7 @@ msgstr "%q의 %q는 %q가 아니라 %q 유형이어야 합니다"
 
 #: ports/espressif/common-hal/espulp/ULP.c
 #: ports/espressif/common-hal/mipidsi/Bus.c
+#: ports/espressif/common-hal/qspibus/QSPIBus.c
 #: ports/mimxrt10xx/common-hal/audiobusio/__init__.c
 #: ports/mimxrt10xx/common-hal/usb_host/Port.c
 #: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2040.c
@@ -147,6 +149,7 @@ msgstr "%q 인덱스는 %s 가 아닌 정수 여야합니다"
 
 #: ports/analog/common-hal/busio/SPI.c ports/analog/common-hal/busio/UART.c
 #: shared-bindings/digitalio/DigitalInOutProtocol.c
+#: shared-module/busdisplay/BusDisplay.c
 msgid "%q init failed"
 msgstr "%q 초기화 실패"
 
@@ -178,8 +181,8 @@ msgstr "%q 길이는 >= %d이어야 합니다"
 msgid "%q must be %d"
 msgstr "%q는 %d이어야 합니다"
 
-#: py/argcheck.c shared-bindings/busdisplay/BusDisplay.c
-#: shared-bindings/displayio/Bitmap.c
+#: ports/zephyr-cp/bindings/zephyr_display/Display.c py/argcheck.c
+#: shared-bindings/busdisplay/BusDisplay.c shared-bindings/displayio/Bitmap.c
 #: shared-bindings/framebufferio/FramebufferDisplay.c
 #: shared-bindings/is31fl3741/FrameBuffer.c
 #: shared-bindings/rgbmatrix/RGBMatrix.c
@@ -488,6 +491,7 @@ msgstr "*x는 할당 대상이어야 합니다"
 msgid ", in %q\n"
 msgstr ", 에서 %q\n"
 
+#: ports/zephyr-cp/bindings/zephyr_display/Display.c
 #: shared-bindings/busdisplay/BusDisplay.c
 #: shared-bindings/epaperdisplay/EPaperDisplay.c
 #: shared-bindings/framebufferio/FramebufferDisplay.c
@@ -662,6 +666,7 @@ msgstr "오디오 변환이 구현되지 않음"
 
 #: ports/raspberrypi/common-hal/audiobusio/I2SOut.c
 #: ports/raspberrypi/common-hal/audiopwmio/PWMAudioOut.c
+#: ports/raspberrypi/common-hal/mcp4822/MCP4822.c
 msgid "Audio source error"
 msgstr ""
 
@@ -689,6 +694,7 @@ msgstr ""
 msgid "Baudrate not supported by peripheral"
 msgstr "주변 기기에서 전송 속도가 지원되지 않습니다"
 
+#: ports/zephyr-cp/common-hal/zephyr_display/Display.c
 #: shared-module/busdisplay/BusDisplay.c
 #: shared-module/framebufferio/FramebufferDisplay.c
 msgid "Below minimum frame rate"
@@ -711,6 +717,7 @@ msgstr "부팅 장치는 첫 번째(인터페이스 #0)여야 합니다."
 msgid "Both RX and TX required for flow control"
 msgstr "플로우 제어에 RX와 TX가 모두 필요합니다"
 
+#: ports/zephyr-cp/bindings/zephyr_display/Display.c
 #: shared-bindings/busdisplay/BusDisplay.c
 #: shared-bindings/framebufferio/FramebufferDisplay.c
 msgid "Brightness not adjustable"
@@ -901,7 +908,7 @@ msgstr "좌표 배열의 길이가 다릅니다"
 msgid "Coordinate arrays types have different sizes"
 msgstr "좌표 배열 유형은 크기가 다릅니다"
 
-#: shared-module/usb/core/Device.c
+#: ports/espressif/common-hal/qspibus/QSPIBus.c shared-module/usb/core/Device.c
 msgid "Could not allocate DMA capable buffer"
 msgstr ""
 
@@ -1005,6 +1012,7 @@ msgstr "ECB는 한 번에 16 바이트에서만 작동합니다"
 
 #: ports/espressif/common-hal/busio/SPI.c
 #: ports/espressif/common-hal/canio/CAN.c
+#: ports/espressif/common-hal/qspibus/QSPIBus.c
 msgid "ESP-IDF memory allocation failed"
 msgstr "ESP-IDF 메모리 할당에 실패하였습니다"
 
@@ -1069,10 +1077,6 @@ msgstr "wifi 검색 메모리 할당에 실패했습니다"
 #: ports/stm/common-hal/audiopwmio/PWMAudioOut.c
 msgid "Failed to buffer the sample"
 msgstr "샘플 버퍼링에 실패했습니다"
-
-#: ports/zephyr-cp/common-hal/_bleio/Adapter.c
-msgid "Failed to connect"
-msgstr ""
 
 #: ports/espressif/common-hal/_bleio/Adapter.c
 #: ports/nordic/common-hal/_bleio/Adapter.c
@@ -1194,6 +1198,7 @@ msgstr "GNSS 초기화"
 msgid "Generic Failure"
 msgstr "일반 오류"
 
+#: ports/zephyr-cp/bindings/zephyr_display/Display.c
 #: shared-bindings/framebufferio/FramebufferDisplay.c
 #: shared-module/busdisplay/BusDisplay.c
 #: shared-module/framebufferio/FramebufferDisplay.c
@@ -1292,7 +1297,8 @@ msgstr "내부 오디오 버퍼가 너무 작습니다"
 msgid "Internal define error"
 msgstr "내부 정의 오류"
 
-#: shared-bindings/pwmio/PWMOut.c supervisor/shared/settings.c
+#: ports/espressif/common-hal/qspibus/QSPIBus.c shared-bindings/pwmio/PWMOut.c
+#: supervisor/shared/settings.c
 msgid "Internal error"
 msgstr "내부 오류"
 
@@ -1348,6 +1354,7 @@ msgstr "출력 함수로 인해 종료되었다"
 msgid "Invalid %q"
 msgstr "잘못된 %q"
 
+#: ports/raspberrypi/common-hal/mcp4822/MCP4822.c
 #: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2350.c
 #: shared-module/aurora_epaper/aurora_framebuffer.c
 msgid "Invalid %q and %q"
@@ -1571,7 +1578,7 @@ msgstr "빠른 메모리 부족"
 #: ports/stm/common-hal/busio/UART.c shared-bindings/fourwire/FourWire.c
 #: shared-bindings/i2cdisplaybus/I2CDisplayBus.c
 #: shared-bindings/paralleldisplaybus/ParallelBus.c
-#: shared-module/bitbangio/SPI.c
+#: shared-bindings/qspibus/QSPIBus.c shared-module/bitbangio/SPI.c
 msgid "No %q pin"
 msgstr "%q 핀이 없습니다"
 
@@ -1589,6 +1596,7 @@ msgstr "칩에 DAC가 없습니다"
 #: ports/atmel-samd/common-hal/audioio/AudioOut.c
 #: ports/raspberrypi/common-hal/audiobusio/I2SOut.c
 #: ports/raspberrypi/common-hal/audiopwmio/PWMAudioOut.c
+#: ports/raspberrypi/common-hal/mcp4822/MCP4822.c
 msgid "No DMA channel found"
 msgstr "DMA 채널을 찾을 수 없습니다"
 
@@ -1706,7 +1714,7 @@ msgid "Not connected"
 msgstr "연결되지 않았습니다"
 
 #: shared-bindings/audiobusio/I2SOut.c shared-bindings/audioio/AudioOut.c
-#: shared-bindings/audiopwmio/PWMAudioOut.c
+#: shared-bindings/audiopwmio/PWMAudioOut.c shared-bindings/mcp4822/MCP4822.c
 msgid "Not playing"
 msgstr "재생되지 않았습니다"
 
@@ -1808,6 +1816,7 @@ msgid "Operation or feature not supported"
 msgstr "작업 또는 기능이 지원되지 않습니다"
 
 #: ports/espressif/common-hal/espidf/__init__.c
+#: ports/espressif/common-hal/qspibus/QSPIBus.c
 #, fuzzy
 msgid "Operation timed out"
 msgstr "작업 시간 초과되었습니다"
@@ -2237,6 +2246,7 @@ msgid "Too many channels in sample"
 msgstr ""
 
 #: ports/raspberrypi/common-hal/audiobusio/I2SOut.c
+#: ports/raspberrypi/common-hal/mcp4822/MCP4822.c
 msgid "Too many channels in sample."
 msgstr ""
 
@@ -2336,6 +2346,7 @@ msgstr ""
 #: ports/atmel-samd/common-hal/audioio/AudioOut.c
 #: ports/raspberrypi/common-hal/audiobusio/I2SOut.c
 #: ports/raspberrypi/common-hal/audiopwmio/PWMAudioOut.c
+#: ports/raspberrypi/common-hal/mcp4822/MCP4822.c
 msgid "Unable to allocate buffers for signed conversion"
 msgstr ""
 
@@ -2476,6 +2487,7 @@ msgstr ""
 msgid "Update failed"
 msgstr ""
 
+#: ports/zephyr-cp/common-hal/audiobusio/I2SOut.c
 #: ports/zephyr-cp/common-hal/busio/I2C.c
 #: ports/zephyr-cp/common-hal/busio/SPI.c
 #: ports/zephyr-cp/common-hal/busio/UART.c
@@ -3307,10 +3319,6 @@ msgstr "float이 너무 큽니다"
 msgid "float unsupported"
 msgstr ""
 
-#: shared-bindings/_stage/Text.c
-msgid "font must be 2048 bytes long"
-msgstr ""
-
 #: extmod/moddeflate.c
 msgid "format"
 msgstr ""
@@ -3390,10 +3398,6 @@ msgstr ""
 
 #: py/objgenerator.c py/runtime.c
 msgid "generator raised StopIteration"
-msgstr ""
-
-#: shared-bindings/_stage/Layer.c
-msgid "graphic must be 2048 bytes long"
 msgstr ""
 
 #: extmod/modhashlib.c
@@ -4115,10 +4119,6 @@ msgstr ""
 #: py/modstruct.c
 #, c-format
 msgid "pack expected %d items for packing (got %d)"
-msgstr ""
-
-#: shared-bindings/_stage/Layer.c shared-bindings/_stage/Text.c
-msgid "palette must be 32 bytes long"
 msgstr ""
 
 #: py/emitinlinerv32.c
