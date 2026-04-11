@@ -122,7 +122,13 @@ static const mp_rom_map_elem_t board_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_DISPLAY), MP_ROM_PTR(&displays[0].epaper_display)},
 
     // button-state on reset
+    // Use `board.RESET_STATE()` to query the state of all buttons at reset.
+    // To detect individual key-presses, `board.ON_RESET_PRESSED()`
+    // is simpler.
     { MP_ROM_QSTR(MP_QSTR_RESET_STATE), (mp_obj_t)&get_reset_state_obj },
+
+    // Use `board.ON_RESET_PRESSED(board.SW_A)` to check if `SW_A` was pressed
+    // during reset.
     { MP_ROM_QSTR(MP_QSTR_ON_RESET_PRESSED), (mp_obj_t)&on_reset_pressed_obj },
 
 };
