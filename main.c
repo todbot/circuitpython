@@ -1149,7 +1149,7 @@ int __attribute__((used)) main(void) {
             } else {
                 skip_repl = false;
             }
-        } else if (exit_code != 0) {
+        } else if (exit_code != PYEXEC_NORMAL_EXIT) {
             break;
         }
 

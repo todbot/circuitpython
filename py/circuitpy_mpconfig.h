@@ -51,6 +51,9 @@ extern void common_hal_mcu_enable_interrupts(void);
 #define MICROPY_VFS_LFS1                 (0)
 #define MICROPY_VFS_LFS2                 (0)
 
+// Always turn on exit code handling
+#define MICROPY_PYEXEC_ENABLE_EXIT_CODE_HANDLING (1)
+
 #ifndef MICROPY_GCREGS_SETJMP
 #define MICROPY_GCREGS_SETJMP            (0)
 #endif
