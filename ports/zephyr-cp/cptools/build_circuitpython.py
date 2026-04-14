@@ -62,6 +62,8 @@ DEFAULT_MODULES = [
     "math",
     "msgpack",
     "aesio",
+    "hashlib",
+    "zlib",
     "adafruit_bus_device",
 ]
 # Flags that don't match with with a *bindings module. Some used by adafruit_requests
@@ -109,6 +111,13 @@ EXTRA_FLAGS = {
 # No QSTR processing or CIRCUITPY specific flags
 LIBRARY_SOURCE = {
     "audiomp3": ["lib/mp3/src/*.c"],
+    "zlib": [
+        "lib/uzlib/tinflate.c",
+        "lib/uzlib/tinfzlib.c",
+        "lib/uzlib/tinfgzip.c",
+        "lib/uzlib/adler32.c",
+        "lib/uzlib/crc32.c",
+    ],
 }
 
 SHARED_MODULE_AND_COMMON_HAL = ["_bleio", "os", "rotaryio"]
