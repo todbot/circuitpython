@@ -91,6 +91,11 @@ msgstr ""
 "%d adres pinleri, %d RGB pinleri ve %d döşemeleri %d'nin yüksekliği "
 "gösterir, %d'nin değil"
 
+#: py/emitinlinextensa.c
+#, c-format
+msgid "%d is not a multiple of %d"
+msgstr ""
+
 #: shared-bindings/microcontroller/Pin.c
 msgid "%q and %q contain duplicate pins"
 msgstr "%q ve %q yinelenen pinler içeriyor"
@@ -274,10 +279,6 @@ msgstr "%q sınırların dışında"
 #: shared-bindings/time/__init__.c
 msgid "%q out of range"
 msgstr "%q aralık dışında"
-
-#: py/objmodule.c
-msgid "%q renamed %q"
-msgstr ""
 
 #: py/objrange.c py/objslice.c shared-bindings/random/__init__.c
 msgid "%q step cannot be zero"
@@ -978,6 +979,14 @@ msgstr "Yukarıdaki hatanın işlenmesi sırasında başka bir hata oluştu:"
 #: shared-bindings/aesio/aes.c
 msgid "ECB only operates on 16 bytes at a time"
 msgstr "ECB aynı anda yalnızca 16 baytla çalışır"
+
+#: py/asmxtensa.c
+msgid "ERROR: %q %q not word-aligned"
+msgstr ""
+
+#: py/asmxtensa.c
+msgid "ERROR: xtensa %q out of range"
+msgstr ""
 
 #: ports/espressif/common-hal/busio/SPI.c
 #: ports/espressif/common-hal/canio/CAN.c
@@ -2651,10 +2660,6 @@ msgstr ""
 msgid "array/bytes required on right side"
 msgstr ""
 
-#: py/asmxtensa.c
-msgid "asm overflow"
-msgstr ""
-
 #: py/compile.c
 msgid "async for/with outside async function"
 msgstr ""
@@ -2868,6 +2873,10 @@ msgstr ""
 msgid "can't create '%q' instances"
 msgstr ""
 
+#: py/objtype.c
+msgid "can't create instance"
+msgstr ""
+
 #: py/compile.c
 msgid "can't declare nonlocal in outer code"
 msgstr ""
@@ -2966,12 +2975,12 @@ msgstr ""
 msgid "cannot convert complex type"
 msgstr ""
 
-#: py/objtype.c
-msgid "cannot create instance"
-msgstr ""
-
 #: extmod/ulab/code/ndarray.c
 msgid "cannot delete array elements"
+msgstr ""
+
+#: py/compile.c
+msgid "cannot emit native code for this architecture"
 msgstr ""
 
 #: extmod/ulab/code/ndarray.c
@@ -3128,7 +3137,7 @@ msgstr ""
 msgid "div/mod not implemented for uint"
 msgstr ""
 
-#: extmod/ulab/code/numpy/create.c
+#: extmod/ulab/code/numpy/create.c py/objint_longlong.c py/objint_mpz.c
 msgid "divide by zero"
 msgstr ""
 
@@ -3504,6 +3513,10 @@ msgstr ""
 msgid "interval must be in range %s-%s"
 msgstr ""
 
+#: py/emitinlinerv32.c
+msgid "invalid RV32 instruction '%q'"
+msgstr ""
+
 #: py/compile.c
 msgid "invalid arch"
 msgstr ""
@@ -3698,6 +3711,10 @@ msgstr ""
 msgid "mode must be complete, or reduced"
 msgstr ""
 
+#: py/runtime.c
+msgid "module '%q' has no attribute '%q'"
+msgstr ""
+
 #: py/builtinimport.c
 msgid "module not found"
 msgstr ""
@@ -3746,10 +3763,6 @@ msgstr ""
 msgid "native code in .mpy unsupported"
 msgstr ""
 
-#: py/asmthumb.c
-msgid "native method too big"
-msgstr ""
-
 #: py/emitnative.c
 msgid "native yield"
 msgstr ""
@@ -3771,7 +3784,7 @@ msgstr ""
 msgid "negative power with no float support"
 msgstr ""
 
-#: py/objint_mpz.c py/runtime.c
+#: py/objint_longlong.c py/objint_mpz.c py/runtime.c
 msgid "negative shift count"
 msgstr ""
 
@@ -4126,6 +4139,10 @@ msgstr ""
 msgid "real and imaginary parts must be of equal length"
 msgstr ""
 
+#: extmod/modre.c
+msgid "regex too complex"
+msgstr ""
+
 #: py/builtinimport.c
 msgid "relative import"
 msgstr ""
@@ -4133,6 +4150,10 @@ msgstr ""
 #: py/obj.c
 #, c-format
 msgid "requested length %d but object has length %d"
+msgstr ""
+
+#: py/objint_longlong.c py/parsenum.c
+msgid "result overflows long long storage"
 msgstr ""
 
 #: extmod/ulab/code/ndarray_operators.c
@@ -4399,10 +4420,6 @@ msgstr ""
 msgid "type takes 1 or 3 arguments"
 msgstr ""
 
-#: py/objint_longlong.c
-msgid "ulonglong too large"
-msgstr ""
-
 #: py/parse.c
 msgid "unexpected indent"
 msgstr ""
@@ -4422,10 +4439,6 @@ msgstr ""
 
 #: py/parse.c
 msgid "unindent doesn't match any outer indent level"
-msgstr ""
-
-#: py/emitinlinerv32.c
-msgid "unknown RV32 instruction '%q'"
 msgstr ""
 
 #: py/objstr.c
