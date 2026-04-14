@@ -62,6 +62,7 @@ DEFAULT_MODULES = [
     "math",
     "msgpack",
     "aesio",
+    "adafruit_bus_device",
 ]
 # Flags that don't match with with a *bindings module. Some used by adafruit_requests
 MPCONFIG_FLAGS = ["array", "errno", "io", "json", "math"]
@@ -549,8 +550,8 @@ async def build_circuitpython():
             hal_source.extend(top.glob(f"ports/zephyr-cp/common-hal/{module.name}/*.c"))
             # Only include shared-module/*.c if no common-hal/*.c files were found
             if len(hal_source) == len_before or module.name in SHARED_MODULE_AND_COMMON_HAL:
-                hal_source.extend(top.glob(f"shared-module/{module.name}/*.c"))
-            hal_source.extend(top.glob(f"shared-bindings/{module.name}/*.c"))
+                hal_source.extend(top.glob(f"shared-module/{module.name}/**/*.c"))
+            hal_source.extend(top.glob(f"shared-bindings/{module.name}/**/*.c"))
             if module.name in LIBRARY_SOURCE:
                 for library_source in LIBRARY_SOURCE[module.name]:
                     library_sources.extend(top.glob(library_source))
