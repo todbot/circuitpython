@@ -117,4 +117,4 @@ watchdog = false
 wifi = true # Zephyr board has wifi
 zephyr_display = false
 zephyr_kernel = false
-zlib = true
+zlib = false
