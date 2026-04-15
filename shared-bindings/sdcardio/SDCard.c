@@ -49,6 +49,7 @@
 //|            Failure to do so will corrupt the SPI bus during SD card init. In
 //|            these cases, initialize and drive the other peripheral's CS high
 //|            first, then initialize the SD card.
+//|
 //|         Example usage:
 //|
 //|         .. code-block:: python
