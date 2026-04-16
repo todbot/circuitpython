@@ -75,13 +75,14 @@ static bool fetch_source_buffer(audiospeed_speedchanger_obj_t *self) {
         self->source_exhausted = true;
         return false;
     }
+    uint32_t old_src_sample_count = self->src_sample_count;
     self->src_buffer = buf;
     self->src_buffer_length = len;
     uint8_t bytes_per_frame = (self->base.bits_per_sample / 8) * self->base.channel_count;
     self->src_sample_count = len / bytes_per_frame;
     self->source_done = (result == GET_BUFFER_DONE);
-    // Reset phase to index within this new buffer
-    self->phase = 0;
+    // Subtract old buffer's frame count to preserve fractional phase and overshoot
+    self->phase -= old_src_sample_count << SPEED_SHIFT;
     return true;
 }
 
@@ -143,7 +144,7 @@ audioio_get_buffer_result_t audiospeed_speedchanger_get_buffer(audiospeed_speedc
         }
     } else {
         // 16-bit samples
-        int16_t *out = (int16_t *)self->output_buffer;
+        int16_t *out = (int16_t *)(void *)self->output_buffer;
         while (out_frames < max_out_frames) {
             uint32_t src_index = self->phase >> SPEED_SHIFT;
             if (src_index >= self->src_sample_count) {
@@ -156,7 +157,7 @@ audioio_get_buffer_result_t audiospeed_speedchanger_get_buffer(audiospeed_speedc
                 }
                 src_index = 0;
             }
-            int16_t *src = (int16_t *)(self->src_buffer + src_index * bytes_per_frame);
+            int16_t *src = (int16_t *)(void *)(self->src_buffer + src_index * bytes_per_frame);
             for (uint8_t c = 0; c < channels; c++) {
                 *out++ = src[c];
             }
