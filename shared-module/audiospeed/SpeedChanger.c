@@ -133,7 +133,7 @@ audioio_get_buffer_result_t audiospeed_speedchanger_get_buffer(audiospeed_speedc
                 if (!fetch_source_buffer(self)) {
                     break;
                 }
-                src_index = 0; // phase was reset by fetch
+                src_index = self->phase >> SPEED_SHIFT;  // phase reset by fetch
             }
             uint8_t *src = self->src_buffer + src_index * bytes_per_frame;
             for (uint8_t c = 0; c < channels; c++) {
@@ -155,7 +155,7 @@ audioio_get_buffer_result_t audiospeed_speedchanger_get_buffer(audiospeed_speedc
                 if (!fetch_source_buffer(self)) {
                     break;
                 }
-                src_index = 0;
+                src_index = self->phase >> SPEED_SHIFT;
             }
             int16_t *src = (int16_t *)(void *)(self->src_buffer + src_index * bytes_per_frame);
             for (uint8_t c = 0; c < channels; c++) {
