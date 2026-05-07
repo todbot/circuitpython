@@ -145,12 +145,16 @@ typedef enum {
 static display_type_t detect_display_type(void) {
     // Bitbang 4-wire SPI with a bidirectional data line to read the first word of register 0x2e,
     // which is the 10-byte USER ID.
+    // NOTE: the SSD1680 drives its response back on the MOSI/DATA line (GPIO35) in half-duplex
+    // mode, NOT on the separate MISO line (GPIO37). Read with GPIO35 switched to input.
     // On the IL0373 it will return 0xff because it's not a valid register.
-    // With SSD1680, we have seen two types:
+    // With SSD1680, we have seen three types:
     // 1. The first batch of displays, labeled "FPC-A005 20.06.15 TRX", which needs colstart=0.
-    //    These have 10 byes of zeros in the User ID
+    //    These have 10 bytes of zeros in the User ID.
     // 2. Second batch, labeled "FPC-7619rev.b", which needs colstart=8.
     //    The USER ID for these boards is [0x44, 0x0, 0x4, 0x0, 0x25, 0x0, 0x1, 0x78, 0x2b, 0xe]
+    // 3. Third batch, labeled "FPC-7519rev.b", which needs colstart=8.
+    //    The USER ID for these boards is [0xca, 0xfe, 0x0, 0x16, 0x80, 0x0, 0x75, 0x1, 0x0, 0x98]
     // So let's distinguish just by the first byte.
     digitalio_digitalinout_obj_t data;
     digitalio_digitalinout_obj_t clock;
@@ -213,6 +217,8 @@ static display_type_t detect_display_type(void) {
         case 0x00:
             return DISPLAY_SSD1680_COLSTART_0;
         case 0x44:
+            return DISPLAY_SSD1680_COLSTART_8;
+        case 0xca:
             return DISPLAY_SSD1680_COLSTART_8;
     }
 }
