@@ -151,6 +151,7 @@ msgid "%q indices must be integers, not %s"
 msgstr "Indexy %q musí být celá čísla, nikoli %s"
 
 #: ports/analog/common-hal/busio/SPI.c ports/analog/common-hal/busio/UART.c
+#: ports/stm/common-hal/audioio/AudioOut.c
 #: shared-bindings/digitalio/DigitalInOutProtocol.c
 #: shared-module/busdisplay/BusDisplay.c
 msgid "%q init failed"
@@ -906,10 +907,12 @@ msgid "Critical ROS failure during soft reboot, reset required: %d"
 msgstr ""
 
 #: ports/stm/common-hal/analogio/AnalogOut.c
+#: ports/stm/common-hal/audioio/AudioOut.c
 msgid "DAC Channel Init Error"
 msgstr "Chyba inicializace kanálu DAC"
 
 #: ports/stm/common-hal/analogio/AnalogOut.c
+#: ports/stm/common-hal/audioio/AudioOut.c
 msgid "DAC Device Init Error"
 msgstr "Chyba inicializace zařízení DAC"
 
@@ -1561,6 +1564,7 @@ msgstr "Žádné CCCD pro tuto charakteristiku"
 
 #: ports/atmel-samd/common-hal/analogio/AnalogOut.c
 #: ports/stm/common-hal/analogio/AnalogOut.c
+#: ports/stm/common-hal/audioio/AudioOut.c
 msgid "No DAC on chip"
 msgstr "Žádný DAC na čipu"
 
@@ -4078,7 +4082,7 @@ msgstr ""
 msgid "output array must be contiguous"
 msgstr ""
 
-#: py/objint_mpz.c
+#: py/objint_longlong.c py/objint_mpz.c
 msgid "overflow converting long int to machine word"
 msgstr ""
 
