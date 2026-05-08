@@ -5,7 +5,6 @@ import pathlib
 import click
 import copy
 import kconfiglib
-import kconfiglib.core
 import os
 
 OPT_SETTINGS = [
@@ -203,7 +202,7 @@ def update(debug, board, update_all):  # noqa: C901 too complex
     kconfig_path = pathlib.Path(f"build-{board}/esp-idf/kconfigs.in")
 
     kconfig_path = pathlib.Path("esp-idf/Kconfig")
-    kconfig = kconfiglib.Kconfig(kconfig_path)
+    kconfig = kconfiglib.Kconfig(str(kconfig_path))
 
     input_config = pathlib.Path(f"build-{board}/esp-idf/sdkconfig")
     kconfig.load_config(input_config)
@@ -244,7 +243,7 @@ def update(debug, board, update_all):  # noqa: C901 too complex
     # Don't include the board file in cp defaults. The board may have custom
     # overrides.
 
-    cp_kconfig_defaults = kconfiglib.Kconfig(kconfig_path)
+    cp_kconfig_defaults = kconfiglib.Kconfig(str(kconfig_path))
     for default_file in sdkconfigs:
         cp_kconfig_defaults.load_config(default_file, replace=False)
 
@@ -332,7 +331,7 @@ def update(debug, board, update_all):  # noqa: C901 too complex
                     shared_keys = {}
                     first = True
                     for path in pathlib.Path(".").glob(loc):
-                        kc = kconfiglib.Kconfig(path)
+                        kc = kconfiglib.Kconfig(str(path))
                         all_file_syms = set()
                         for sym in kc.unique_defined_syms:
                             all_file_syms.add(sym)
@@ -378,6 +377,8 @@ def update(debug, board, update_all):  # noqa: C901 too complex
                     all_references.update(rdep.referenced)
             psram_reference = False
             for referenced in all_references:
+                if not referenced.name:
+                    continue
                 if referenced.name.startswith("IDF_TARGET"):
                     target_reference = True
                 if referenced.name in target_symbols:
