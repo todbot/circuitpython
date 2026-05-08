@@ -143,7 +143,7 @@ typedef enum {
 } display_type_t;
 
 static display_type_t detect_display_type(void) {
-    // Bitbang 4-wire SPI with a bidirectional data line to read the first word of register 0x2e,
+    // Bitbang 4-wire SPI with a bidirectional data line to read the first byte of register 0x2e,
     // which is the 10-byte USER ID.
     // NOTE: the SSD1680 drives its response back on the MOSI/DATA line (GPIO35) in half-duplex
     // mode, NOT on the separate MISO line (GPIO37). Read with GPIO35 switched to input.
