@@ -399,12 +399,13 @@ CHIP_COMPONENTS = \
 	esp_hal_usb
 
 else ifeq ($(IDF_TARGET),esp32p4)
+CIRCUITPY_ESP32P4_REV ?= 1
 CFLAGS += \
-	-isystem esp-idf/components/soc/esp32p4/register/hw_ver3 \
-	-isystem esp-idf/components/soc/esp32p4/register/hw_ver1 \
+	-isystem esp-idf/components/soc/esp32p4/register/hw_ver$(CIRCUITPY_ESP32P4_REV) \
 	-isystem esp-idf/components/esp_hw_support/ldo/include \
 	-isystem esp-idf/components/esp_driver_touch_sens/hw_ver3/include
 
+ifeq ($(CIRCUITPY_ESP32P4_REV),3)
 LDFLAGS += \
 	-Tesp32p4.rom.libc.ld \
 	-Tesp32p4.rom.systimer.ld \
@@ -413,6 +414,14 @@ LDFLAGS += \
 	-Tesp32p4.rom.eco5.rvfp.ld \
 	-Tesp32p4.rom.version.ld \
 	-Trom.wdt.ld
+else
+LDFLAGS += \
+	-Tesp32p4.rom.libc.ld \
+	-Tesp32p4.rom.systimer.ld \
+	-Tesp32p4.rom.rvfp.ld \
+	-Tesp32p4.rom.version.ld \
+	-Trom.wdt.ld
+endif
 
 
 CHIP_COMPONENTS = \
