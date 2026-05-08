@@ -217,7 +217,6 @@ static display_type_t detect_display_type(void) {
         case 0x00:
             return DISPLAY_SSD1680_COLSTART_0;
         case 0x44:
-            return DISPLAY_SSD1680_COLSTART_8;
         case 0xca:
             return DISPLAY_SSD1680_COLSTART_8;
     }
