@@ -128,13 +128,13 @@ const uint8_t ssd1680_display_start_sequence[] = {
     0x22, 0x00, 0x01, 0xc7 // display update mode
 };
 
-// FPC-7519rev.b (User ID byte 0xca) requires VCOM=0x20 (-1.5V) for correct contrast.
+// FPC-7519rev.b (User ID byte 0xca) requires lower VCOM for correct contrast.
 // The 0x44 panel works correctly with the default VCOM=0x28, so keep them separate.
 const uint8_t ssd1680_vcom20_display_start_sequence[] = {
     0x12, DELAY, 0x00, 0x14, // soft reset and wait 20ms
     0x11, 0x00, 0x01, 0x03, // Ram data entry mode
     0x3c, 0x00, 0x01, 0x03, // border color
-    0x2c, 0x00, 0x01, 0x20, // Set vcom voltage (0x20 = -1.5V, tuned for FPC-7519rev.b)
+    0x2c, 0x00, 0x01, 0x14, // Set vcom voltage (0x14 = -1.0V, tuned for FPC-7519rev.b)
     0x03, 0x00, 0x01, 0x17, // Set gate voltage
     0x04, 0x00, 0x03, 0x41, 0xae, 0x32, // Set source voltage
     0x4e, 0x00, 0x01, 0x01, // ram x count
