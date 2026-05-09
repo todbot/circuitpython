@@ -129,8 +129,9 @@ const uint8_t ssd1680_display_start_sequence[] = {
 };
 
 // FPC-7519rev.b (User ID byte 0xca) requires lower VCOM for correct contrast.
+// VCOM=0x14 (-1.0V) confirmed by reading the panel's OTP register (cmd 0x2D, byte 1 = 0x14).
 // The 0x44 panel works correctly with the default VCOM=0x28, so keep them separate.
-const uint8_t ssd1680_vcom20_display_start_sequence[] = {
+const uint8_t ssd1680_vcom14_display_start_sequence[] = {
     0x12, DELAY, 0x00, 0x14, // soft reset and wait 20ms
     0x11, 0x00, 0x01, 0x03, // Ram data entry mode
     0x3c, 0x00, 0x01, 0x03, // border color
@@ -175,7 +176,7 @@ typedef enum {
     DISPLAY_IL0373,
     DISPLAY_SSD1680_COLSTART_0,
     DISPLAY_SSD1680_COLSTART_8,
-    DISPLAY_SSD1680_COLSTART_8_VCOM20, // FPC-7519rev.b (User ID 0xca)
+    DISPLAY_SSD1680_COLSTART_8_VCOM14, // FPC-7519rev.b (User ID 0xca)
 } display_type_t;
 
 static display_type_t detect_display_type(void) {
@@ -255,7 +256,7 @@ static display_type_t detect_display_type(void) {
         case 0x44:
             return DISPLAY_SSD1680_COLSTART_8;
         case 0xca:
-            return DISPLAY_SSD1680_COLSTART_8_VCOM20;
+            return DISPLAY_SSD1680_COLSTART_8_VCOM14;
     }
 }
 
@@ -304,13 +305,13 @@ void board_init(void) {
     } else {
         epaperdisplay_construct_args_t args = EPAPERDISPLAY_CONSTRUCT_ARGS_DEFAULTS;
         // Default colstart is 0.
-        if (display_type == DISPLAY_SSD1680_COLSTART_8 || display_type == DISPLAY_SSD1680_COLSTART_8_VCOM20) {
+        if (display_type == DISPLAY_SSD1680_COLSTART_8 || display_type == DISPLAY_SSD1680_COLSTART_8_VCOM14) {
             args.colstart = 8;
         }
         args.bus = bus;
-        if (display_type == DISPLAY_SSD1680_COLSTART_8_VCOM20) {
-            args.start_sequence = ssd1680_vcom20_display_start_sequence;
-            args.start_sequence_len = sizeof(ssd1680_vcom20_display_start_sequence);
+        if (display_type == DISPLAY_SSD1680_COLSTART_8_VCOM14) {
+            args.start_sequence = ssd1680_vcom14_display_start_sequence;
+            args.start_sequence_len = sizeof(ssd1680_vcom14_display_start_sequence);
         } else {
             args.start_sequence = ssd1680_display_start_sequence;
             args.start_sequence_len = sizeof(ssd1680_display_start_sequence);
