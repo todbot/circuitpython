@@ -107,7 +107,7 @@ static void display_init(void) {
         spi,
         MP_OBJ_FROM_PTR(&pin_GPIO2),    // DC
         MP_OBJ_FROM_PTR(&pin_GPIO10),     // CS
-        MP_OBJ_NULL,           // RST
+        mp_const_none,           // RST
         80000000,       // baudrate
         0,              // polarity
         0               // phase

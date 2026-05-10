@@ -48,7 +48,7 @@ static bool display_init(void) {
         spi,
         MP_OBJ_FROM_PTR(&pin_GPIO35),    // DC
         MP_OBJ_FROM_PTR(&pin_GPIO3),     // CS
-        NULL,           // RST
+        mp_const_none,           // RST
         40000000,       // baudrate
         0,              // polarity
         0               // phase

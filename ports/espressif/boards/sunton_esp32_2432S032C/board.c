@@ -45,7 +45,7 @@ static void display_init(void) {
         spi,
         MP_OBJ_FROM_PTR(&pin_GPIO2),  // TFT_DC
         MP_OBJ_FROM_PTR(&pin_GPIO15),  // TFT_CS
-        MP_OBJ_NULL,  // TFT_RST
+        mp_const_none,  // TFT_RST
         26600000, // Baudrate
         0, // Polarity
         0 // Phase
