@@ -18,6 +18,7 @@
 #include "shared-module/storage/__init__.h"
 #include "supervisor/filesystem.h"
 #include "supervisor/shared/reload.h"
+#include "supervisor/shared/settings.h"
 
 #define MSC_FLASH_BLOCK_SIZE    512
 
@@ -365,6 +366,26 @@ void tud_msc_inquiry_cb(uint8_t lun, uint8_t vendor_id[8], uint8_t product_id[16
     memcpy(product_rev, CFG_TUD_MSC_PRODUCT_REV, strlen(CFG_TUD_MSC_PRODUCT_REV));
 }
 
+#ifdef SDCARD_LUN
+typedef enum {
+    SDCARD_USB_SETTING_NOT_YET_READ = 0,
+    SDCARD_USB_SETTING_TRUE,
+    SDCARD_USB_SETTING_FALSE,
+} sdcard_usb_setting_state_t;
+
+static sdcard_usb_setting_state_t _sdcard_usb_setting_state = SDCARD_USB_SETTING_NOT_YET_READ;
+
+// Read only once to save file access time.
+static bool sdcard_usb_enabled(void) {
+    if (_sdcard_usb_setting_state == SDCARD_USB_SETTING_NOT_YET_READ) {
+        bool setting = true;
+        (void)settings_get_bool("CIRCUITPY_SDCARD_USB", &setting);
+        _sdcard_usb_setting_state = setting ? SDCARD_USB_SETTING_TRUE : SDCARD_USB_SETTING_FALSE;
+    }
+    return _sdcard_usb_setting_state == SDCARD_USB_SETTING_TRUE;
+}
+#endif
+
 // Invoked when received Test Unit Ready command.
 // return true allowing host to read/write this LUN e.g SD card inserted
 bool tud_msc_test_unit_ready_cb(uint8_t lun) {
@@ -372,17 +393,16 @@ bool tud_msc_test_unit_ready_cb(uint8_t lun) {
         return false;
     }
 
-    #ifdef SDCARD_LUN
-    if (lun == SDCARD_LUN) {
-        automount_sd_card();
-    }
-    #endif
-
     fs_user_mount_t *current_mount = get_vfs(lun);
     if (current_mount == NULL) {
         return false;
     }
-    if (ejected[lun] || eject_once[lun]) {
+
+    if (ejected[lun] || eject_once[lun]
+        #ifdef SDCARD_LUN
+        || (lun == SDCARD_LUN && !sdcard_usb_enabled())
+        #endif
+        ) {
         eject_once[lun] = false;
         // Set 0x3a for media not present.
         tud_msc_set_sense(lun, SCSI_SENSE_NOT_READY, 0x3A, 0x00);
