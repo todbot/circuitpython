@@ -55,7 +55,7 @@ void board_init(void) {
         spi,
         MP_OBJ_FROM_PTR(&pin_PA09), // Command or data
         MP_OBJ_FROM_PTR(&pin_PA08), // Chip select
-        MP_OBJ_NULL, // Reset
+        mp_const_none,              // Reset
         24000000, // Baudrate
         0, // Polarity
         0); // Phase

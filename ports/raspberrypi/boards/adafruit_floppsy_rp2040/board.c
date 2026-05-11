@@ -36,7 +36,7 @@ void board_init(void) {
         spi,
         MP_OBJ_FROM_PTR(CIRCUITPY_BOARD_TFT_DC),
         MP_OBJ_FROM_PTR(CIRCUITPY_BOARD_TFT_CS),
-        MP_OBJ_NULL, // TFT_RESET Reset
+        mp_const_none, // TFT_RESET Reset
         40000000, // Baudrate
         0, // Polarity
         0); // Phase
