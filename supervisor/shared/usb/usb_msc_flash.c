@@ -367,6 +367,7 @@ void tud_msc_inquiry_cb(uint8_t lun, uint8_t vendor_id[8], uint8_t product_id[16
 }
 
 #ifdef SDCARD_LUN
+#if CIRCUITPY_SETTINGS_TOML
 typedef enum {
     SDCARD_USB_SETTING_NOT_YET_READ = 0,
     SDCARD_USB_SETTING_TRUE,
@@ -384,6 +385,11 @@ static bool sdcard_usb_enabled(void) {
     }
     return _sdcard_usb_setting_state == SDCARD_USB_SETTING_TRUE;
 }
+#else
+static bool sdcard_usb_enabled(void) {
+    return CIRCUITPY_SDCARD_USB;
+}
+#endif
 #endif
 
 // Invoked when received Test Unit Ready command.
