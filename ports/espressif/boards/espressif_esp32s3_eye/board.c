@@ -58,7 +58,7 @@ void board_init(void) {
         spi,
         MP_OBJ_FROM_PTR(&pin_GPIO43),    // DC
         MP_OBJ_FROM_PTR(&pin_GPIO44),    // CS
-        NULL,           // no reset pin
+        mp_const_none,                   // no reset pin
         40000000,       // baudrate
         0,              // polarity
         0               // phase

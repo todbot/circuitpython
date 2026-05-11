@@ -54,7 +54,7 @@ void board_init(void) {
         spi,
         MP_OBJ_FROM_PTR(&pin_GPIO21), // TFT_DC Command or data
         MP_OBJ_FROM_PTR(&pin_GPIO5), // TFT_CS Chip select
-        MP_OBJ_NULL, // TFT_RST Reset
+        mp_const_none, // TFT_RST Reset
         40000000, // Baudrate
         0, // Polarity
         0); // Phase
