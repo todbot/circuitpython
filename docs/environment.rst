@@ -20,7 +20,7 @@ Environment variables are sometimes used to store "secrets" such as Wi-Fi passwo
 keys. The ``settings.toml`` file *does not* make the secrets secure. It only separates them from the
 code.
 
-CircuitPython supports onlya subset of the full TOML specification; see below for more details.
+CircuitPython supports only a subset of the full TOML specification; see below for more details.
 The subset is very "Python-like", which is a key reason the format was selected.
 To make the code simpler, the implementation accepts some files that are
 not valid TOML, but do not depend on this.
