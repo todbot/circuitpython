@@ -16,6 +16,7 @@ typedef struct {
     uint32_t sample_rate;
     uint8_t bit_depth;
     bool mono;
+    bool samples_signed;
     bool settled;
     rp2pio_statemachine_obj_t state_machine;
     // Background DMA ring buffer. The state machine alternates DMA writes

@@ -151,7 +151,8 @@ static const uint16_t i2sin_program_left_justified_swap_32[] = {
 void common_hal_audioi2sin_i2sin_construct(audioi2sin_i2sin_obj_t *self,
     const mcu_pin_obj_t *bit_clock, const mcu_pin_obj_t *word_select,
     const mcu_pin_obj_t *data, const mcu_pin_obj_t *main_clock,
-    uint32_t sample_rate, uint8_t bit_depth, bool mono, bool left_justified) {
+    uint32_t sample_rate, uint8_t bit_depth, bool mono, bool left_justified,
+    bool samples_signed) {
 
     if (main_clock != NULL) {
         mp_raise_NotImplementedError_varg(MP_ERROR_TEXT("%q"), MP_QSTR_main_clock);
@@ -225,6 +226,7 @@ void common_hal_audioi2sin_i2sin_construct(audioi2sin_i2sin_obj_t *self,
     self->sample_rate = actual_frequency / pio_clocks_per_frame;
     self->bit_depth = bit_depth;
     self->mono = mono;
+    self->samples_signed = samples_signed;
     self->settled = false;
     self->ring = NULL;
     self->ring_size = 0;
@@ -293,6 +295,10 @@ uint32_t common_hal_audioi2sin_i2sin_get_sample_rate(audioi2sin_i2sin_obj_t *sel
     return self->sample_rate;
 }
 
+bool common_hal_audioi2sin_i2sin_get_samples_signed(audioi2sin_i2sin_obj_t *self) {
+    return self->samples_signed;
+}
+
 // In 16-bit mode, each PIO frame produces a single 32-bit FIFO word with bits
 // 31..16 = right channel and bits 15..0 = left channel (both MSB-first signed
 // 16-bit). In 24/32-bit mode each frame produces two FIFO words: right first,
@@ -321,6 +327,15 @@ uint32_t common_hal_audioi2sin_i2sin_record_to_buffer(audioi2sin_i2sin_obj_t *se
     uint32_t output_count = 0;
     const size_t ring_size = self->ring_size;
     const size_t half_size = self->half_size;
+
+    // I2S delivers signed PCM. When the caller asked for unsigned samples,
+    // flip the sign bit per sample (XOR with 0x8000 for 16-bit, 0x800000 for
+    // 24-bit data in a 32-bit slot, 0x80000000 for 32-bit), matching the WAV
+    // convention.
+    const uint16_t flip16 = self->samples_signed ? 0 : 0x8000u;
+    const uint32_t flip32 = self->samples_signed
+        ? 0u
+        : (self->bit_depth == 24 ? 0x800000u : 0x80000000u);
 
     if (self->bit_depth == 16) {
         // 16-bit mode auto-pushes one stereo frame per FIFO word. The DMA has
@@ -352,8 +367,8 @@ uint32_t common_hal_audioi2sin_i2sin_record_to_buffer(audioi2sin_i2sin_obj_t *se
             }
             while (avail >= 4 && output_count < output_buffer_length) {
                 uint32_t frame = *(volatile uint32_t *)(self->ring + self->read_pos);
-                uint16_t left = (uint16_t)(frame & 0xffff);
-                uint16_t right = (uint16_t)(frame >> 16);
+                uint16_t left = (uint16_t)(frame & 0xffff) ^ flip16;
+                uint16_t right = (uint16_t)(frame >> 16) ^ flip16;
                 if (self->mono) {
                     output[output_count++] = left;
                 } else {
@@ -410,9 +425,9 @@ uint32_t common_hal_audioi2sin_i2sin_record_to_buffer(audioi2sin_i2sin_obj_t *se
                 continue;
             }
             while (avail >= 8 && output_count < output_buffer_length) {
-                uint32_t right = *(volatile uint32_t *)(self->ring + self->read_pos);
+                uint32_t right = *(volatile uint32_t *)(self->ring + self->read_pos) ^ flip32;
                 size_t next_pos = (self->read_pos + 4) % ring_size;
-                uint32_t left = *(volatile uint32_t *)(self->ring + next_pos);
+                uint32_t left = *(volatile uint32_t *)(self->ring + next_pos) ^ flip32;
                 if (self->mono) {
                     output[output_count++] = left;
                 } else {

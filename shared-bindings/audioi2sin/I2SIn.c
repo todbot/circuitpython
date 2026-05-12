@@ -30,6 +30,7 @@
 //|         bit_depth: int = 16,
 //|         mono: bool = True,
 //|         left_justified: bool = False,
+//|         samples_signed: bool = True,
 //|     ) -> None:
 //|         """Create an I2SIn object associated with the given pins. This allows you to
 //|         record audio signals from an external I2S source (e.g. an I2S MEMS microphone
@@ -51,6 +52,9 @@
 //|         :param bool mono: True when capturing a single channel of audio, captures two channels otherwise.
 //|         :param bool left_justified: True when data bits are aligned with the word select clock. False
 //|           when they are shifted by one to match classic I2S protocol. Set True for mics like the SPH0645LM4H.
+//|         :param bool samples_signed: Samples are signed (True) or unsigned (False). I2S mics deliver signed
+//|           two's-complement PCM natively; set False to have the recorded samples converted to unsigned PCM
+//|           (the top/sign bit is flipped, matching the WAV convention for unsigned samples).
 //|
 //|         Example, recording 16-bit mono samples from an INMP441::
 //|
@@ -71,7 +75,7 @@ static mp_obj_t audioi2sin_i2sin_make_new(const mp_obj_type_t *type, size_t n_ar
     return NULL; // Not reachable.
     #else
     enum { ARG_bit_clock, ARG_word_select, ARG_data, ARG_main_clock,
-           ARG_sample_rate, ARG_bit_depth, ARG_mono, ARG_left_justified };
+           ARG_sample_rate, ARG_bit_depth, ARG_mono, ARG_left_justified, ARG_samples_signed };
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_bit_clock,      MP_ARG_REQUIRED | MP_ARG_OBJ },
         { MP_QSTR_word_select,    MP_ARG_REQUIRED | MP_ARG_OBJ },
@@ -81,6 +85,7 @@ static mp_obj_t audioi2sin_i2sin_make_new(const mp_obj_type_t *type, size_t n_ar
         { MP_QSTR_bit_depth,      MP_ARG_KW_ONLY | MP_ARG_INT,  {.u_int = 16} },
         { MP_QSTR_mono,           MP_ARG_KW_ONLY | MP_ARG_BOOL, {.u_bool = true} },
         { MP_QSTR_left_justified, MP_ARG_KW_ONLY | MP_ARG_BOOL, {.u_bool = false} },
+        { MP_QSTR_samples_signed, MP_ARG_KW_ONLY | MP_ARG_BOOL, {.u_bool = true} },
     };
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
     mp_arg_parse_all_kw_array(n_args, n_kw, all_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
@@ -97,10 +102,11 @@ static mp_obj_t audioi2sin_i2sin_make_new(const mp_obj_type_t *type, size_t n_ar
     }
     bool mono = args[ARG_mono].u_bool;
     bool left_justified = args[ARG_left_justified].u_bool;
+    bool samples_signed = args[ARG_samples_signed].u_bool;
 
     audioi2sin_i2sin_obj_t *self = mp_obj_malloc_with_finaliser(audioi2sin_i2sin_obj_t, &audioi2sin_i2sin_type);
     common_hal_audioi2sin_i2sin_construct(self, bit_clock, word_select, data, main_clock,
-        sample_rate, bit_depth, mono, left_justified);
+        sample_rate, bit_depth, mono, left_justified, samples_signed);
 
     return MP_OBJ_FROM_PTR(self);
     #endif
@@ -200,6 +206,20 @@ MP_DEFINE_CONST_FUN_OBJ_1(audioi2sin_i2sin_get_bit_depth_obj, audioi2sin_i2sin_o
 MP_PROPERTY_GETTER(audioi2sin_i2sin_bit_depth_obj,
     (mp_obj_t)&audioi2sin_i2sin_get_bit_depth_obj);
 
+//|     samples_signed: bool
+//|     """True if recorded samples are signed PCM, False for unsigned. (read-only)"""
+//|
+//|
+static mp_obj_t audioi2sin_i2sin_obj_get_samples_signed(mp_obj_t self_in) {
+    audioi2sin_i2sin_obj_t *self = MP_OBJ_TO_PTR(self_in);
+    check_for_deinit(self);
+    return mp_obj_new_bool(common_hal_audioi2sin_i2sin_get_samples_signed(self));
+}
+MP_DEFINE_CONST_FUN_OBJ_1(audioi2sin_i2sin_get_samples_signed_obj, audioi2sin_i2sin_obj_get_samples_signed);
+
+MP_PROPERTY_GETTER(audioi2sin_i2sin_samples_signed_obj,
+    (mp_obj_t)&audioi2sin_i2sin_get_samples_signed_obj);
+
 static const mp_rom_map_elem_t audioi2sin_i2sin_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&audioi2sin_i2sin_deinit_obj) },
     { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&audioi2sin_i2sin_deinit_obj) },
@@ -208,6 +228,7 @@ static const mp_rom_map_elem_t audioi2sin_i2sin_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_record), MP_ROM_PTR(&audioi2sin_i2sin_record_obj) },
     { MP_ROM_QSTR(MP_QSTR_sample_rate), MP_ROM_PTR(&audioi2sin_i2sin_sample_rate_obj) },
     { MP_ROM_QSTR(MP_QSTR_bit_depth), MP_ROM_PTR(&audioi2sin_i2sin_bit_depth_obj) },
+    { MP_ROM_QSTR(MP_QSTR_samples_signed), MP_ROM_PTR(&audioi2sin_i2sin_samples_signed_obj) },
 };
 static MP_DEFINE_CONST_DICT(audioi2sin_i2sin_locals_dict, audioi2sin_i2sin_locals_dict_table);
 #endif // CIRCUITPY_AUDIOI2SIN

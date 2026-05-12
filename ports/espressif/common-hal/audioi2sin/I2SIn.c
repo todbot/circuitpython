@@ -20,7 +20,8 @@
 void common_hal_audioi2sin_i2sin_construct(audioi2sin_i2sin_obj_t *self,
     const mcu_pin_obj_t *bit_clock, const mcu_pin_obj_t *word_select,
     const mcu_pin_obj_t *data, const mcu_pin_obj_t *main_clock,
-    uint32_t sample_rate, uint8_t bit_depth, bool mono, bool left_justified) {
+    uint32_t sample_rate, uint8_t bit_depth, bool mono, bool left_justified,
+    bool samples_signed) {
 
     if (bit_depth != 8 && bit_depth != 16 && bit_depth != 24 && bit_depth != 32) {
         mp_raise_ValueError(MP_ERROR_TEXT("bit_depth must be 8, 16, 24, or 32."));
@@ -66,6 +67,7 @@ void common_hal_audioi2sin_i2sin_construct(audioi2sin_i2sin_obj_t *self,
     self->sample_rate = sample_rate;
     self->bit_depth = bit_depth;
     self->mono = mono;
+    self->samples_signed = samples_signed;
 
     claim_pin(bit_clock);
     claim_pin(word_select);
@@ -111,6 +113,31 @@ void common_hal_audioi2sin_i2sin_deinit(audioi2sin_i2sin_obj_t *self) {
     self->mclk = NULL;
 }
 
+// I2S delivers signed PCM. When samples_signed is false, XOR each sample with
+// the sign bit for its width to convert to unsigned PCM (WAV convention).
+static void i2sin_convert_to_unsigned(void *buffer, uint32_t samples,
+    uint8_t bit_depth, size_t element_size) {
+    if (bit_depth == 8) {
+        uint8_t *p = (uint8_t *)buffer;
+        for (uint32_t i = 0; i < samples; i++) {
+            p[i] ^= 0x80u;
+        }
+    } else if (bit_depth == 16) {
+        uint16_t *p = (uint16_t *)buffer;
+        for (uint32_t i = 0; i < samples; i++) {
+            p[i] ^= 0x8000u;
+        }
+    } else {
+        // 24- or 32-bit; both stored in 32-bit slots (element_size == 4).
+        (void)element_size;
+        uint32_t mask = (bit_depth == 24) ? 0x800000u : 0x80000000u;
+        uint32_t *p = (uint32_t *)buffer;
+        for (uint32_t i = 0; i < samples; i++) {
+            p[i] ^= mask;
+        }
+    }
+}
+
 uint32_t common_hal_audioi2sin_i2sin_record_to_buffer(audioi2sin_i2sin_obj_t *self,
     void *buffer, uint32_t length) {
     size_t element_size = self->bit_depth / 8;
@@ -119,41 +146,46 @@ uint32_t common_hal_audioi2sin_i2sin_record_to_buffer(audioi2sin_i2sin_obj_t *se
         element_size = 4;
     }
 
+    uint32_t produced;
     if (!self->mono) {
         size_t result = 0;
         esp_err_t err = i2s_channel_read(self->rx_chan, buffer, length * element_size,
             &result, portMAX_DELAY);
         CHECK_ESP_RESULT(err);
-        return result / element_size;
+        produced = result / element_size;
+    } else {
+        // Mono: bus is configured stereo, so each WS frame yields two slots in
+        // the DMA buffer. Read in chunks into a scratch and keep only the left
+        // slot of each frame.
+        uint8_t scratch[256];
+        const size_t frame_bytes = 2 * element_size;
+        const size_t scratch_frames = sizeof(scratch) / frame_bytes;
+        uint8_t *out = (uint8_t *)buffer;
+        produced = 0;
+        while (produced < length) {
+            size_t want_frames = length - produced;
+            if (want_frames > scratch_frames) {
+                want_frames = scratch_frames;
+            }
+            size_t got_bytes = 0;
+            esp_err_t err = i2s_channel_read(self->rx_chan, scratch,
+                want_frames * frame_bytes, &got_bytes, portMAX_DELAY);
+            CHECK_ESP_RESULT(err);
+            size_t got_frames = got_bytes / frame_bytes;
+            for (size_t i = 0; i < got_frames; i++) {
+                memcpy(out + produced * element_size,
+                    scratch + i * frame_bytes,
+                    element_size);
+                produced++;
+            }
+            if (got_frames < want_frames) {
+                break;
+            }
+        }
     }
 
-    // Mono: bus is configured stereo, so each WS frame yields two slots in
-    // the DMA buffer. Read in chunks into a scratch and keep only the left
-    // slot of each frame.
-    uint8_t scratch[256];
-    const size_t frame_bytes = 2 * element_size;
-    const size_t scratch_frames = sizeof(scratch) / frame_bytes;
-    uint8_t *out = (uint8_t *)buffer;
-    uint32_t produced = 0;
-    while (produced < length) {
-        size_t want_frames = length - produced;
-        if (want_frames > scratch_frames) {
-            want_frames = scratch_frames;
-        }
-        size_t got_bytes = 0;
-        esp_err_t err = i2s_channel_read(self->rx_chan, scratch,
-            want_frames * frame_bytes, &got_bytes, portMAX_DELAY);
-        CHECK_ESP_RESULT(err);
-        size_t got_frames = got_bytes / frame_bytes;
-        for (size_t i = 0; i < got_frames; i++) {
-            memcpy(out + produced * element_size,
-                scratch + i * frame_bytes,
-                element_size);
-            produced++;
-        }
-        if (got_frames < want_frames) {
-            break;
-        }
+    if (!self->samples_signed && produced > 0) {
+        i2sin_convert_to_unsigned(buffer, produced, self->bit_depth, element_size);
     }
     return produced;
 }
@@ -164,6 +196,10 @@ uint8_t common_hal_audioi2sin_i2sin_get_bit_depth(audioi2sin_i2sin_obj_t *self) 
 
 uint32_t common_hal_audioi2sin_i2sin_get_sample_rate(audioi2sin_i2sin_obj_t *self) {
     return self->sample_rate;
+}
+
+bool common_hal_audioi2sin_i2sin_get_samples_signed(audioi2sin_i2sin_obj_t *self) {
+    return self->samples_signed;
 }
 
 #endif // CIRCUITPY_AUDIOI2SIN

@@ -24,6 +24,7 @@ typedef struct {
     uint32_t sample_rate;
     uint8_t bit_depth;
     bool mono;
+    bool samples_signed;
 } audioi2sin_i2sin_obj_t;
 
 #endif
