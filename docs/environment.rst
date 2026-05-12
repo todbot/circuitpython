@@ -1,65 +1,77 @@
 Environment Variables
 =====================
 
-CircuitPython 8.0.0 introduces support for environment variables. Environment
-variables are commonly used to store "secrets" such as Wi-Fi passwords and API
-keys. This method *does not* make them secure. It only separates them from the
+CircuitPython provides support for environment variables. These values
+can be examined by user code, and are also used as settings by CircuitPython during startup.
+
+CircuitPython looks for a  file called ``settings.toml`` at the ``CIRCUITPY`` drive root
+to find the values of environment variables,
+The file format is a subset of the `TOML config file language <https://toml.io>`__.
+
+User code can access the values from the file using either `os.getenv()` or `supervisor.get_setting()`
+The value returned by `os.getenv()` is always a string, but `supervisor.get_setting()`
+will parse a value into a Python object: a string, an integer, a float, or a boolean.
+
+Both `os.getenv()` and `supervisor.get_setting()`
+read and parse the ``settings.toml`` file on every access.
+It will save time to copy any values you use repeatedly into variables.
+
+Environment variables are sometimes used to store "secrets" such as Wi-Fi passwords and API
+keys. The ``settings.toml`` file *does not* make the secrets secure. It only separates them from the
 code.
 
-CircuitPython uses a file called ``settings.toml`` at the drive root (no
-folder) as the environment.  User code can access the values from the file
-using `os.getenv()`. It is recommended to save any values used repeatedly in a
-variable because `os.getenv()` will parse the ``settings.toml`` file contents
-on every access.
+CircuitPython supports only a subset of the full TOML specification; see below for more details.
+The subset is very "Python-like", which is a key reason the format was selected.
+To make the code simpler, the implementation accepts some files that are
+not valid TOML, but do not depend on this.
 
-CircuitPython only supports a subset of the full toml specification, see below
-for more details. The subset is very "Python-like", which is a key reason we
-selected the format.
+The full TOML specification provides for tables labeled with table names in brackets, like
+``[table_name]``.
+CircuitPython does not support this and ignores any explicit inline TOML tables.
 
-Due to technical limitations it probably also accepts some files that are
-not valid TOML files; bugs of this nature are subject to change (i.e., be
-fixed) without the usual deprecation period for incompatible changes.
-
-File format example:
+Here is an example ``settings.toml`` file.
+Entries consist of a key and value, separated by an ``=`` sign.
+Upper and lower case may both be used in the key name.
 
 .. code-block::
 
-   str_key="Hello world" # with trailing comment
-   int_key = 7
-   unicode_key="œuvre"
-   unicode_key2="\\u0153uvre" # same as above
-   unicode_key3="\\U00000153uvre" # same as above
-   escape_codes="supported, including \\r\\n\\"\\\\"
-   # comment
-   [subtable]
-   subvalue="cannot retrieve this using getenv"
+   # Comment.
+   CIRCUITPY_WIFI_PASSWORD = "mypassword"
+   GREETING="Hello world"       # trailing comments are ok
+   REPEAT_COUNT = 7             # an integer
+   CIRCUITPY_SDCARD_USB = false # a boolean
+   delay = 0.75                 # a float
+   FRENCH="œuvre"               # unicode can be used
+   FRENCH2="\\u0153uvre"        # same unicode string, using a 16-bit escape code
+   FRENCH3="\\U00000153uvre"    # same unicode string, using a 32-bit escape code
+   STRING_WITH_ESCAPE_CODES="supported, including \\r\\n\\"\\\\"
 
-
-Details of the toml language subset
+Details of the TOML language subset
 -----------------------------------
 
-* The content is required to be in UTF-8 encoding
-* The supported data types are string and integer
-* Only basic strings are supported, not triple-quoted strings
-* Only integers supported by strtol. (no 0o, no 0b, no underscores 1_000, 011
-  is 9, not 11)
-* Only bare keys are supported
+* The content must be in UTF-8 encoding
+* The supported data types are strings, integers, floats, and booleans.
+* Whitespace is allowed.
+* Only basic strings are supported, not triple-quoted strings.
+* Only integers supported by ``strtol()`` can be parsed:
+  no ``0o``, no ``0b``, no underscores ``1_000``, ``011`` is 9, not 11.
+* Only bare keys are supported.
 * Duplicate keys are not diagnosed.
-* Comments are supported
-* Only values from the "root table" can be retrieved
-* due to technical limitations, the content of multi-line
-  strings can erroneously be parsed as a value.
+* Comments are allowed.
+* Only values from the "root table" can be retrieved.
+
 
 CircuitPython behavior
 ----------------------
 
-CircuitPython will also read the environment to configure its behavior. Some keys are read at
-startup once and others are read on reload (ctrl-D in the REPL). If a reload doesn't change things,
-then try a reset (a power cycle or pressing the reset button). Other keys are ignored by CircuitPython.
-Here are the keys it uses:
+On startup, CircuitPython looks for for certain key/value pairs to use as configuration values.
+Some values are read only once, after a hard reset, and others are read on each reload (ctrl-D in the REPL).
+If you edit ``settings.toml`` and a reload doesn't read your changes,
+then try a hard reset (a power cycle or pressing the reset button).
+You can also include any other key/value pairs in the file for use with your own code.
 
-Core CircuitPython keys
-^^^^^^^^^^^^^^^^^^^^^^^
+Keys that affect CircuitPython behavior
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 CIRCUITPY_BLE_NAME
 ~~~~~~~~~~~~~~~~~~
@@ -83,24 +95,36 @@ Used to avoid "Pystack exhausted" errors when the code can't be reworked to avoi
 CIRCUITPY_WEB_API_PASSWORD
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 Password required to make modifications to the board from the Web Workflow.
+If the password is not specified, the Web Workflow is not enabled.
 
 CIRCUITPY_WEB_API_PORT
 ~~~~~~~~~~~~~~~~~~~~~~
-TCP port number used for the web HTTP API. Defaults to 80 when omitted.
+TCP port number used for the Web Workflow HTTP API. Defaults to 80 when omitted.
 
 CIRCUITPY_WEB_INSTANCE_NAME
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Name the board advertises as for the WEB workflow. Defaults to human readable board name if omitted.
-
-CIRCUITPY_WIFI_PASSWORD
-~~~~~~~~~~~~~~~~~~~~~~~
-Wi-Fi password used to auto connect to CIRCUITPY_WIFI_SSID.
+Hostname the board advertises as, using mDNS, for the Web Workflow.
+Defaults to a semi-unique name if omitted.
 
 CIRCUITPY_WIFI_SSID
 ~~~~~~~~~~~~~~~~~~~
-Wi-Fi SSID to auto-connect to even if user code is not running.
+CIRCUITPY_WIFI_PASSWORD
+~~~~~~~~~~~~~~~~~~~~~~~
+If these values are specified,
+CircuitPython will connect automatically to a local WiFi network using the supplied SSID
+and password before ``boot.py`` and/or ``code.py`` are run.
 
-Additional board specific keys
+CIRCUITPY_SDCARD_USB
+^^^^^^^^^^^^^^^^^^^^
+Present a mounted SD card as a USB MSC device. If the board has default pins for an SD card socket,
+the card is mounted automatically on startup.
+Only one card can be presented.
+Defaults to ``true``.
+SD card presentation can slow down board startup,
+so set this to ``false`` if you don't need this feature.
+
+
+Additional board-specific keys
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 CIRCUITPY_DISPLAY_WIDTH (Sunton, MaTouch)
