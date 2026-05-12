@@ -8,16 +8,16 @@
 
 #include "bindings/espidf/__init__.h"
 
-#include "common-hal/audio_i2sin/I2SIn.h"
+#include "common-hal/audioi2sin/I2SIn.h"
 #include "py/runtime.h"
-#include "shared-bindings/audio_i2sin/I2SIn.h"
+#include "shared-bindings/audioi2sin/I2SIn.h"
 #include "shared-bindings/microcontroller/Pin.h"
 
 #include "driver/i2s_std.h"
 
-#if CIRCUITPY_AUDIO_I2SIN
+#if CIRCUITPY_AUDIOI2SIN
 
-void common_hal_audio_i2sin_i2sin_construct(audio_i2sin_i2sin_obj_t *self,
+void common_hal_audioi2sin_i2sin_construct(audioi2sin_i2sin_obj_t *self,
     const mcu_pin_obj_t *bit_clock, const mcu_pin_obj_t *word_select,
     const mcu_pin_obj_t *data, const mcu_pin_obj_t *main_clock,
     uint32_t sample_rate, uint8_t bit_depth, bool mono, bool left_justified) {
@@ -75,12 +75,12 @@ void common_hal_audio_i2sin_i2sin_construct(audio_i2sin_i2sin_obj_t *self,
     }
 }
 
-bool common_hal_audio_i2sin_i2sin_deinited(audio_i2sin_i2sin_obj_t *self) {
+bool common_hal_audioi2sin_i2sin_deinited(audioi2sin_i2sin_obj_t *self) {
     return self->data == NULL;
 }
 
-void common_hal_audio_i2sin_i2sin_deinit(audio_i2sin_i2sin_obj_t *self) {
-    if (common_hal_audio_i2sin_i2sin_deinited(self)) {
+void common_hal_audioi2sin_i2sin_deinit(audioi2sin_i2sin_obj_t *self) {
+    if (common_hal_audioi2sin_i2sin_deinited(self)) {
         return;
     }
 
@@ -111,7 +111,7 @@ void common_hal_audio_i2sin_i2sin_deinit(audio_i2sin_i2sin_obj_t *self) {
     self->mclk = NULL;
 }
 
-uint32_t common_hal_audio_i2sin_i2sin_record_to_buffer(audio_i2sin_i2sin_obj_t *self,
+uint32_t common_hal_audioi2sin_i2sin_record_to_buffer(audioi2sin_i2sin_obj_t *self,
     void *buffer, uint32_t length) {
     size_t element_size = self->bit_depth / 8;
     // 24-bit samples occupy a 32-bit slot on the I2S bus.
@@ -158,12 +158,12 @@ uint32_t common_hal_audio_i2sin_i2sin_record_to_buffer(audio_i2sin_i2sin_obj_t *
     return produced;
 }
 
-uint8_t common_hal_audio_i2sin_i2sin_get_bit_depth(audio_i2sin_i2sin_obj_t *self) {
+uint8_t common_hal_audioi2sin_i2sin_get_bit_depth(audioi2sin_i2sin_obj_t *self) {
     return self->bit_depth;
 }
 
-uint32_t common_hal_audio_i2sin_i2sin_get_sample_rate(audio_i2sin_i2sin_obj_t *self) {
+uint32_t common_hal_audioi2sin_i2sin_get_sample_rate(audioi2sin_i2sin_obj_t *self) {
     return self->sample_rate;
 }
 
-#endif // CIRCUITPY_AUDIO_I2SIN
+#endif // CIRCUITPY_AUDIOI2SIN

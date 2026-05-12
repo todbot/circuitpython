@@ -11,15 +11,15 @@
 #include "py/mphal.h"
 #include "py/runtime.h"
 #include "shared/runtime/interrupt_char.h"
-#include "common-hal/audio_i2sin/I2SIn.h"
-#include "shared-bindings/audio_i2sin/I2SIn.h"
+#include "common-hal/audioi2sin/I2SIn.h"
+#include "shared-bindings/audioi2sin/I2SIn.h"
 #include "shared-bindings/microcontroller/Pin.h"
 #include "bindings/rp2pio/StateMachine.h"
 #include "supervisor/port.h"
 
 #include "hardware/dma.h"
 
-#if CIRCUITPY_AUDIO_I2SIN
+#if CIRCUITPY_AUDIOI2SIN
 
 // 16-bit programs sample a stereo frame of 16+16 = 32 bits and rely on
 // auto-push at 32 to deliver one packed (right<<16 | left) word per frame.
@@ -148,7 +148,7 @@ static const uint16_t i2sin_program_left_justified_swap_32[] = {
 };
 
 // Caller validates that pins are free.
-void common_hal_audio_i2sin_i2sin_construct(audio_i2sin_i2sin_obj_t *self,
+void common_hal_audioi2sin_i2sin_construct(audioi2sin_i2sin_obj_t *self,
     const mcu_pin_obj_t *bit_clock, const mcu_pin_obj_t *word_select,
     const mcu_pin_obj_t *data, const mcu_pin_obj_t *main_clock,
     uint32_t sample_rate, uint8_t bit_depth, bool mono, bool left_justified) {
@@ -239,7 +239,7 @@ void common_hal_audio_i2sin_i2sin_construct(audio_i2sin_i2sin_obj_t *self,
     // 8 bytes; size the half-buffer for ~40 ms of audio so a slow consumer
     // (SD card flush etc.) can complete without overrunning.
     size_t bytes_per_frame = (bit_depth == 16) ? 4 : 8;
-    size_t target = (size_t)self->sample_rate * bytes_per_frame * 2 / 2;
+    size_t target = (size_t)self->sample_rate * bytes_per_frame * 40 / 1000;
     size_t half_size = (target > 4096) ? target : 4096;
     // Round up to a multiple of 8 so 24/32-bit pair reads never straddle
     // the half boundary.
@@ -266,12 +266,12 @@ void common_hal_audio_i2sin_i2sin_construct(audio_i2sin_i2sin_obj_t *self,
     self->dma_channel = common_hal_rp2pio_statemachine_get_read_dma_channel(&self->state_machine);
 }
 
-bool common_hal_audio_i2sin_i2sin_deinited(audio_i2sin_i2sin_obj_t *self) {
+bool common_hal_audioi2sin_i2sin_deinited(audioi2sin_i2sin_obj_t *self) {
     return common_hal_rp2pio_statemachine_deinited(&self->state_machine);
 }
 
-void common_hal_audio_i2sin_i2sin_deinit(audio_i2sin_i2sin_obj_t *self) {
-    if (common_hal_audio_i2sin_i2sin_deinited(self)) {
+void common_hal_audioi2sin_i2sin_deinit(audioi2sin_i2sin_obj_t *self) {
+    if (common_hal_audioi2sin_i2sin_deinited(self)) {
         return;
     }
     common_hal_rp2pio_statemachine_stop_background_read(&self->state_machine);
@@ -285,11 +285,11 @@ void common_hal_audio_i2sin_i2sin_deinit(audio_i2sin_i2sin_obj_t *self) {
     self->dma_channel = -1;
 }
 
-uint8_t common_hal_audio_i2sin_i2sin_get_bit_depth(audio_i2sin_i2sin_obj_t *self) {
+uint8_t common_hal_audioi2sin_i2sin_get_bit_depth(audioi2sin_i2sin_obj_t *self) {
     return self->bit_depth;
 }
 
-uint32_t common_hal_audio_i2sin_i2sin_get_sample_rate(audio_i2sin_i2sin_obj_t *self) {
+uint32_t common_hal_audioi2sin_i2sin_get_sample_rate(audioi2sin_i2sin_obj_t *self) {
     return self->sample_rate;
 }
 
@@ -304,7 +304,7 @@ uint32_t common_hal_audio_i2sin_i2sin_get_sample_rate(audio_i2sin_i2sin_obj_t *s
 // the number actually written.
 // Compute the byte offset inside `ring` that the DMA is currently writing
 // (one past the last word it finished). Always lies in [0, ring_size).
-static size_t i2sin_write_pos(audio_i2sin_i2sin_obj_t *self) {
+static size_t i2sin_write_pos(audioi2sin_i2sin_obj_t *self) {
     uintptr_t addr = (uintptr_t)dma_channel_hw_addr(self->dma_channel)->write_addr;
     uintptr_t base = (uintptr_t)self->ring;
     if (addr < base || addr >= base + self->ring_size) {
@@ -316,7 +316,7 @@ static size_t i2sin_write_pos(audio_i2sin_i2sin_obj_t *self) {
     return (size_t)(addr - base);
 }
 
-uint32_t common_hal_audio_i2sin_i2sin_record_to_buffer(audio_i2sin_i2sin_obj_t *self,
+uint32_t common_hal_audioi2sin_i2sin_record_to_buffer(audioi2sin_i2sin_obj_t *self,
     void *buffer, uint32_t output_buffer_length) {
     uint32_t output_count = 0;
     const size_t ring_size = self->ring_size;
@@ -433,4 +433,4 @@ uint32_t common_hal_audio_i2sin_i2sin_record_to_buffer(audio_i2sin_i2sin_obj_t *
     return output_count;
 }
 
-#endif // CIRCUITPY_AUDIO_I2SIN
+#endif // CIRCUITPY_AUDIOI2SIN

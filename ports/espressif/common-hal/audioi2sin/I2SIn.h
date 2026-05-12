@@ -12,7 +12,7 @@
 
 #include "driver/i2s_std.h"
 
-#if CIRCUITPY_AUDIO_I2SIN
+#if CIRCUITPY_AUDIOI2SIN
 
 typedef struct {
     mp_obj_base_t base;
@@ -24,6 +24,6 @@ typedef struct {
     uint32_t sample_rate;
     uint8_t bit_depth;
     bool mono;
-} audio_i2sin_i2sin_obj_t;
+} audioi2sin_i2sin_obj_t;
 
 #endif

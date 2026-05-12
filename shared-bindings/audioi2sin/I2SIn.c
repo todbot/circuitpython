@@ -13,7 +13,7 @@
 #include "py/objproperty.h"
 #include "py/runtime.h"
 #include "shared-bindings/microcontroller/Pin.h"
-#include "shared-bindings/audio_i2sin/I2SIn.h"
+#include "shared-bindings/audioi2sin/I2SIn.h"
 #include "shared-bindings/util.h"
 
 //| class I2SIn:
@@ -55,18 +55,18 @@
 //|         Example, recording 16-bit mono samples from an INMP441::
 //|
 //|           import array
-//|           import audio_i2sin
+//|           import audioi2sin
 //|           import board
 //|
 //|           buf = array.array("H", [0] * 16000)
-//|           with audio_i2sin.I2SIn(board.D9, board.D10, board.D11,
+//|           with audioi2sin.I2SIn(board.D9, board.D10, board.D11,
 //|                                  sample_rate=16000, bit_depth=16) as mic:
 //|               mic.record(buf, len(buf))
 //|         """
 //|         ...
 //|
-static mp_obj_t audio_i2sin_i2sin_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
-    #if !CIRCUITPY_AUDIO_I2SIN
+static mp_obj_t audioi2sin_i2sin_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
+    #if !CIRCUITPY_AUDIOI2SIN
     mp_raise_NotImplementedError_varg(MP_ERROR_TEXT("%q"), MP_QSTR_I2SIn);
     return NULL; // Not reachable.
     #else
@@ -98,28 +98,28 @@ static mp_obj_t audio_i2sin_i2sin_make_new(const mp_obj_type_t *type, size_t n_a
     bool mono = args[ARG_mono].u_bool;
     bool left_justified = args[ARG_left_justified].u_bool;
 
-    audio_i2sin_i2sin_obj_t *self = mp_obj_malloc_with_finaliser(audio_i2sin_i2sin_obj_t, &audio_i2sin_i2sin_type);
-    common_hal_audio_i2sin_i2sin_construct(self, bit_clock, word_select, data, main_clock,
+    audioi2sin_i2sin_obj_t *self = mp_obj_malloc_with_finaliser(audioi2sin_i2sin_obj_t, &audioi2sin_i2sin_type);
+    common_hal_audioi2sin_i2sin_construct(self, bit_clock, word_select, data, main_clock,
         sample_rate, bit_depth, mono, left_justified);
 
     return MP_OBJ_FROM_PTR(self);
     #endif
 }
 
-#if CIRCUITPY_AUDIO_I2SIN
+#if CIRCUITPY_AUDIOI2SIN
 //|     def deinit(self) -> None:
 //|         """Deinitialises the I2SIn and releases any hardware resources for reuse."""
 //|         ...
 //|
-static mp_obj_t audio_i2sin_i2sin_deinit(mp_obj_t self_in) {
-    audio_i2sin_i2sin_obj_t *self = MP_OBJ_TO_PTR(self_in);
-    common_hal_audio_i2sin_i2sin_deinit(self);
+static mp_obj_t audioi2sin_i2sin_deinit(mp_obj_t self_in) {
+    audioi2sin_i2sin_obj_t *self = MP_OBJ_TO_PTR(self_in);
+    common_hal_audioi2sin_i2sin_deinit(self);
     return mp_const_none;
 }
-static MP_DEFINE_CONST_FUN_OBJ_1(audio_i2sin_i2sin_deinit_obj, audio_i2sin_i2sin_deinit);
+static MP_DEFINE_CONST_FUN_OBJ_1(audioi2sin_i2sin_deinit_obj, audioi2sin_i2sin_deinit);
 
-static void check_for_deinit(audio_i2sin_i2sin_obj_t *self) {
-    if (common_hal_audio_i2sin_i2sin_deinited(self)) {
+static void check_for_deinit(audioi2sin_i2sin_obj_t *self) {
+    if (common_hal_audioi2sin_i2sin_deinited(self)) {
         raise_deinited_error();
     }
 }
@@ -144,8 +144,8 @@ static void check_for_deinit(audio_i2sin_i2sin_obj_t *self) {
 //|           some samples were missed due to processing time."""
 //|         ...
 //|
-static mp_obj_t audio_i2sin_i2sin_obj_record(mp_obj_t self_obj, mp_obj_t destination, mp_obj_t destination_length) {
-    audio_i2sin_i2sin_obj_t *self = MP_OBJ_TO_PTR(self_obj);
+static mp_obj_t audioi2sin_i2sin_obj_record(mp_obj_t self_obj, mp_obj_t destination, mp_obj_t destination_length) {
+    audioi2sin_i2sin_obj_t *self = MP_OBJ_TO_PTR(self_obj);
     check_for_deinit(self);
     uint32_t length = mp_arg_validate_type_int(destination_length, MP_QSTR_length);
     mp_arg_validate_length_min(length, 0, MP_QSTR_length);
@@ -158,7 +158,7 @@ static mp_obj_t audio_i2sin_i2sin_obj_record(mp_obj_t self_obj, mp_obj_t destina
     if (bufinfo.len / mp_binary_get_size('@', bufinfo.typecode, NULL) < length) {
         mp_raise_ValueError(MP_ERROR_TEXT("Destination capacity is smaller than destination_length."));
     }
-    uint8_t bit_depth = common_hal_audio_i2sin_i2sin_get_bit_depth(self);
+    uint8_t bit_depth = common_hal_audioi2sin_i2sin_get_bit_depth(self);
     if ((bit_depth == 24 || bit_depth == 32) && bufinfo.typecode != 'I') {
         mp_raise_ValueError(MP_ERROR_TEXT("destination buffer must be an array of type 'I' for bit_depth = 24 or 32"));
     } else if (bit_depth == 16 && bufinfo.typecode != 'H') {
@@ -167,57 +167,57 @@ static mp_obj_t audio_i2sin_i2sin_obj_record(mp_obj_t self_obj, mp_obj_t destina
         mp_raise_ValueError(MP_ERROR_TEXT("destination buffer must be a bytearray or array of type 'B' for bit_depth = 8"));
     }
     uint32_t length_written =
-        common_hal_audio_i2sin_i2sin_record_to_buffer(self, bufinfo.buf, length);
+        common_hal_audioi2sin_i2sin_record_to_buffer(self, bufinfo.buf, length);
     return MP_OBJ_NEW_SMALL_INT(length_written);
 }
-MP_DEFINE_CONST_FUN_OBJ_3(audio_i2sin_i2sin_record_obj, audio_i2sin_i2sin_obj_record);
+MP_DEFINE_CONST_FUN_OBJ_3(audioi2sin_i2sin_record_obj, audioi2sin_i2sin_obj_record);
 
 //|     sample_rate: int
 //|     """The actual sample rate of the recording. This may not match the constructed
 //|     sample rate due to internal clock limitations."""
 //|
-static mp_obj_t audio_i2sin_i2sin_obj_get_sample_rate(mp_obj_t self_in) {
-    audio_i2sin_i2sin_obj_t *self = MP_OBJ_TO_PTR(self_in);
+static mp_obj_t audioi2sin_i2sin_obj_get_sample_rate(mp_obj_t self_in) {
+    audioi2sin_i2sin_obj_t *self = MP_OBJ_TO_PTR(self_in);
     check_for_deinit(self);
-    return MP_OBJ_NEW_SMALL_INT(common_hal_audio_i2sin_i2sin_get_sample_rate(self));
+    return MP_OBJ_NEW_SMALL_INT(common_hal_audioi2sin_i2sin_get_sample_rate(self));
 }
-MP_DEFINE_CONST_FUN_OBJ_1(audio_i2sin_i2sin_get_sample_rate_obj, audio_i2sin_i2sin_obj_get_sample_rate);
+MP_DEFINE_CONST_FUN_OBJ_1(audioi2sin_i2sin_get_sample_rate_obj, audioi2sin_i2sin_obj_get_sample_rate);
 
-MP_PROPERTY_GETTER(audio_i2sin_i2sin_sample_rate_obj,
-    (mp_obj_t)&audio_i2sin_i2sin_get_sample_rate_obj);
+MP_PROPERTY_GETTER(audioi2sin_i2sin_sample_rate_obj,
+    (mp_obj_t)&audioi2sin_i2sin_get_sample_rate_obj);
 
 //|     bit_depth: int
 //|     """The actual bit depth of the recording. (read-only)"""
 //|
 //|
-static mp_obj_t audio_i2sin_i2sin_obj_get_bit_depth(mp_obj_t self_in) {
-    audio_i2sin_i2sin_obj_t *self = MP_OBJ_TO_PTR(self_in);
+static mp_obj_t audioi2sin_i2sin_obj_get_bit_depth(mp_obj_t self_in) {
+    audioi2sin_i2sin_obj_t *self = MP_OBJ_TO_PTR(self_in);
     check_for_deinit(self);
-    return MP_OBJ_NEW_SMALL_INT(common_hal_audio_i2sin_i2sin_get_bit_depth(self));
+    return MP_OBJ_NEW_SMALL_INT(common_hal_audioi2sin_i2sin_get_bit_depth(self));
 }
-MP_DEFINE_CONST_FUN_OBJ_1(audio_i2sin_i2sin_get_bit_depth_obj, audio_i2sin_i2sin_obj_get_bit_depth);
+MP_DEFINE_CONST_FUN_OBJ_1(audioi2sin_i2sin_get_bit_depth_obj, audioi2sin_i2sin_obj_get_bit_depth);
 
-MP_PROPERTY_GETTER(audio_i2sin_i2sin_bit_depth_obj,
-    (mp_obj_t)&audio_i2sin_i2sin_get_bit_depth_obj);
+MP_PROPERTY_GETTER(audioi2sin_i2sin_bit_depth_obj,
+    (mp_obj_t)&audioi2sin_i2sin_get_bit_depth_obj);
 
-static const mp_rom_map_elem_t audio_i2sin_i2sin_locals_dict_table[] = {
-    { MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&audio_i2sin_i2sin_deinit_obj) },
-    { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&audio_i2sin_i2sin_deinit_obj) },
+static const mp_rom_map_elem_t audioi2sin_i2sin_locals_dict_table[] = {
+    { MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&audioi2sin_i2sin_deinit_obj) },
+    { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&audioi2sin_i2sin_deinit_obj) },
     { MP_ROM_QSTR(MP_QSTR___enter__), MP_ROM_PTR(&default___enter___obj) },
     { MP_ROM_QSTR(MP_QSTR___exit__), MP_ROM_PTR(&default___exit___obj) },
-    { MP_ROM_QSTR(MP_QSTR_record), MP_ROM_PTR(&audio_i2sin_i2sin_record_obj) },
-    { MP_ROM_QSTR(MP_QSTR_sample_rate), MP_ROM_PTR(&audio_i2sin_i2sin_sample_rate_obj) },
-    { MP_ROM_QSTR(MP_QSTR_bit_depth), MP_ROM_PTR(&audio_i2sin_i2sin_bit_depth_obj) },
+    { MP_ROM_QSTR(MP_QSTR_record), MP_ROM_PTR(&audioi2sin_i2sin_record_obj) },
+    { MP_ROM_QSTR(MP_QSTR_sample_rate), MP_ROM_PTR(&audioi2sin_i2sin_sample_rate_obj) },
+    { MP_ROM_QSTR(MP_QSTR_bit_depth), MP_ROM_PTR(&audioi2sin_i2sin_bit_depth_obj) },
 };
-static MP_DEFINE_CONST_DICT(audio_i2sin_i2sin_locals_dict, audio_i2sin_i2sin_locals_dict_table);
-#endif // CIRCUITPY_AUDIO_I2SIN
+static MP_DEFINE_CONST_DICT(audioi2sin_i2sin_locals_dict, audioi2sin_i2sin_locals_dict_table);
+#endif // CIRCUITPY_AUDIOI2SIN
 
 MP_DEFINE_CONST_OBJ_TYPE(
-    audio_i2sin_i2sin_type,
+    audioi2sin_i2sin_type,
     MP_QSTR_I2SIn,
     MP_TYPE_FLAG_HAS_SPECIAL_ACCESSORS,
-    make_new, audio_i2sin_i2sin_make_new
-    #if CIRCUITPY_AUDIO_I2SIN
-    , locals_dict, &audio_i2sin_i2sin_locals_dict
+    make_new, audioi2sin_i2sin_make_new
+    #if CIRCUITPY_AUDIOI2SIN
+    , locals_dict, &audioi2sin_i2sin_locals_dict
     #endif
     );

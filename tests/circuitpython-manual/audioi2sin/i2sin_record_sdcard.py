@@ -15,7 +15,7 @@ import board
 import busio
 import sdcardio
 import storage
-import audio_i2sin
+import audioi2sin
 
 # ---- Recording config ------------------------------------------------------
 SAMPLE_RATE = 16000
@@ -32,7 +32,7 @@ storage.mount(vfs, "/sd")
 # ---- Mic -------------------------------------------------------------------
 # 24-bit MEMS mics ride in 32-bit slots. Downconvert each slot to a
 # signed 16-bit PCM sample before writing.
-mic = audio_i2sin.I2SIn(
+mic = audioi2sin.I2SIn(
     bit_clock=board.D5,
     word_select=board.D6,
     data=board.D9,

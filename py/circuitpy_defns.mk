@@ -122,8 +122,8 @@ endif
 ifeq ($(CIRCUITPY_AUDIOBUSIO),1)
 SRC_PATTERNS += audiobusio/%
 endif
-ifeq ($(CIRCUITPY_AUDIO_I2SIN),1)
-SRC_PATTERNS += audio_i2sin/%
+ifeq ($(CIRCUITPY_AUDIOI2SIN),1)
+SRC_PATTERNS += audioi2sin/%
 endif
 ifeq ($(CIRCUITPY_AUDIOIO),1)
 SRC_PATTERNS += audioio/%
@@ -508,8 +508,8 @@ SRC_COMMON_HAL_ALL = \
 	audiobusio/I2SOut.c \
 	audiobusio/PDMIn.c \
 	audiobusio/__init__.c \
-	audio_i2sin/I2SIn.c \
-	audio_i2sin/__init__.c \
+	audioi2sin/I2SIn.c \
+	audioi2sin/__init__.c \
 	audioio/AudioOut.c \
 	audioio/__init__.c \
 	audiopwmio/PWMAudioOut.c \

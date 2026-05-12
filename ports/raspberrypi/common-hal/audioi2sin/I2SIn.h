@@ -26,4 +26,4 @@ typedef struct {
     size_t read_pos;
     int dma_channel;
     bool overflow;
-} audio_i2sin_i2sin_obj_t;
+} audioi2sin_i2sin_obj_t;

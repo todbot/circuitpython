@@ -18,7 +18,7 @@ import math
 import time
 
 import board
-import audio_i2sin
+import audioi2sin
 import neopixel
 
 NUM_PIXELS = 30
@@ -29,7 +29,7 @@ SAMPLES_PER_FRAME = 512  # ~32 ms windows
 
 pixels = neopixel.NeoPixel(PIXEL_PIN, NUM_PIXELS, brightness=0.3, auto_write=False)
 
-mic = audio_i2sin.I2SIn(
+mic = audioi2sin.I2SIn(
     bit_clock=board.D5,
     word_select=board.D6,
     data=board.D9,
