@@ -100,7 +100,7 @@ static mp_uint_t usb_cdc_serial_write_stream(mp_obj_t self_in, const void *buf_i
     return common_hal_usb_cdc_serial_write(self, buf, size, errcode);
 }
 
-static mp_uint_t usb_cdc_serial_ioctl_stream(mp_obj_t self_in, mp_uint_t request, mp_uint_t arg, int *errcode) {
+static mp_uint_t usb_cdc_serial_ioctl_stream(mp_obj_t self_in, mp_uint_t request, uintptr_t arg, int *errcode) {
     usb_cdc_serial_obj_t *self = MP_OBJ_TO_PTR(self_in);
     mp_uint_t ret = 0;
     switch (request) {

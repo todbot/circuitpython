@@ -277,7 +277,7 @@ static mp_uint_t busio_uart_write(mp_obj_t self_in, const void *buf_in, mp_uint_
     return common_hal_busio_uart_write(self, buf, size, errcode);
 }
 
-static mp_uint_t busio_uart_ioctl(mp_obj_t self_in, mp_uint_t request, mp_uint_t arg, int *errcode) {
+static mp_uint_t busio_uart_ioctl(mp_obj_t self_in, mp_uint_t request, uintptr_t arg, int *errcode) {
     busio_uart_obj_t *self = native_uart(self_in);
     check_for_deinit(self);
     mp_uint_t ret;

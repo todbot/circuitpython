@@ -26,6 +26,7 @@
 #ifndef MICROPY_INCLUDED_PY_MPCONFIG_H
 #define MICROPY_INCLUDED_PY_MPCONFIG_H
 
+#include <stddef.h>
 #include <stdint.h>
 
 #if defined(__cplusplus) // Required on at least one compiler to get ULLONG_MAX
@@ -204,10 +205,13 @@
 
 #if MP_INT_TYPE == MP_INT_TYPE_INTPTR
 typedef intptr_t mp_int_t;
-typedef uintptr_t mp_uint_t;
+// Use size_t so kw-function signatures and other size-typed APIs match without
+// triggering -Wincompatible-pointer-types under newer GCCs where size_t and
+// uintptr_t are distinct types of the same width (e.g. picolibc on 32-bit ARM).
+typedef size_t mp_uint_t;
 #define MP_INT_MAX INTPTR_MAX
 #define MP_INT_MIN INTPTR_MIN
-#define MP_UINT_MAX INTPTR_UMAX
+#define MP_UINT_MAX SIZE_MAX
 #elif MP_INT_TYPE == MP_INT_TYPE_INT64
 typedef int64_t mp_int_t;
 typedef uint64_t mp_uint_t;

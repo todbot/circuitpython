@@ -27,3 +27,7 @@ mp_obj_t common_hal_busio_uart_construct_from_device(busio_uart_obj_t *self, con
 
 // Internal helper for clearing buffer
 void common_hal_busio_uart_clear_rx_buffer(busio_uart_obj_t *self);
+
+// Zephyr-port-specific write-timeout accessors, used by usb_cdc/Serial.c.
+mp_float_t common_hal_busio_uart_get_write_timeout(busio_uart_obj_t *self);
+void common_hal_busio_uart_set_write_timeout(busio_uart_obj_t *self, mp_float_t write_timeout);

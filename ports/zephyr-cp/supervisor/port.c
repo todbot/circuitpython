@@ -13,6 +13,8 @@
 #include "common-hal/audiobusio/I2SOut.h"
 #endif
 
+#include <stdlib.h>
+
 #include <zephyr/autoconf.h>
 #include <zephyr/kernel.h>
 #include <zephyr/sys/reboot.h>
@@ -20,7 +22,6 @@
 
 #if defined(CONFIG_ARCH_POSIX)
 #include <limits.h>
-#include <stdlib.h>
 
 #include "cmdline.h"
 #include "posix_board_if.h"

@@ -520,7 +520,19 @@ async def build_circuitpython():
             ("-isystem", portdir / "modules" / "crypto" / "mbedtls" / "configs")
         )
         circuitpython_flags.extend(
-            ("-isystem", portdir / "modules" / "crypto" / "mbedtls" / "include")
+            ("-isystem", portdir / "modules" / "crypto" / "tf-psa-crypto" / "include")
+        )
+        circuitpython_flags.extend(
+            (
+                "-isystem",
+                portdir
+                / "modules"
+                / "crypto"
+                / "tf-psa-crypto"
+                / "drivers"
+                / "builtin"
+                / "include",
+            )
         )
         circuitpython_flags.extend(("-isystem", zephyrdir / "modules" / "mbedtls" / "configs"))
         if "ssl" in enabled_modules:

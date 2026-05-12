@@ -141,7 +141,7 @@ MP_DEFINE_CONST_FUN_OBJ_2(jpegio_jpegdecoder_open_obj, jpegio_jpegdecoder_open);
 //|         """
 //|
 //|
-static mp_obj_t jpegio_jpegdecoder_decode(mp_uint_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
+static mp_obj_t jpegio_jpegdecoder_decode(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     jpegio_jpegdecoder_obj_t *self = MP_OBJ_TO_PTR(pos_args[0]);
 
     enum { ARG_bitmap, ARG_scale, ARG_x, ARG_y, ARGS_X1_Y1_X2_Y2, ARG_skip_source_index, ARG_skip_dest_index };

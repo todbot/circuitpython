@@ -350,6 +350,25 @@ def find_flash_devices(device_tree):
             )
             continue
 
+        # Skip soc-nv-flash nodes whose parent is itself a flash device — the
+        # parent is the real Zephyr device (e.g. nxp,imx-flexspi-nor) and the
+        # child has no driver-instantiated symbol.
+        if "soc-nv-flash" in compatible and node.parent is not None:
+            parent_compat = []
+            if "compatible" in node.parent.props:
+                parent_compat = node.parent.props["compatible"].to_strings()
+            parent_drivers = []
+            for c in parent_compat:
+                underscored = c.replace(",", "_").replace("-", "_")
+                d = COMPAT_TO_DRIVER.get(underscored) or MANUAL_COMPAT_TO_DRIVER.get(underscored)
+                if d:
+                    parent_drivers.append(d)
+            if "flash" in parent_drivers:
+                logger.debug(
+                    f"  skipping flash {node.labels[0] if node.labels else node.name} (parent is flash device)"
+                )
+                continue
+
         if node.labels:
             flashes.append(node.labels[0])
 
