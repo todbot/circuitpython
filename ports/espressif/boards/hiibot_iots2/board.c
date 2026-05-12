@@ -64,7 +64,7 @@ static void display_init(void) {
         spi,
         MP_OBJ_FROM_PTR(&pin_GPIO35),    // DC
         MP_OBJ_FROM_PTR(&pin_GPIO36),    // CS
-        NULL,           // NO RST ?
+        mp_const_none,                   // NO RST ?
         40000000,       // baudrate
         0,              // polarity
         0               // phase
