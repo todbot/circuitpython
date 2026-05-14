@@ -252,6 +252,12 @@ REGISTRATION_FUNCTIONS += \
 	-u rv_core_fpu_restore
 endif
 
+ifneq ($(CIRCUITPY_WIFI),0)
+ifeq ($(filter $(IDF_TARGET),esp32s2 esp32p4),)
+REGISTRATION_FUNCTIONS += -u esp_coex_init_include_func
+endif
+endif
+
 
 #Debugging/Optimization
 ifeq ($(DEBUG), 1)
