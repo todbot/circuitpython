@@ -39,15 +39,7 @@ mic = audioi2sin.I2SIn(
     left_justified=False,  # set True for SPH0645LM4H
 )
 
-buf = array.array("I", [0] * SAMPLES_PER_FRAME)
-
-
-def to_signed24(u32):
-    # The mic packs a 24-bit signed sample left-justified in 32 bits.
-    s = u32 >> 8
-    if s & 0x800000:
-        s -= 0x1000000
-    return s
+buf = array.array("i", [0] * SAMPLES_PER_FRAME)
 
 
 def wheel(pos):
@@ -72,8 +64,7 @@ while True:
 
     # Compute RMS of the window.
     acc = 0
-    for raw in buf:
-        s = to_signed24(raw)
+    for s in buf:
         acc += s * s
     rms = math.sqrt(acc / len(buf))
 

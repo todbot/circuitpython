@@ -44,9 +44,24 @@
 //|         :param ~microcontroller.Pin data: The data input pin
 //|         :param ~microcontroller.Pin main_clock: The main clock pin. Not all ports support this.
 //|         :param int sample_rate: Target sample rate of the resulting samples. Check `sample_rate` for actual value.
-//|         :param int bit_depth: Number of bits per sample. Must be 8, 16, 24, or 32.
-//|           For 8-bit, pass a ``bytearray`` or ``array.array('B', ...)``; for 16-bit,
-//|           ``array.array('H', ...)``; for 24- or 32-bit, ``array.array('I', ...)``.
+//|         :param int bit_depth: Number of bits per sample. Must be 8, 16, 24, or 32. 8-bit only supported on espressif.
+//|
+//|           +----------------+-----------+----------------------+
+//|           | samples_signed | bit_depth | Required typecode(s) |
+//|           +================+===========+======================+
+//|           | True           | 24 or 32  | ``'i'``              |
+//|           +----------------+-----------+----------------------+
+//|           | True           | 16        | ``'h'``              |
+//|           +----------------+-----------+----------------------+
+//|           | True           | 8         | ``'b'`` or BYTEARRAY |
+//|           +----------------+-----------+----------------------+
+//|           | False          | 24 or 32  | ``'I'``              |
+//|           +----------------+-----------+----------------------+
+//|           | False          | 16        | ``'H'``              |
+//|           +----------------+-----------+----------------------+
+//|           | False          | 8         | ``'B'`` or BYTEARRAY |
+//|           +----------------+-----------+----------------------+
+//|
 //|           Note that 24-bit samples from mics like the SPH0645LM4H / INMP441 are
 //|           transported in 32-bit slots, so use ``bit_depth=32`` and an ``'I'`` buffer.
 //|         :param bool mono: True when capturing a single channel of audio, captures two channels otherwise.
@@ -62,10 +77,11 @@
 //|           import audioi2sin
 //|           import board
 //|
-//|           buf = array.array("H", [0] * 16000)
+//|           buf = array.array("h", [0] * 16000)
 //|           with audioi2sin.I2SIn(board.D9, board.D10, board.D11,
 //|                                  sample_rate=16000, bit_depth=16) as mic:
 //|               mic.record(buf, len(buf))
+//|
 //|         """
 //|         ...
 //|
@@ -165,12 +181,30 @@ static mp_obj_t audioi2sin_i2sin_obj_record(mp_obj_t self_obj, mp_obj_t destinat
         mp_raise_ValueError(MP_ERROR_TEXT("Destination capacity is smaller than destination_length."));
     }
     uint8_t bit_depth = common_hal_audioi2sin_i2sin_get_bit_depth(self);
-    if ((bit_depth == 24 || bit_depth == 32) && bufinfo.typecode != 'I') {
-        mp_raise_ValueError(MP_ERROR_TEXT("destination buffer must be an array of type 'I' for bit_depth = 24 or 32"));
-    } else if (bit_depth == 16 && bufinfo.typecode != 'H') {
-        mp_raise_ValueError(MP_ERROR_TEXT("destination buffer must be an array of type 'H' for bit_depth = 16"));
-    } else if (bit_depth == 8 && bufinfo.typecode != 'B' && bufinfo.typecode != BYTEARRAY_TYPECODE) {
-        mp_raise_ValueError(MP_ERROR_TEXT("destination buffer must be a bytearray or array of type 'B' for bit_depth = 8"));
+    char error_type = ' ';
+    bool samples_signed = common_hal_audioi2sin_i2sin_get_samples_signed(self);
+    if (samples_signed) {
+        if ((bit_depth == 24 || bit_depth == 32) && bufinfo.typecode != 'i') {
+            error_type = 'i';
+        } else if (bit_depth == 16 && bufinfo.typecode != 'h') {
+            error_type = 'h';
+        } else if (bit_depth == 8 && bufinfo.typecode != 'b' && bufinfo.typecode != BYTEARRAY_TYPECODE) {
+            error_type = 'b'; // NOTE: Not identifying as bytearray
+        }
+    } else {
+        if ((bit_depth == 24 || bit_depth == 32) && bufinfo.typecode != 'I') {
+            error_type = 'I';
+        } else if (bit_depth == 16 && bufinfo.typecode != 'H') {
+            error_type = 'H';
+        } else if (bit_depth == 8 && bufinfo.typecode != 'B' && bufinfo.typecode != BYTEARRAY_TYPECODE) {
+            error_type = 'B';
+        }
+    }
+    if (error_type != ' ') {
+        mp_raise_TypeError_varg(
+            MP_ERROR_TEXT("invalid destination buffer, must be an array of type: %c"),
+            error_type
+            );
     }
     uint32_t length_written =
         common_hal_audioi2sin_i2sin_record_to_buffer(self, bufinfo.buf, length);

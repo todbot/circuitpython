@@ -227,6 +227,7 @@ void common_hal_audioi2sin_i2sin_construct(audioi2sin_i2sin_obj_t *self,
     self->bit_depth = bit_depth;
     self->mono = mono;
     self->samples_signed = samples_signed;
+    self->left_justified = left_justified;
     self->settled = false;
     self->ring = NULL;
     self->ring_size = 0;
@@ -322,6 +323,13 @@ static size_t i2sin_write_pos(audioi2sin_i2sin_obj_t *self) {
     return (size_t)(addr - base);
 }
 
+// 24-bit non-left-justified data arrives in the low 24 bits of the FIFO word
+// with the sign bit at bit 23 and bits 31..24 zero. To make it decode
+// correctly as int32 (array typecode "i"), lift the sign bit to bit 31.
+static inline uint32_t movesign24(uint32_t val) {
+    return ((val & 0x800000u) << 8) | (val & 0x7fffffu);
+}
+
 uint32_t common_hal_audioi2sin_i2sin_record_to_buffer(audioi2sin_i2sin_obj_t *self,
     void *buffer, uint32_t output_buffer_length) {
     uint32_t output_count = 0;
@@ -332,10 +340,13 @@ uint32_t common_hal_audioi2sin_i2sin_record_to_buffer(audioi2sin_i2sin_obj_t *se
     // flip the sign bit per sample (XOR with 0x8000 for 16-bit, 0x800000 for
     // 24-bit data in a 32-bit slot, 0x80000000 for 32-bit), matching the WAV
     // convention.
-    const uint16_t flip16 = self->samples_signed ? 0 : 0x8000u;
+    const uint32_t flip16 = self->samples_signed ? 0u : 0x80008000u;
     const uint32_t flip32 = self->samples_signed
         ? 0u
         : (self->bit_depth == 24 ? 0x800000u : 0x80000000u);
+    const bool fix_sign24 = self->bit_depth == 24
+        && self->samples_signed
+        && !self->left_justified;
 
     if (self->bit_depth == 16) {
         // 16-bit mode auto-pushes one stereo frame per FIFO word. The DMA has
@@ -366,9 +377,9 @@ uint32_t common_hal_audioi2sin_i2sin_record_to_buffer(audioi2sin_i2sin_obj_t *se
                 continue;
             }
             while (avail >= 4 && output_count < output_buffer_length) {
-                uint32_t frame = *(volatile uint32_t *)(self->ring + self->read_pos);
-                uint16_t left = (uint16_t)(frame & 0xffff) ^ flip16;
-                uint16_t right = (uint16_t)(frame >> 16) ^ flip16;
+                uint32_t frame = *(volatile uint32_t *)(self->ring + self->read_pos) ^ flip16;
+                uint16_t left = (uint16_t)(frame & 0xffff);
+                uint16_t right = (uint16_t)(frame >> 16);
                 if (self->mono) {
                     output[output_count++] = left;
                 } else {
@@ -405,14 +416,7 @@ uint32_t common_hal_audioi2sin_i2sin_record_to_buffer(audioi2sin_i2sin_obj_t *se
                 self->settled = false;
                 avail = (write_pos + ring_size - self->read_pos) % ring_size;
             }
-            if (!self->settled) {
-                if (avail < 8) {
-                    RUN_BACKGROUND_TASKS;
-                    if (mp_hal_is_interrupted()) {
-                        return output_count;
-                    }
-                    continue;
-                }
+            if (!self->settled && avail >= 8) {
                 self->read_pos = (self->read_pos + 8) % ring_size;
                 avail -= 8;
                 self->settled = true;
@@ -428,6 +432,10 @@ uint32_t common_hal_audioi2sin_i2sin_record_to_buffer(audioi2sin_i2sin_obj_t *se
                 uint32_t right = *(volatile uint32_t *)(self->ring + self->read_pos) ^ flip32;
                 size_t next_pos = (self->read_pos + 4) % ring_size;
                 uint32_t left = *(volatile uint32_t *)(self->ring + next_pos) ^ flip32;
+                if (fix_sign24) {
+                    right = movesign24(right);
+                    left = movesign24(left);
+                }
                 if (self->mono) {
                     output[output_count++] = left;
                 } else {

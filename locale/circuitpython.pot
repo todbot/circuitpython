@@ -219,7 +219,7 @@ msgstr ""
 msgid "%q must be array of type 'h'"
 msgstr ""
 
-#: shared-bindings/audio_i2sin/I2SIn.c shared-bindings/audiobusio/PDMIn.c
+#: shared-bindings/audiobusio/PDMIn.c shared-bindings/audioi2sin/I2SIn.c
 msgid "%q must be multiple of 8."
 msgstr ""
 
@@ -659,8 +659,8 @@ msgstr ""
 msgid "Below minimum frame rate"
 msgstr ""
 
-#: ports/raspberrypi/common-hal/audio_i2sin/I2SIn.c
 #: ports/raspberrypi/common-hal/audiobusio/I2SOut.c
+#: ports/raspberrypi/common-hal/audioi2sin/I2SIn.c
 msgid "Bit clock and word select must be sequential GPIO pins"
 msgstr ""
 
@@ -805,7 +805,7 @@ msgstr ""
 msgid "Cannot pull on input-only pin."
 msgstr ""
 
-#: shared-bindings/audio_i2sin/I2SIn.c shared-bindings/audiobusio/PDMIn.c
+#: shared-bindings/audiobusio/PDMIn.c shared-bindings/audioi2sin/I2SIn.c
 msgid "Cannot record to a file"
 msgstr ""
 
@@ -927,7 +927,7 @@ msgstr ""
 msgid "Deep sleep pins must use a rising edge with pulldown"
 msgstr ""
 
-#: shared-bindings/audio_i2sin/I2SIn.c shared-bindings/audiobusio/PDMIn.c
+#: shared-bindings/audiobusio/PDMIn.c shared-bindings/audioi2sin/I2SIn.c
 msgid "Destination capacity is smaller than destination_length."
 msgstr ""
 
@@ -1695,7 +1695,7 @@ msgstr ""
 msgid "Ok"
 msgstr ""
 
-#: ports/raspberrypi/common-hal/audio_i2sin/I2SIn.c
+#: ports/raspberrypi/common-hal/audioi2sin/I2SIn.c
 msgid "Only 16, 24, or 32 bit depth supported."
 msgstr ""
 
@@ -1811,8 +1811,8 @@ msgstr ""
 msgid "Parameter error"
 msgstr ""
 
-#: ports/espressif/common-hal/audio_i2sin/I2SIn.c
 #: ports/espressif/common-hal/audiobusio/__init__.c
+#: ports/espressif/common-hal/audioi2sin/I2SIn.c
 msgid "Peripheral in use"
 msgstr ""
 
@@ -2702,8 +2702,8 @@ msgstr ""
 msgid "binary op %q not implemented"
 msgstr ""
 
-#: ports/espressif/common-hal/audio_i2sin/I2SIn.c
 #: ports/espressif/common-hal/audiobusio/PDMIn.c
+#: ports/espressif/common-hal/audioi2sin/I2SIn.c
 msgid "bit_depth must be 8, 16, 24, or 32."
 msgstr ""
 
@@ -3095,18 +3095,13 @@ msgstr ""
 msgid "default is not a function"
 msgstr ""
 
-#: shared-bindings/audio_i2sin/I2SIn.c shared-bindings/audiobusio/PDMIn.c
+#: shared-bindings/audiobusio/PDMIn.c
 msgid ""
 "destination buffer must be a bytearray or array of type 'B' for bit_depth = 8"
 msgstr ""
 
-#: shared-bindings/audio_i2sin/I2SIn.c shared-bindings/audiobusio/PDMIn.c
+#: shared-bindings/audiobusio/PDMIn.c
 msgid "destination buffer must be an array of type 'H' for bit_depth = 16"
-msgstr ""
-
-#: shared-bindings/audio_i2sin/I2SIn.c
-msgid ""
-"destination buffer must be an array of type 'I' for bit_depth = 24 or 32"
 msgstr ""
 
 #: py/objdict.c
@@ -3520,6 +3515,11 @@ msgstr ""
 
 #: shared-module/ssl/SSLSocket.c
 msgid "invalid cert"
+msgstr ""
+
+#: shared-bindings/audioi2sin/I2SIn.c
+#, c-format
+msgid "invalid destination buffer, must be an array of type: %c"
 msgstr ""
 
 #: shared-bindings/bitmaptools/__init__.c

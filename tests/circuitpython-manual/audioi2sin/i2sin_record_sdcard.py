@@ -45,7 +45,7 @@ mic = audioi2sin.I2SIn(
 actual_rate = mic.sample_rate
 print("Recording at", actual_rate, "Hz for", RECORD_SECONDS, "s ->", OUTPUT_PATH)
 
-raw = array.array("I", [0] * CHUNK_SAMPLES)
+raw = array.array("i", [0] * CHUNK_SAMPLES)
 pcm16 = array.array("h", [0] * CHUNK_SAMPLES)
 
 
@@ -90,8 +90,6 @@ with open(OUTPUT_PATH, "wb") as f:
         for i in range(n):
             v = raw[i]
             s = v >> 16  # take top 16 bits
-            if s & 0x8000:
-                s -= 0x10000  # sign-extend
             pcm16[i] = s
         # Write only the valid portion.
         f.write(memoryview(pcm16)[:n])

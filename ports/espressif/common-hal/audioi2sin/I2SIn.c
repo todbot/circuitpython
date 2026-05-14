@@ -117,26 +117,38 @@ void common_hal_audioi2sin_i2sin_deinit(audioi2sin_i2sin_obj_t *self) {
 // the sign bit for its width to convert to unsigned PCM (WAV convention).
 static void i2sin_convert_to_unsigned(void *buffer, uint32_t samples,
     uint8_t bit_depth, size_t element_size) {
+    (void)element_size;
+    uint32_t *p = (uint32_t *)buffer;
+
     if (bit_depth == 8) {
-        uint8_t *p = (uint8_t *)buffer;
-        for (uint32_t i = 0; i < samples; i++) {
-            p[i] ^= 0x80u;
+        // 4 samples per word
+        uint32_t words = samples / 4;
+        for (uint32_t i = 0; i < words; i++) {
+            p[i] ^= 0x80808080u;
+        }
+        // tail: 0–3 leftover bytes
+        uint8_t *tail = (uint8_t *)(p + words);
+        for (uint32_t i = 0; i < (samples & 3u); i++) {
+            tail[i] ^= 0x80u;
         }
     } else if (bit_depth == 16) {
-        uint16_t *p = (uint16_t *)buffer;
-        for (uint32_t i = 0; i < samples; i++) {
-            p[i] ^= 0x8000u;
+        // 2 samples per word
+        uint32_t words = samples / 2;
+        for (uint32_t i = 0; i < words; i++) {
+            p[i] ^= 0x80008000u;
+        }
+        if (samples & 1u) {
+            ((uint16_t *)(p + words))[0] ^= 0x8000u;
         }
     } else {
-        // 24- or 32-bit; both stored in 32-bit slots (element_size == 4).
-        (void)element_size;
-        uint32_t mask = (bit_depth == 24) ? 0x800000u : 0x80000000u;
-        uint32_t *p = (uint32_t *)buffer;
+        // 24- or 32-bit: one sample per 32-bit slot
+        uint32_t mask = (bit_depth == 24) ? 0x00800000u : 0x80000000u;
         for (uint32_t i = 0; i < samples; i++) {
             p[i] ^= mask;
         }
     }
 }
+
 
 uint32_t common_hal_audioi2sin_i2sin_record_to_buffer(audioi2sin_i2sin_obj_t *self,
     void *buffer, uint32_t length) {
