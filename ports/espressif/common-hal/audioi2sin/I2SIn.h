@@ -23,6 +23,7 @@ typedef struct {
     const mcu_pin_obj_t *mclk;
     uint32_t sample_rate;
     uint8_t bit_depth;
+    uint8_t output_bit_depth;
     bool mono;
     bool samples_signed;
 } audioi2sin_i2sin_obj_t;

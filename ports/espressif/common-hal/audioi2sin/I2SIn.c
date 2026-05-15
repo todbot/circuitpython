@@ -20,8 +20,8 @@
 void common_hal_audioi2sin_i2sin_construct(audioi2sin_i2sin_obj_t *self,
     const mcu_pin_obj_t *bit_clock, const mcu_pin_obj_t *word_select,
     const mcu_pin_obj_t *data, const mcu_pin_obj_t *main_clock,
-    uint32_t sample_rate, uint8_t bit_depth, bool mono, bool left_justified,
-    bool samples_signed) {
+    uint32_t sample_rate, uint8_t bit_depth, uint8_t output_bit_depth,
+    bool mono, bool left_justified, bool samples_signed) {
 
     if (bit_depth != 8 && bit_depth != 16 && bit_depth != 24 && bit_depth != 32) {
         mp_raise_ValueError(MP_ERROR_TEXT("bit_depth must be 8, 16, 24, or 32."));
@@ -66,6 +66,7 @@ void common_hal_audioi2sin_i2sin_construct(audioi2sin_i2sin_obj_t *self,
     self->mclk = main_clock;
     self->sample_rate = sample_rate;
     self->bit_depth = bit_depth;
+    self->output_bit_depth = output_bit_depth;
     self->mono = mono;
     self->samples_signed = samples_signed;
 
@@ -113,6 +114,72 @@ void common_hal_audioi2sin_i2sin_deinit(audioi2sin_i2sin_obj_t *self) {
     self->mclk = NULL;
 }
 
+// Sign-extend a raw I2S sample (in the low `in_depth` bits of `raw`) to a
+// canonical int32 value.
+static inline int32_t i2sin_normalize_signed(uint32_t raw, uint8_t in_depth) {
+    if (in_depth == 32) {
+        return (int32_t)raw;
+    }
+    if (in_depth == 24) {
+        uint32_t sign_bit = 0x800000u;
+        return (int32_t)((raw ^ sign_bit) - sign_bit);
+    }
+    if (in_depth == 16) {
+        return (int16_t)(raw & 0xffffu);
+    }
+    return (int8_t)(raw & 0xffu);
+}
+
+// Read a single sample from the DMA scratch at the given byte offset for the
+// configured input bit depth.
+static inline uint32_t i2sin_read_raw(const uint8_t *src, uint8_t in_depth) {
+    if (in_depth == 8) {
+        return (uint32_t)(*src);
+    }
+    if (in_depth == 16) {
+        uint16_t v;
+        memcpy(&v, src, sizeof(v));
+        return v;
+    }
+    uint32_t v;
+    memcpy(&v, src, sizeof(v));
+    return v;
+}
+
+// Convert `raw` from `in_depth` to `out_depth` (shift-only semantics, sign-
+// preserving for signed) and write it to `buffer` at sample index `idx`.
+// Output element size: 1 byte at 8, 2 bytes at 16, 4 bytes at 24 or 32.
+static inline void i2sin_write_converted(void *buffer, uint32_t idx,
+    uint32_t raw, uint8_t in_depth, uint8_t out_depth, bool samples_signed) {
+    int32_t s = i2sin_normalize_signed(raw, in_depth);
+    int32_t shifted;
+    if (out_depth >= in_depth) {
+        shifted = (int32_t)((uint32_t)s << (out_depth - in_depth));
+    } else {
+        shifted = s >> (in_depth - out_depth);
+    }
+    uint32_t u = (uint32_t)shifted;
+    if (!samples_signed) {
+        if (out_depth >= 32) {
+            u ^= 0x80000000u;
+        } else {
+            uint32_t mask = (1u << out_depth) - 1u;
+            u = (u & mask) ^ (1u << (out_depth - 1));
+        }
+    }
+    switch (out_depth) {
+        case 8:
+            ((uint8_t *)buffer)[idx] = (uint8_t)(u & 0xffu);
+            break;
+        case 16:
+            ((uint16_t *)buffer)[idx] = (uint16_t)(u & 0xffffu);
+            break;
+        default: // 24 or 32
+            ((uint32_t *)buffer)[idx] = u;
+            break;
+    }
+}
+
 // I2S delivers signed PCM. When samples_signed is false, XOR each sample with
 // the sign bit for its width to convert to unsigned PCM (WAV convention).
 static void i2sin_convert_to_unsigned(void *buffer, uint32_t samples,
@@ -156,6 +223,49 @@ uint32_t common_hal_audioi2sin_i2sin_record_to_buffer(audioi2sin_i2sin_obj_t *se
     // 24-bit samples occupy a 32-bit slot on the I2S bus.
     if (self->bit_depth == 24) {
         element_size = 4;
+    }
+
+    if (self->output_bit_depth != self->bit_depth) {
+        // Bit-depth conversion path: always read at input width into scratch,
+        // convert each sample into the user's buffer at output width.
+        const uint8_t in_depth = self->bit_depth;
+        const uint8_t out_depth = self->output_bit_depth;
+        const bool samples_signed = self->samples_signed;
+        uint8_t scratch[256];
+        const size_t in_frame_bytes = 2 * element_size;
+        const size_t scratch_frames = sizeof(scratch) / in_frame_bytes;
+        uint32_t produced = 0;
+        while (produced < length) {
+            size_t want_frames;
+            if (self->mono) {
+                want_frames = length - produced;
+            } else {
+                want_frames = (length - produced + 1) / 2;
+            }
+            if (want_frames > scratch_frames) {
+                want_frames = scratch_frames;
+            }
+            size_t got_bytes = 0;
+            esp_err_t err = i2s_channel_read(self->rx_chan, scratch,
+                want_frames * in_frame_bytes, &got_bytes, portMAX_DELAY);
+            CHECK_ESP_RESULT(err);
+            size_t got_frames = got_bytes / in_frame_bytes;
+            for (size_t i = 0; i < got_frames && produced < length; i++) {
+                const uint8_t *frame = scratch + i * in_frame_bytes;
+                uint32_t left_raw = i2sin_read_raw(frame, in_depth);
+                i2sin_write_converted(buffer, produced++, left_raw,
+                    in_depth, out_depth, samples_signed);
+                if (!self->mono && produced < length) {
+                    uint32_t right_raw = i2sin_read_raw(frame + element_size, in_depth);
+                    i2sin_write_converted(buffer, produced++, right_raw,
+                        in_depth, out_depth, samples_signed);
+                }
+            }
+            if (got_frames < want_frames) {
+                break;
+            }
+        }
+        return produced;
     }
 
     uint32_t produced;
@@ -204,6 +314,10 @@ uint32_t common_hal_audioi2sin_i2sin_record_to_buffer(audioi2sin_i2sin_obj_t *se
 
 uint8_t common_hal_audioi2sin_i2sin_get_bit_depth(audioi2sin_i2sin_obj_t *self) {
     return self->bit_depth;
+}
+
+uint8_t common_hal_audioi2sin_i2sin_get_output_bit_depth(audioi2sin_i2sin_obj_t *self) {
+    return self->output_bit_depth;
 }
 
 uint32_t common_hal_audioi2sin_i2sin_get_sample_rate(audioi2sin_i2sin_obj_t *self) {

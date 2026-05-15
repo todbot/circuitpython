@@ -151,14 +151,14 @@ static const uint16_t i2sin_program_left_justified_swap_32[] = {
 void common_hal_audioi2sin_i2sin_construct(audioi2sin_i2sin_obj_t *self,
     const mcu_pin_obj_t *bit_clock, const mcu_pin_obj_t *word_select,
     const mcu_pin_obj_t *data, const mcu_pin_obj_t *main_clock,
-    uint32_t sample_rate, uint8_t bit_depth, bool mono, bool left_justified,
-    bool samples_signed) {
+    uint32_t sample_rate, uint8_t bit_depth, uint8_t output_bit_depth,
+    bool mono, bool left_justified, bool samples_signed) {
 
     if (main_clock != NULL) {
         mp_raise_NotImplementedError_varg(MP_ERROR_TEXT("%q"), MP_QSTR_main_clock);
     }
     if (bit_depth != 16 && bit_depth != 24 && bit_depth != 32) {
-        mp_raise_NotImplementedError(MP_ERROR_TEXT("Only 16, 24, or 32 bit depth supported."));
+        mp_raise_ValueError(MP_ERROR_TEXT("bit_depth must be 16, 24, or 32"));
     }
 
     // 24- and 32-bit recordings both clock 32 bits per channel; 24-bit MEMS
@@ -225,6 +225,7 @@ void common_hal_audioi2sin_i2sin_construct(audioi2sin_i2sin_obj_t *self,
     uint32_t actual_frequency = common_hal_rp2pio_statemachine_get_frequency(&self->state_machine);
     self->sample_rate = actual_frequency / pio_clocks_per_frame;
     self->bit_depth = bit_depth;
+    self->output_bit_depth = output_bit_depth;
     self->mono = mono;
     self->samples_signed = samples_signed;
     self->left_justified = left_justified;
@@ -292,6 +293,10 @@ uint8_t common_hal_audioi2sin_i2sin_get_bit_depth(audioi2sin_i2sin_obj_t *self) 
     return self->bit_depth;
 }
 
+uint8_t common_hal_audioi2sin_i2sin_get_output_bit_depth(audioi2sin_i2sin_obj_t *self) {
+    return self->output_bit_depth;
+}
+
 uint32_t common_hal_audioi2sin_i2sin_get_sample_rate(audioi2sin_i2sin_obj_t *self) {
     return self->sample_rate;
 }
@@ -330,6 +335,69 @@ static inline uint32_t movesign24(uint32_t val) {
     return ((val & 0x800000u) << 8) | (val & 0x7fffffu);
 }
 
+// Sign-extend a raw FIFO sample to a canonical int32 value. `raw` holds the
+// sample as delivered by the PIO program for the given input bit depth and
+// alignment. The returned int32 represents the same magnitude with the sign
+// bit at bit 31.
+static inline int32_t i2sin_normalize_signed(uint32_t raw, uint8_t in_depth,
+    bool left_justified) {
+    if (in_depth == 32) {
+        return (int32_t)raw;
+    }
+    if (in_depth == 24) {
+        if (left_justified) {
+            // value in bits 31..8, sign at 31; arithmetic shift right 8
+            return (int32_t)raw >> 8;
+        }
+        // value in bits 23..0, sign at 23
+        uint32_t sign_bit = 0x800000u;
+        return (int32_t)((raw ^ sign_bit) - sign_bit);
+    }
+    // 16-bit: low 16 bits, sign at 15
+    return (int16_t)(raw & 0xffffu);
+}
+
+// Write `raw` (input-depth bits, just-read FIFO sample) to `buffer` at sample
+// index `idx`, converting from `in_depth` to `out_depth` and (if needed)
+// flipping the sign bit for the unsigned-WAV convention. Output element size
+// follows `out_depth`: 1 byte at 8, 2 bytes at 16, 4 bytes at 24 or 32.
+//
+// For signed 24-bit output, the int32 slot holds the sign-extended value
+// (range -2^23 .. 2^23-1) — unlike the default `output_bit_depth=bit_depth=24`
+// path which uses `movesign24`, the converted path returns proper two's
+// complement so the result decodes correctly as int32.
+static inline void i2sin_write_converted(void *buffer, uint32_t idx,
+    uint32_t raw, uint8_t in_depth, uint8_t out_depth,
+    bool samples_signed, bool left_justified) {
+    int32_t s = i2sin_normalize_signed(raw, in_depth, left_justified);
+    int32_t shifted;
+    if (out_depth >= in_depth) {
+        shifted = (int32_t)((uint32_t)s << (out_depth - in_depth));
+    } else {
+        shifted = s >> (in_depth - out_depth);
+    }
+    uint32_t u = (uint32_t)shifted;
+    if (!samples_signed) {
+        if (out_depth >= 32) {
+            u ^= 0x80000000u;
+        } else {
+            uint32_t mask = (1u << out_depth) - 1u;
+            u = (u & mask) ^ (1u << (out_depth - 1));
+        }
+    }
+    switch (out_depth) {
+        case 8:
+            ((uint8_t *)buffer)[idx] = (uint8_t)(u & 0xffu);
+            break;
+        case 16:
+            ((uint16_t *)buffer)[idx] = (uint16_t)(u & 0xffffu);
+            break;
+        default: // 24 or 32
+            ((uint32_t *)buffer)[idx] = u;
+            break;
+    }
+}
+
 uint32_t common_hal_audioi2sin_i2sin_record_to_buffer(audioi2sin_i2sin_obj_t *self,
     void *buffer, uint32_t output_buffer_length) {
     uint32_t output_count = 0;
@@ -339,21 +407,29 @@ uint32_t common_hal_audioi2sin_i2sin_record_to_buffer(audioi2sin_i2sin_obj_t *se
     // I2S delivers signed PCM. When the caller asked for unsigned samples,
     // flip the sign bit per sample (XOR with 0x8000 for 16-bit, 0x800000 for
     // 24-bit data in a 32-bit slot, 0x80000000 for 32-bit), matching the WAV
-    // convention.
-    const uint32_t flip16 = self->samples_signed ? 0u : 0x80008000u;
-    const uint32_t flip32 = self->samples_signed
-        ? 0u
-        : (self->bit_depth == 24 ? 0x800000u : 0x80000000u);
-    const bool fix_sign24 = self->bit_depth == 24
+    // convention. The default (no-conversion) path applies the flip to the
+    // raw FIFO word before splitting into channels; the conversion path
+    // applies the flip per output sample at output bit width.
+    const bool convert = self->output_bit_depth != self->bit_depth;
+    const uint32_t flip16 = (!convert && !self->samples_signed) ? 0x80008000u : 0u;
+    const uint32_t flip32 = (!convert && !self->samples_signed)
+        ? (self->bit_depth == 24 ? 0x800000u : 0x80000000u)
+        : 0u;
+    const bool fix_sign24 = !convert
+        && self->bit_depth == 24
         && self->samples_signed
         && !self->left_justified;
+    const uint8_t in_depth = self->bit_depth;
+    const uint8_t out_depth = self->output_bit_depth;
+    const bool left_justified = self->left_justified;
+    const bool samples_signed = self->samples_signed;
 
     if (self->bit_depth == 16) {
         // 16-bit mode auto-pushes one stereo frame per FIFO word. The DMA has
         // been streaming since construct time, so the ring already contains
         // settled data; drop the first 4 bytes once to discard a single
         // pre-record frame (matches the prior synchronous behaviour).
-        uint16_t *output = (uint16_t *)buffer;
+        uint16_t *output = convert ? NULL : (uint16_t *)buffer;
         while (output_count < output_buffer_length) {
             size_t write_pos = i2sin_write_pos(self);
             size_t avail = (write_pos + ring_size - self->read_pos) % ring_size;
@@ -380,16 +456,30 @@ uint32_t common_hal_audioi2sin_i2sin_record_to_buffer(audioi2sin_i2sin_obj_t *se
                 uint32_t frame = *(volatile uint32_t *)(self->ring + self->read_pos) ^ flip16;
                 uint16_t left = (uint16_t)(frame & 0xffff);
                 uint16_t right = (uint16_t)(frame >> 16);
-                if (self->mono) {
-                    output[output_count++] = left;
-                } else {
-                    output[output_count++] = left;
-                    if (output_count >= output_buffer_length) {
-                        self->read_pos = (self->read_pos + 4) % ring_size;
-                        avail -= 4;
-                        break;
+                if (!convert) {
+                    if (self->mono) {
+                        output[output_count++] = left;
+                    } else {
+                        output[output_count++] = left;
+                        if (output_count >= output_buffer_length) {
+                            self->read_pos = (self->read_pos + 4) % ring_size;
+                            avail -= 4;
+                            break;
+                        }
+                        output[output_count++] = right;
                     }
-                    output[output_count++] = right;
+                } else {
+                    i2sin_write_converted(buffer, output_count++, left,
+                        in_depth, out_depth, samples_signed, left_justified);
+                    if (!self->mono) {
+                        if (output_count >= output_buffer_length) {
+                            self->read_pos = (self->read_pos + 4) % ring_size;
+                            avail -= 4;
+                            break;
+                        }
+                        i2sin_write_converted(buffer, output_count++, right,
+                            in_depth, out_depth, samples_signed, left_justified);
+                    }
                 }
                 self->read_pos = (self->read_pos + 4) % ring_size;
                 avail -= 4;
@@ -403,7 +493,7 @@ uint32_t common_hal_audioi2sin_i2sin_record_to_buffer(audioi2sin_i2sin_obj_t *se
         // counter and always read an even number of words. half_size is a
         // multiple of 8, so reading 8-byte pairs stays aligned across the
         // ring wrap.
-        uint32_t *output = (uint32_t *)buffer;
+        uint32_t *output = convert ? NULL : (uint32_t *)buffer;
         while (output_count < output_buffer_length) {
             size_t write_pos = i2sin_write_pos(self);
             size_t avail = (write_pos + ring_size - self->read_pos) % ring_size;
@@ -436,16 +526,30 @@ uint32_t common_hal_audioi2sin_i2sin_record_to_buffer(audioi2sin_i2sin_obj_t *se
                     right = movesign24(right);
                     left = movesign24(left);
                 }
-                if (self->mono) {
-                    output[output_count++] = left;
-                } else {
-                    output[output_count++] = left;
-                    if (output_count >= output_buffer_length) {
-                        self->read_pos = (self->read_pos + 8) % ring_size;
-                        avail -= 8;
-                        break;
+                if (!convert) {
+                    if (self->mono) {
+                        output[output_count++] = left;
+                    } else {
+                        output[output_count++] = left;
+                        if (output_count >= output_buffer_length) {
+                            self->read_pos = (self->read_pos + 8) % ring_size;
+                            avail -= 8;
+                            break;
+                        }
+                        output[output_count++] = right;
                     }
-                    output[output_count++] = right;
+                } else {
+                    i2sin_write_converted(buffer, output_count++, left,
+                        in_depth, out_depth, samples_signed, left_justified);
+                    if (!self->mono) {
+                        if (output_count >= output_buffer_length) {
+                            self->read_pos = (self->read_pos + 8) % ring_size;
+                            avail -= 8;
+                            break;
+                        }
+                        i2sin_write_converted(buffer, output_count++, right,
+                            in_depth, out_depth, samples_signed, left_justified);
+                    }
                 }
                 self->read_pos = (self->read_pos + 8) % ring_size;
                 avail -= 8;

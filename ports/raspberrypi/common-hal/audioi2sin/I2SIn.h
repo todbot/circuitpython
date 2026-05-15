@@ -15,6 +15,7 @@ typedef struct {
     mp_obj_base_t base;
     uint32_t sample_rate;
     uint8_t bit_depth;
+    uint8_t output_bit_depth;
     bool mono;
     bool samples_signed;
     bool left_justified;

@@ -28,6 +28,7 @@
 //|         main_clock: Optional[microcontroller.Pin] = None,
 //|         sample_rate: int = 16000,
 //|         bit_depth: int = 16,
+//|         output_bit_depth: Optional[int] = None,
 //|         mono: bool = True,
 //|         left_justified: bool = False,
 //|         samples_signed: bool = True,
@@ -44,26 +45,33 @@
 //|         :param ~microcontroller.Pin data: The data input pin
 //|         :param ~microcontroller.Pin main_clock: The main clock pin. Not all ports support this.
 //|         :param int sample_rate: Target sample rate of the resulting samples. Check `sample_rate` for actual value.
-//|         :param int bit_depth: Number of bits per sample. Must be 8, 16, 24, or 32. 8-bit only supported on espressif.
+//|         :param int bit_depth: Number of bits per sample on the I2S bus. Must be 8, 16, 24, or
+//|           32. 8-bit only supported on espressif. The destination buffer typecode is determined
+//|           by ``output_bit_depth`` (or ``bit_depth`` when ``output_bit_depth`` is ``None``):
 //|
-//|           +----------------+-----------+----------------------+
-//|           | samples_signed | bit_depth | Required typecode(s) |
-//|           +================+===========+======================+
-//|           | True           | 24 or 32  | ``'i'``              |
-//|           +----------------+-----------+----------------------+
-//|           | True           | 16        | ``'h'``              |
-//|           +----------------+-----------+----------------------+
-//|           | True           | 8         | ``'b'`` or BYTEARRAY |
-//|           +----------------+-----------+----------------------+
-//|           | False          | 24 or 32  | ``'I'``              |
-//|           +----------------+-----------+----------------------+
-//|           | False          | 16        | ``'H'``              |
-//|           +----------------+-----------+----------------------+
-//|           | False          | 8         | ``'B'`` or BYTEARRAY |
-//|           +----------------+-----------+----------------------+
+//|           +----------------+------------------+----------------------+
+//|           | samples_signed | output_bit_depth | Required typecode(s) |
+//|           +================+==================+======================+
+//|           | True           | 24 or 32         | ``'i'``              |
+//|           +----------------+------------------+----------------------+
+//|           | True           | 16               | ``'h'``              |
+//|           +----------------+------------------+----------------------+
+//|           | True           | 8                | ``'b'`` or BYTEARRAY |
+//|           +----------------+------------------+----------------------+
+//|           | False          | 24 or 32         | ``'I'``              |
+//|           +----------------+------------------+----------------------+
+//|           | False          | 16               | ``'H'``              |
+//|           +----------------+------------------+----------------------+
+//|           | False          | 8                | ``'B'`` or BYTEARRAY |
+//|           +----------------+------------------+----------------------+
 //|
 //|           Note that 24-bit samples from mics like the SPH0645LM4H / INMP441 are
 //|           transported in 32-bit slots, so use ``bit_depth=32`` and an ``'I'`` buffer.
+//|         :param int output_bit_depth: If set, recorded samples are bit-shifted from
+//|           ``bit_depth`` to this width before being written to the destination buffer
+//|           (8, 16, 24, or 32). Widening pads the new LSBs with zero; narrowing arithmetic-
+//|           shifts the value right (sign-preserving when ``samples_signed`` is True). When
+//|           ``None`` (the default) the destination buffer holds samples at ``bit_depth``.
 //|         :param bool mono: True when capturing a single channel of audio, captures two channels otherwise.
 //|         :param bool left_justified: True when data bits are aligned with the word select clock. False
 //|           when they are shifted by one to match classic I2S protocol. Set True for mics like the SPH0645LM4H.
@@ -91,17 +99,19 @@ static mp_obj_t audioi2sin_i2sin_make_new(const mp_obj_type_t *type, size_t n_ar
     return NULL; // Not reachable.
     #else
     enum { ARG_bit_clock, ARG_word_select, ARG_data, ARG_main_clock,
-           ARG_sample_rate, ARG_bit_depth, ARG_mono, ARG_left_justified, ARG_samples_signed };
+           ARG_sample_rate, ARG_bit_depth, ARG_output_bit_depth,
+           ARG_mono, ARG_left_justified, ARG_samples_signed };
     static const mp_arg_t allowed_args[] = {
-        { MP_QSTR_bit_clock,      MP_ARG_REQUIRED | MP_ARG_OBJ },
-        { MP_QSTR_word_select,    MP_ARG_REQUIRED | MP_ARG_OBJ },
-        { MP_QSTR_data,           MP_ARG_REQUIRED | MP_ARG_OBJ },
-        { MP_QSTR_main_clock,     MP_ARG_KW_ONLY | MP_ARG_OBJ,  {.u_obj = mp_const_none} },
-        { MP_QSTR_sample_rate,    MP_ARG_KW_ONLY | MP_ARG_INT,  {.u_int = 16000} },
-        { MP_QSTR_bit_depth,      MP_ARG_KW_ONLY | MP_ARG_INT,  {.u_int = 16} },
-        { MP_QSTR_mono,           MP_ARG_KW_ONLY | MP_ARG_BOOL, {.u_bool = true} },
-        { MP_QSTR_left_justified, MP_ARG_KW_ONLY | MP_ARG_BOOL, {.u_bool = false} },
-        { MP_QSTR_samples_signed, MP_ARG_KW_ONLY | MP_ARG_BOOL, {.u_bool = true} },
+        { MP_QSTR_bit_clock,        MP_ARG_REQUIRED | MP_ARG_OBJ },
+        { MP_QSTR_word_select,      MP_ARG_REQUIRED | MP_ARG_OBJ },
+        { MP_QSTR_data,             MP_ARG_REQUIRED | MP_ARG_OBJ },
+        { MP_QSTR_main_clock,       MP_ARG_KW_ONLY | MP_ARG_OBJ,  {.u_obj = mp_const_none} },
+        { MP_QSTR_sample_rate,      MP_ARG_KW_ONLY | MP_ARG_INT,  {.u_int = 16000} },
+        { MP_QSTR_bit_depth,        MP_ARG_KW_ONLY | MP_ARG_INT,  {.u_int = 16} },
+        { MP_QSTR_output_bit_depth, MP_ARG_KW_ONLY | MP_ARG_OBJ,  {.u_obj = mp_const_none} },
+        { MP_QSTR_mono,             MP_ARG_KW_ONLY | MP_ARG_BOOL, {.u_bool = true} },
+        { MP_QSTR_left_justified,   MP_ARG_KW_ONLY | MP_ARG_BOOL, {.u_bool = false} },
+        { MP_QSTR_samples_signed,   MP_ARG_KW_ONLY | MP_ARG_BOOL, {.u_bool = true} },
     };
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
     mp_arg_parse_all_kw_array(n_args, n_kw, all_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
@@ -116,13 +126,24 @@ static mp_obj_t audioi2sin_i2sin_make_new(const mp_obj_type_t *type, size_t n_ar
     if (bit_depth % 8 != 0) {
         mp_raise_ValueError_varg(MP_ERROR_TEXT("%q must be multiple of 8."), MP_QSTR_bit_depth);
     }
+    uint8_t output_bit_depth;
+    mp_obj_t output_bit_depth_obj = args[ARG_output_bit_depth].u_obj;
+    if (output_bit_depth_obj == mp_const_none) {
+        output_bit_depth = bit_depth;
+    } else {
+        mp_int_t v = mp_obj_get_int(output_bit_depth_obj);
+        if (v != 8 && v != 16 && v != 24 && v != 32) {
+            mp_raise_ValueError_varg(MP_ERROR_TEXT("%q must be 8, 16, 24, or 32"), MP_QSTR_output_bit_depth);
+        }
+        output_bit_depth = (uint8_t)v;
+    }
     bool mono = args[ARG_mono].u_bool;
     bool left_justified = args[ARG_left_justified].u_bool;
     bool samples_signed = args[ARG_samples_signed].u_bool;
 
     audioi2sin_i2sin_obj_t *self = mp_obj_malloc_with_finaliser(audioi2sin_i2sin_obj_t, &audioi2sin_i2sin_type);
     common_hal_audioi2sin_i2sin_construct(self, bit_clock, word_select, data, main_clock,
-        sample_rate, bit_depth, mono, left_justified, samples_signed);
+        sample_rate, bit_depth, output_bit_depth, mono, left_justified, samples_signed);
 
     return MP_OBJ_FROM_PTR(self);
     #endif
@@ -180,23 +201,23 @@ static mp_obj_t audioi2sin_i2sin_obj_record(mp_obj_t self_obj, mp_obj_t destinat
     if (bufinfo.len / mp_binary_get_size('@', bufinfo.typecode, NULL) < length) {
         mp_raise_ValueError(MP_ERROR_TEXT("Destination capacity is smaller than destination_length."));
     }
-    uint8_t bit_depth = common_hal_audioi2sin_i2sin_get_bit_depth(self);
+    uint8_t output_bit_depth = common_hal_audioi2sin_i2sin_get_output_bit_depth(self);
     char error_type = ' ';
     bool samples_signed = common_hal_audioi2sin_i2sin_get_samples_signed(self);
     if (samples_signed) {
-        if ((bit_depth == 24 || bit_depth == 32) && bufinfo.typecode != 'i') {
+        if ((output_bit_depth == 24 || output_bit_depth == 32) && bufinfo.typecode != 'i') {
             error_type = 'i';
-        } else if (bit_depth == 16 && bufinfo.typecode != 'h') {
+        } else if (output_bit_depth == 16 && bufinfo.typecode != 'h') {
             error_type = 'h';
-        } else if (bit_depth == 8 && bufinfo.typecode != 'b' && bufinfo.typecode != BYTEARRAY_TYPECODE) {
+        } else if (output_bit_depth == 8 && bufinfo.typecode != 'b' && bufinfo.typecode != BYTEARRAY_TYPECODE) {
             error_type = 'b'; // NOTE: Not identifying as bytearray
         }
     } else {
-        if ((bit_depth == 24 || bit_depth == 32) && bufinfo.typecode != 'I') {
+        if ((output_bit_depth == 24 || output_bit_depth == 32) && bufinfo.typecode != 'I') {
             error_type = 'I';
-        } else if (bit_depth == 16 && bufinfo.typecode != 'H') {
+        } else if (output_bit_depth == 16 && bufinfo.typecode != 'H') {
             error_type = 'H';
-        } else if (bit_depth == 8 && bufinfo.typecode != 'B' && bufinfo.typecode != BYTEARRAY_TYPECODE) {
+        } else if (output_bit_depth == 8 && bufinfo.typecode != 'B' && bufinfo.typecode != BYTEARRAY_TYPECODE) {
             error_type = 'B';
         }
     }
@@ -240,6 +261,21 @@ MP_DEFINE_CONST_FUN_OBJ_1(audioi2sin_i2sin_get_bit_depth_obj, audioi2sin_i2sin_o
 MP_PROPERTY_GETTER(audioi2sin_i2sin_bit_depth_obj,
     (mp_obj_t)&audioi2sin_i2sin_get_bit_depth_obj);
 
+//|     output_bit_depth: int
+//|     """The bit depth of samples written to the destination buffer. Equals ``bit_depth`` when
+//|     ``output_bit_depth`` was not supplied (or was ``None``) at construction time. (read-only)"""
+//|
+//|
+static mp_obj_t audioi2sin_i2sin_obj_get_output_bit_depth(mp_obj_t self_in) {
+    audioi2sin_i2sin_obj_t *self = MP_OBJ_TO_PTR(self_in);
+    check_for_deinit(self);
+    return MP_OBJ_NEW_SMALL_INT(common_hal_audioi2sin_i2sin_get_output_bit_depth(self));
+}
+MP_DEFINE_CONST_FUN_OBJ_1(audioi2sin_i2sin_get_output_bit_depth_obj, audioi2sin_i2sin_obj_get_output_bit_depth);
+
+MP_PROPERTY_GETTER(audioi2sin_i2sin_output_bit_depth_obj,
+    (mp_obj_t)&audioi2sin_i2sin_get_output_bit_depth_obj);
+
 //|     samples_signed: bool
 //|     """True if recorded samples are signed PCM, False for unsigned. (read-only)"""
 //|
@@ -262,6 +298,7 @@ static const mp_rom_map_elem_t audioi2sin_i2sin_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_record), MP_ROM_PTR(&audioi2sin_i2sin_record_obj) },
     { MP_ROM_QSTR(MP_QSTR_sample_rate), MP_ROM_PTR(&audioi2sin_i2sin_sample_rate_obj) },
     { MP_ROM_QSTR(MP_QSTR_bit_depth), MP_ROM_PTR(&audioi2sin_i2sin_bit_depth_obj) },
+    { MP_ROM_QSTR(MP_QSTR_output_bit_depth), MP_ROM_PTR(&audioi2sin_i2sin_output_bit_depth_obj) },
     { MP_ROM_QSTR(MP_QSTR_samples_signed), MP_ROM_PTR(&audioi2sin_i2sin_samples_signed_obj) },
 };
 static MP_DEFINE_CONST_DICT(audioi2sin_i2sin_locals_dict, audioi2sin_i2sin_locals_dict_table);
