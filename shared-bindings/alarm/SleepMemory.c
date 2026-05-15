@@ -18,12 +18,6 @@
 //|     and deep sleep wake. Contents are lost when power is removed and restored,
 //|     or on brown-out reset.
 //|
-//|     .. note::
-//|         Programs that call ``microcontroller.reset()`` should wait at least
-//|         one second after boot before resetting, otherwise CircuitPython's
-//|         double-reset safe mode detector may activate. See
-//|         ``supervisor/shared/safe_mode.c``.
-//|
 //|     Note that this class can't be imported and used directly. The sole
 //|     instance of :class:`SleepMemory` is available at
 //|     :attr:`alarm.sleep_memory`.
