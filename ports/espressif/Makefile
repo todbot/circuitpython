@@ -209,6 +209,7 @@ REGISTRATION_FUNCTIONS = \
 	-u vfs_include_syscalls_impl \
 	-u esp_vfs_include_nullfs_register \
 	-u usb_serial_jtag_vfs_include_dev_init \
+	-u usb_serial_jtag_connection_monitor_include \
 	-u esp_flash_spi_init_include_func \
 	-u pthread_include_pthread_impl \
 	-u pthread_include_pthread_cond_var_impl \
@@ -217,6 +218,45 @@ REGISTRATION_FUNCTIONS = \
 	-u pthread_include_pthread_semaphore_impl \
 	-u esp_security_init_include_impl \
 	-u mbedtls_psa_crypto_init_include_impl
+
+# RISC-V picolibc ships optimized memcpy/memset/etc. that need forcing
+# (gated by CONFIG_LIBC_OPTIMIZED_MISALIGNED_ACCESS in IDF's esp_libc CMake).
+ifeq ($(IDF_TARGET_ARCH),riscv)
+REGISTRATION_FUNCTIONS += \
+	-u esp_libc_include_memcpy_impl \
+	-u esp_libc_include_memmove_impl \
+	-u esp_libc_include_memcmp_impl \
+	-u esp_libc_include_memset_impl \
+	-u esp_libc_include_strcpy_impl \
+	-u esp_libc_include_strncpy_impl \
+	-u esp_libc_include_strcmp_impl \
+	-u esp_libc_include_strncmp_impl
+endif
+
+# Chips with PAU + TOP power-down (SOC_PAU_SUPPORTED && SOC_PM_SUPPORT_TOP_PD):
+# C5, C6, C61, H2, H21, H4, P4. These pull in sleep_gpio + system-peripheral
+# retention, and the SW-driven RISC-V CPU register save/restore path.
+ifneq ($(filter $(IDF_TARGET),esp32c5 esp32c6 esp32c61 esp32h2 esp32h21 esp32h4 esp32p4),)
+REGISTRATION_FUNCTIONS += \
+	-u esp_sleep_gpio_include \
+	-u sleep_system_peripheral_dummy \
+	-u rv_core_critical_regs_save \
+	-u rv_core_critical_regs_restore
+endif
+
+# RISC-V chips with a hardware FPU (H4, P4) need FPU register save/restore
+# alongside the CPU retention path.
+ifneq ($(filter $(IDF_TARGET),esp32h4 esp32p4),)
+REGISTRATION_FUNCTIONS += \
+	-u rv_core_fpu_save \
+	-u rv_core_fpu_restore
+endif
+
+ifneq ($(CIRCUITPY_WIFI),0)
+ifeq ($(filter $(IDF_TARGET),esp32s2 esp32p4),)
+REGISTRATION_FUNCTIONS += -u esp_coex_init_include_func
+endif
+endif
 
 
 #Debugging/Optimization
@@ -244,6 +284,14 @@ endif
 
 # option to override compiler optimization level, set in boards/$(BOARD)/mpconfigboard.mk
 CFLAGS += $(OPTIMIZATION_FLAGS)
+
+# Default ROM symbol maps; per-chip blocks below may override.
+IDF_TARGET_ROM_LD ?= $(IDF_TARGET).rom.ld
+# Floating-point/libgcc ROM map. IDF picks between libgcc and rvfp based on
+# CONFIG_COMPILER_FLOAT_LIB_FROM_GCCLIB (rvfp xor libgcc, never both). Default
+# to libgcc; targets that ship the rvfp variant in ROM (P4 in particular)
+# override this.
+IDF_TARGET_ROM_FLOAT_LD ?= $(IDF_TARGET).rom.libgcc.ld
 
 CFLAGS += $(INC) -Werror -Wall -std=gnu11 -Wl,--gc-sections $(BASE_CFLAGS) $(C_DEFS) $(CFLAGS_MOD) $(COPT) -Werror=missing-prototypes -Werror=old-style-definition -Wno-error=cpp -Wno-cpp
 
@@ -294,9 +342,9 @@ LDFLAGS += \
 	-Tmemory.ld \
 	-Tsections.ld \
 	-T$(IDF_TARGET).peripherals.ld \
-	-T$(IDF_TARGET).rom.ld \
+	-T$(IDF_TARGET_ROM_LD) \
 	-T$(IDF_TARGET).rom.api.ld \
-	-T$(IDF_TARGET).rom.libgcc.ld \
+	-T$(IDF_TARGET_ROM_FLOAT_LD) \
 	-Wl,-Bstatic \
 	-Wl,--no-warn-mismatch \
 	-Wl,--build-id=none \
@@ -406,19 +454,18 @@ CFLAGS += \
 	-isystem esp-idf/components/esp_driver_touch_sens/hw_ver3/include
 
 ifeq ($(CIRCUITPY_ESP32P4_REV),3)
+IDF_TARGET_ROM_LD = esp32p4.rom.eco5.ld
+IDF_TARGET_ROM_FLOAT_LD = esp32p4.rom.eco5.rvfp.ld
 LDFLAGS += \
-	-Tesp32p4.rom.libc.ld \
 	-Tesp32p4.rom.systimer.ld \
-	-Tesp32p4.rom.eco5.ld \
 	-Tesp32p4.rom.eco5.libc.ld \
-	-Tesp32p4.rom.eco5.rvfp.ld \
 	-Tesp32p4.rom.version.ld \
 	-Trom.wdt.ld
 else
+IDF_TARGET_ROM_FLOAT_LD = esp32p4.rom.rvfp.ld
 LDFLAGS += \
 	-Tesp32p4.rom.libc.ld \
 	-Tesp32p4.rom.systimer.ld \
-	-Tesp32p4.rom.rvfp.ld \
 	-Tesp32p4.rom.version.ld \
 	-Trom.wdt.ld
 endif
