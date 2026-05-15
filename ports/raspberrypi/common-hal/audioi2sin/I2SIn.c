@@ -158,7 +158,7 @@ void common_hal_audioi2sin_i2sin_construct(audioi2sin_i2sin_obj_t *self,
         mp_raise_NotImplementedError_varg(MP_ERROR_TEXT("%q"), MP_QSTR_main_clock);
     }
     if (bit_depth != 16 && bit_depth != 24 && bit_depth != 32) {
-        mp_raise_ValueError(MP_ERROR_TEXT("bit_depth must be 16, 24, or 32"));
+        mp_raise_ValueError_varg(MP_ERROR_TEXT("%q must be 16, 24, or 32"), MP_QSTR_bit_depth);
     }
 
     // 24- and 32-bit recordings both clock 32 bits per channel; 24-bit MEMS

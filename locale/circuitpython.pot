@@ -186,6 +186,10 @@ msgstr ""
 msgid "%q must be 1 when %q is True"
 msgstr ""
 
+#: ports/raspberrypi/common-hal/audioi2sin/I2SIn.c
+msgid "%q must be 16, 24, or 32"
+msgstr ""
+
 #: shared-bindings/audioi2sin/I2SIn.c
 msgid "%q must be 8, 16, 24, or 32"
 msgstr ""
@@ -223,7 +227,7 @@ msgstr ""
 msgid "%q must be array of type 'h'"
 msgstr ""
 
-#: shared-bindings/audiobusio/PDMIn.c shared-bindings/audioi2sin/I2SIn.c
+#: shared-bindings/audiobusio/PDMIn.c
 msgid "%q must be multiple of 8."
 msgstr ""
 
@@ -2702,12 +2706,7 @@ msgstr ""
 msgid "binary op %q not implemented"
 msgstr ""
 
-#: ports/raspberrypi/common-hal/audioi2sin/I2SIn.c
-msgid "bit_depth must be 16, 24, or 32"
-msgstr ""
-
 #: ports/espressif/common-hal/audiobusio/PDMIn.c
-#: ports/espressif/common-hal/audioi2sin/I2SIn.c
 msgid "bit_depth must be 8, 16, 24, or 32."
 msgstr ""
 

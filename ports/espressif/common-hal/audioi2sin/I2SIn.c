@@ -23,10 +23,6 @@ void common_hal_audioi2sin_i2sin_construct(audioi2sin_i2sin_obj_t *self,
     uint32_t sample_rate, uint8_t bit_depth, uint8_t output_bit_depth,
     bool mono, bool left_justified, bool samples_signed) {
 
-    if (bit_depth != 8 && bit_depth != 16 && bit_depth != 24 && bit_depth != 32) {
-        mp_raise_ValueError(MP_ERROR_TEXT("bit_depth must be 8, 16, 24, or 32."));
-    }
-
     i2s_data_bit_width_t bit_width = (i2s_data_bit_width_t)bit_depth;
 
     i2s_chan_config_t chan_cfg = I2S_CHANNEL_DEFAULT_CONFIG(I2S_NUM_AUTO, I2S_ROLE_MASTER);

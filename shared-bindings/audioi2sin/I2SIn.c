@@ -123,8 +123,8 @@ static mp_obj_t audioi2sin_i2sin_make_new(const mp_obj_type_t *type, size_t n_ar
 
     uint32_t sample_rate = args[ARG_sample_rate].u_int;
     uint8_t bit_depth = args[ARG_bit_depth].u_int;
-    if (bit_depth % 8 != 0) {
-        mp_raise_ValueError_varg(MP_ERROR_TEXT("%q must be multiple of 8."), MP_QSTR_bit_depth);
+    if (bit_depth != 8 && bit_depth != 16 && bit_depth != 24 && bit_depth != 32) {
+        mp_raise_ValueError_varg(MP_ERROR_TEXT("%q must be 8, 16, 24, or 32"), MP_QSTR_bit_depth);
     }
     uint8_t output_bit_depth;
     mp_obj_t output_bit_depth_obj = args[ARG_output_bit_depth].u_obj;
