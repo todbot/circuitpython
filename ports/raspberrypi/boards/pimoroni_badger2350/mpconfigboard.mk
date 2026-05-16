@@ -19,6 +19,9 @@ CIRCUITPY_MDNS = 1
 CIRCUITPY_SOCKETPOOL = 1
 CIRCUITPY_WIFI = 1
 
+# GPIO12-19 needed for picodvi, but many are not available.
+CIRCUITPY_PICODVI = 0
+
 # PIO clock divider set to 2 (default), consider changing if TM2 gSPI
 # becomes unreliable.
 CFLAGS += \
