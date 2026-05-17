@@ -53,7 +53,7 @@
 #include "pico/bootrom.h"
 #include "hardware/watchdog.h"
 
-#ifdef PICO_RP2350
+#if PICO_RP2350
 #include "RP2350.h" // CMSIS
 #endif
 
@@ -336,10 +336,10 @@ safe_mode_t port_init(void) {
     // Load from the XIP memory space that doesn't cache. That way we don't
     // evict anything else. The code we're loading is linked to the RAM address
     // anyway.
-    #ifdef PICO_RP2040
+    #if PICO_RP2040
     size_t nocache = 0x03000000;
     #endif
-    #ifdef PICO_RP2350
+    #if PICO_RP2350
     size_t nocache = 0x04000000;
     #endif
 
@@ -547,7 +547,7 @@ void port_interrupt_after_ticks(uint32_t ticks) {
 }
 
 void port_idle_until_interrupt(void) {
-    #ifdef PICO_RP2040
+    #if PICO_RP2040
     common_hal_mcu_disable_interrupts();
     #if CIRCUITPY_USB_HOST
     if (!background_callback_pending() && !tud_task_event_ready() && !tuh_task_event_ready() && !_woken_up) {

@@ -233,7 +233,7 @@ audio_dma_result audio_dma_setup_playback(
         max_buffer_length /= dma->sample_spacing;
     }
 
-    #ifdef PICO_RP2350
+    #if PICO_RP2350
     dma->buffer[0] = (uint8_t *)port_realloc(dma->buffer[0], max_buffer_length, true);
     #else
     dma->buffer[0] = (uint8_t *)m_realloc(dma->buffer[0],
@@ -249,7 +249,7 @@ audio_dma_result audio_dma_setup_playback(
     }
 
     if (!single_buffer) {
-        #ifdef PICO_RP2350
+        #if PICO_RP2350
         dma->buffer[1] = (uint8_t *)port_realloc(dma->buffer[1], max_buffer_length, true);
         #else
         dma->buffer[1] = (uint8_t *)m_realloc(dma->buffer[1],
@@ -460,7 +460,7 @@ void audio_dma_init(audio_dma_t *dma) {
 }
 
 void audio_dma_deinit(audio_dma_t *dma) {
-    #ifdef PICO_RP2350
+    #if PICO_RP2350
     port_free(dma->buffer[0]);
     #else
     #if MICROPY_MALLOC_USES_ALLOCATED_SIZE
@@ -472,7 +472,7 @@ void audio_dma_deinit(audio_dma_t *dma) {
     dma->buffer[0] = NULL;
     dma->buffer_length[0] = 0;
 
-    #ifdef PICO_RP2350
+    #if PICO_RP2350
     port_free(dma->buffer[1]);
     #else
     #if MICROPY_MALLOC_USES_ALLOCATED_SIZE

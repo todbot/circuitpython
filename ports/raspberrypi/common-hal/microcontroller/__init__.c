@@ -30,7 +30,7 @@ void common_hal_mcu_delay_us(uint32_t delay) {
 }
 
 volatile uint32_t nesting_count = 0;
-#ifdef PICO_RP2040
+#if PICO_RP2040
 void common_hal_mcu_disable_interrupts(void) {
     // We don't use save_and_disable_interrupts() from the sdk because we don't want to worry about PRIMASK.
     // This is what we do on the SAMD21 via CMSIS.
