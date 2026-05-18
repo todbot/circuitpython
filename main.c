@@ -441,17 +441,6 @@ static void print_code_py_status_message(safe_mode_t safe_mode) {
 }
 
 static bool __attribute__((noinline)) run_code_py(safe_mode_t safe_mode, bool *simulate_reset) {
-    bool serial_connected_at_start = serial_connected();
-    bool printed_safe_mode_message = false;
-    #if CIRCUITPY_AUTORELOAD_DELAY_MS > 0
-    if (serial_connected_at_start) {
-        serial_write("\r\n");
-        print_code_py_status_message(safe_mode);
-        print_safe_mode_message(safe_mode);
-        printed_safe_mode_message = true;
-    }
-    #endif
-
     bool skip_repl = false;
     bool skip_wait = false;
     bool found_main = false;
@@ -651,20 +640,13 @@ static bool __attribute__((noinline)) run_code_py(safe_mode_t safe_mode, bool *s
 
         // If messages haven't been printed yet, print them
         if (!printed_press_any_key && serial_connected() && !autoreload_pending()) {
-            if (!serial_connected_at_start) {
-                print_code_py_status_message(safe_mode);
-            }
-
-            if (!printed_safe_mode_message) {
-                print_safe_mode_message(safe_mode);
-                printed_safe_mode_message = true;
-            }
+            print_code_py_status_message(safe_mode);
+            print_safe_mode_message(safe_mode);
             serial_write("\r\n");
             serial_write_compressed(MP_ERROR_TEXT("Press any key to enter the REPL. Use CTRL-D to reload.\n"));
             printed_press_any_key = true;
         }
         if (!serial_connected()) {
-            serial_connected_at_start = false;
             printed_press_any_key = false;
         }
 
