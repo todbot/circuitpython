@@ -222,7 +222,7 @@ MP_DEFINE_CONST_FUN_OBJ_1(terminalio_terminal_get_cursor_y_obj, terminalio_termi
 MP_PROPERTY_GETTER(terminalio_terminal_cursor_y_obj,
     (mp_obj_t)&terminalio_terminal_get_cursor_y_obj);
 
-static mp_uint_t terminalio_terminal_ioctl(mp_obj_t self_in, mp_uint_t request, mp_uint_t arg, int *errcode) {
+static mp_uint_t terminalio_terminal_ioctl(mp_obj_t self_in, mp_uint_t request, uintptr_t arg, int *errcode) {
     terminalio_terminal_obj_t *self = MP_OBJ_TO_PTR(self_in);
     mp_uint_t ret;
     if (request == MP_STREAM_POLL) {

@@ -16,6 +16,7 @@
 #include "shared-bindings/wifi/Network.h"
 #include "shared-bindings/wifi/Radio.h"
 #include "shared-bindings/wifi/ScannedNetworks.h"
+#include "bindings/zephyr_kernel/__init__.h"
 
 #include <zephyr/kernel.h>
 #include <zephyr/net/wifi_mgmt.h>

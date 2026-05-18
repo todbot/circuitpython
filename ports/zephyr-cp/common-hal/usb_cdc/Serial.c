@@ -7,6 +7,7 @@
 #include "shared/runtime/interrupt_char.h"
 #include "shared-bindings/usb_cdc/Serial.h"
 #include "shared-bindings/busio/UART.h"
+#include "common-hal/busio/UART.h"
 #include "supervisor/shared/tick.h"
 
 mp_obj_t common_hal_usb_cdc_serial_construct_from_device(usb_cdc_serial_obj_t *self, const struct device *uart_device, uint16_t receiver_buffer_size, byte *receiver_buffer) {

@@ -291,7 +291,7 @@ static mp_uint_t sslsocket_write(mp_obj_t self_in, const void *buf, mp_uint_t si
     return readwrite_common(self_in, common_hal_ssl_sslsocket_send, buf, size, errorcode);
 }
 
-static mp_uint_t sslsocket_ioctl(mp_obj_t self_in, mp_uint_t request, mp_uint_t arg, int *errcode) {
+static mp_uint_t sslsocket_ioctl(mp_obj_t self_in, mp_uint_t request, uintptr_t arg, int *errcode) {
     ssl_sslsocket_obj_t *self = MP_OBJ_TO_PTR(self_in);
     mp_uint_t ret;
     if (request == MP_STREAM_POLL) {

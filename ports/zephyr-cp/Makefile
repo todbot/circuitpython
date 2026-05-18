@@ -23,6 +23,9 @@ endif
 
 .PHONY: $(BUILD)/zephyr-cp/zephyr/zephyr.elf flash recover debug debug-jlink debugserver attach run run-sim clean menuconfig all clean-all sim clean-sim test fetch-port-submodules
 
+export BSIM_COMPONENTS_PATH := $(CURDIR)/tools/bsim/components
+export BSIM_OUT_PATH := $(CURDIR)/tools/bsim
+
 $(BUILD)/zephyr-cp/zephyr/zephyr.elf:
 	python cptools/pre_zephyr_build_prep.py $(BOARD)
 	west build -b $(BOARD) -d $(BUILD) $(WEST_SHIELD_ARGS) --sysbuild -- $(WEST_CMAKE_ARGS)
