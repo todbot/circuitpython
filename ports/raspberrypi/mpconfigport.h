@@ -8,11 +8,11 @@
 
 #include "hardware/platform_defs.h"
 
-#ifdef PICO_RP2040
+#if PICO_RP2040
 #define MICROPY_PY_SYS_PLATFORM             "RP2040"
 #endif
 
-#ifdef PICO_RP2350
+#if PICO_RP2350
 #define MICROPY_PY_SYS_PLATFORM             "RP2350"
 
 // PSRAM can require more stack space for GC.

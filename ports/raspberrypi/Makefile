@@ -407,8 +407,7 @@ CFLAGS += \
 	-msoft-float \
 	-mfloat-abi=soft
 
-CFLAGS += \
-	-DPICO_RP2040
+CFLAGS += -DPICO_RP2040=1 -DPICO_RP2350=0
 
 SRC_SDK_CHIP_VARIANT := \
 	src/rp2_common/hardware_rtc/rtc.c \
@@ -451,7 +450,7 @@ DOUBLE_EABI = dcp
 INC += \
 	-isystem sdk/src/rp2_common/hardware_dcp/include/
 
-CFLAGS += -DPICO_RP2350=1
+CFLAGS += -DPICO_RP2040=0 -DPICO_RP2350=1
 
 SRC_SDK_CHIP_VARIANT := \
 	src/rp2_common/hardware_powman/powman.c \

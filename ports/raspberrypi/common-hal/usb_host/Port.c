@@ -13,10 +13,10 @@
 
 #include "pico/time.h"
 #include "hardware/structs/mpu.h"
-#ifdef PICO_RP2040
+#if PICO_RP2040
 #include "RP2040.h" // (cmsis)
 #endif
-#ifdef PICO_RP2350
+#if PICO_RP2350
 #include "RP2350.h" // (cmsis)
 #endif
 #include "hardware/dma.h"
