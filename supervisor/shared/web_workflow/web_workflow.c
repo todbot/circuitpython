@@ -1040,7 +1040,7 @@ static void _write_file_and_reply(socketpool_socket_obj_t *socket, _request *req
     if (result == FR_NO_FILE) {
         new_file = true;
         result = f_open(fs, &active_file, path, FA_WRITE | FA_OPEN_ALWAYS);
-    } else {
+    } else if (result == FR_OK) {
         old_length = f_size(&active_file);
     }
 
@@ -1049,6 +1049,18 @@ static void _write_file_and_reply(socketpool_socket_obj_t *socket, _request *req
         filesystem_unlock(fs_mount);
         _discard_incoming(socket, request->content_length);
         _reply_missing(socket, request);
+        return;
+    }
+    if (result == FR_WRITE_PROTECTED) {
+        // The filesystem is held by something else with write access (most
+        // commonly USB-MSC: the host has CIRCUITPY mounted, so CircuitPython
+        // can't write through FatFS). Match the mkdir/move/delete paths and
+        // reply 409 Conflict so clients can show an actionable message
+        // ("eject CIRCUITPY / disable USB MSC") instead of a generic 500.
+        override_fattime(0);
+        filesystem_unlock(fs_mount);
+        _discard_incoming(socket, request->content_length);
+        _reply_conflict(socket, request);
         return;
     }
     if (result != FR_OK) {
