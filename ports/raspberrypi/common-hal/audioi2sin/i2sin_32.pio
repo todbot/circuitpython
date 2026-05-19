@@ -8,17 +8,28 @@
 .side_set 2
 
 ; Master-mode I2S RX, 32 bits per channel (also used for 24-bit mics that
-; transmit data left-justified in a 32-bit slot).
+; transmit data left-justified in a 32-bit slot). Generates BCLK and LRCLK
+; via side-set and samples the data pin. The slave updates `data` on BCLK
+; falling edge, so the master samples on the rising edge: every `in pins 1`
+; runs on a side-set value with BCLK=1, and the preceding nop holds BCLK=0
+; so the slave has time to settle the next bit.
                     ;        /--- LRCLK
                     ;        |/-- BCLK
                     ;        ||
-    set y 30          side 0b10
+    nop               side 0b11
+.wrap_target
+    set y 30          side 0b11 [1]
 bitloop1:
-    in pins 1         side 0b11 [2] ; Right channel first
-    jmp y-- bitloop1  side 0b10 [2]
-    in pins 1         side 0b01 [2]
-    set y 30          side 0b00 [2]
+    nop               side 0b10 [2] ; Right channel first
+    in pins 1         side 0b11
+    jmp y-- bitloop1  side 0b11 [1]
+    nop               side 0b00 [2]
+    in pins 1         side 0b01
+    set y 30          side 0b01 [1]
 bitloop0:
-    in pins 1         side 0b01 [2] ; Then left channel
-    jmp y-- bitloop0  side 0b00 [2]
-    in pins 1         side 0b11 [2]
+    nop               side 0b00 [2] ; Then left channel
+    in pins 1         side 0b01
+    jmp y-- bitloop0  side 0b01 [1]
+    nop               side 0b10 [2]
+    in pins 1         side 0b11
+.wrap

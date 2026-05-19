@@ -38,57 +38,77 @@
 
 // Master-mode RX, regular pin order (BCLK = WS - 1), Philips alignment.
 static const uint16_t i2sin_program[] = {
-    //     .wrap_target
-    0xf04e, //  0: set    y, 14           side 2
-    0x5a01, //  1: in     pins, 1         side 3 [2]
-    0x1281, //  2: jmp    y--, 1          side 2 [2]
-    0x4a01, //  3: in     pins, 1         side 1 [2]
-    0xe24e, //  4: set    y, 14           side 0 [2]
-    0x4a01, //  5: in     pins, 1         side 1 [2]
-    0x0285, //  6: jmp    y--, 5          side 0 [2]
-    0x5a01, //  7: in     pins, 1         side 3 [2]
+    0xb842, //  0: nop                    side 3
+            //     .wrap_target
+    0xf94e, //  1: set    y, 14           side 3 [1]
+    0xb242, //  2: nop                    side 2 [2]
+    0x5801, //  3: in     pins, 1         side 3
+    0x1982, //  4: jmp    y--, 2          side 3 [1]
+    0xa242, //  5: nop                    side 0 [2]
+    0x4801, //  6: in     pins, 1         side 1
+    0xe94e, //  7: set    y, 14           side 1 [1]
+    0xa242, //  8: nop                    side 0 [2]
+    0x4801, //  9: in     pins, 1         side 1
+    0x0988, // 10: jmp    y--, 8          side 1 [1]
+    0xb242, // 11: nop                    side 2 [2]
+    0x5801, // 12: in     pins, 1         side 3
             //     .wrap
 };
 
 // Master-mode RX, regular pin order, left-justified.
 static const uint16_t i2sin_program_left_justified[] = {
-    //     .wrap_target
-    0xe04e, //  0: set    y, 14           side 0
-    0x5a01, //  1: in     pins, 1         side 3 [2]
-    0x1281, //  2: jmp    y--, 1          side 2 [2]
-    0x5a01, //  3: in     pins, 1         side 3 [2]
-    0xf24e, //  4: set    y, 14           side 2 [2]
-    0x4a01, //  5: in     pins, 1         side 1 [2]
-    0x0285, //  6: jmp    y--, 5          side 0 [2]
-    0x4a01, //  7: in     pins, 1         side 1 [2]
+    0xa842, //  0: nop                    side 1
+            //     .wrap_target
+    0xe94e, //  1: set    y, 14           side 1 [1]
+    0xb242, //  2: nop                    side 2 [2]
+    0x5801, //  3: in     pins, 1         side 3
+    0x1982, //  4: jmp    y--, 2          side 3 [1]
+    0xb242, //  5: nop                    side 2 [2]
+    0x5801, //  6: in     pins, 1         side 3
+    0xf94e, //  7: set    y, 14           side 3 [1]
+    0xa242, //  8: nop                    side 0 [2]
+    0x4801, //  9: in     pins, 1         side 1
+    0x0988, // 10: jmp    y--, 8          side 1 [1]
+    0xa242, // 11: nop                    side 0 [2]
+    0x4801, // 12: in     pins, 1         side 1
             //     .wrap
 };
 
 // Master-mode RX, swapped pin order (BCLK = WS + 1), Philips alignment.
 static const uint16_t i2sin_program_swap[] = {
-    //     .wrap_target
-    0xe84e, //  0: set    y, 14           side 1
-    0x5a01, //  1: in     pins, 1         side 3 [2]
-    0x0a81, //  2: jmp    y--, 1          side 1 [2]
-    0x5201, //  3: in     pins, 1         side 2 [2]
-    0xe24e, //  4: set    y, 14           side 0 [2]
-    0x5201, //  5: in     pins, 1         side 2 [2]
-    0x0285, //  6: jmp    y--, 5          side 0 [2]
-    0x5a01, //  7: in     pins, 1         side 3 [2]
+    0xb842, //  0: nop                    side 3
+            //     .wrap_target
+    0xf94e, //  1: set    y, 14           side 3 [1]
+    0xaa42, //  2: nop                    side 1 [2]
+    0x5801, //  3: in     pins, 1         side 3
+    0x1982, //  4: jmp    y--, 2          side 3 [1]
+    0xa242, //  5: nop                    side 0 [2]
+    0x5001, //  6: in     pins, 1         side 2
+    0xf14e, //  7: set    y, 14           side 2 [1]
+    0xa242, //  8: nop                    side 0 [2]
+    0x5001, //  9: in     pins, 1         side 2
+    0x1188, // 10: jmp    y--, 8          side 2 [1]
+    0xaa42, // 11: nop                    side 1 [2]
+    0x5801, // 12: in     pins, 1         side 3
             //     .wrap
 };
 
 // Master-mode RX, swapped pin order, left-justified.
 static const uint16_t i2sin_program_left_justified_swap[] = {
-    //     .wrap_target
-    0xe04e, //  0: set    y, 14           side 0
-    0x5a01, //  1: in     pins, 1         side 3 [2]
-    0x0a81, //  2: jmp    y--, 1          side 1 [2]
-    0x5a01, //  3: in     pins, 1         side 3 [2]
-    0xea4e, //  4: set    y, 14           side 1 [2]
-    0x5201, //  5: in     pins, 1         side 2 [2]
-    0x0285, //  6: jmp    y--, 5          side 0 [2]
-    0x5201, //  7: in     pins, 1         side 2 [2]
+    0xb042, //  0: nop                    side 2
+            //     .wrap_target
+    0xf14e, //  1: set    y, 14           side 2 [1]
+    0xaa42, //  2: nop                    side 1 [2]
+    0x5801, //  3: in     pins, 1         side 3
+    0x1982, //  4: jmp    y--, 2          side 3 [1]
+    0xaa42, //  5: nop                    side 1 [2]
+    0x5801, //  6: in     pins, 1         side 3
+    0xf94e, //  7: set    y, 14           side 3 [1]
+    0xa242, //  8: nop                    side 0 [2]
+    0x5001, //  9: in     pins, 1         side 2
+    0x1188, // 10: jmp    y--, 8          side 2 [1]
+    0xa242, // 11: nop                    side 0 [2]
+    0x5001, // 12: in     pins, 1         side 2
             //     .wrap
 };
 
@@ -96,54 +116,74 @@ static const uint16_t i2sin_program_left_justified_swap[] = {
 // the loop counter is set to 30 (so each `bitloop` runs 31 in's, plus one
 // outside the loop = 32 in's per channel).
 static const uint16_t i2sin_program_32[] = {
-    //     .wrap_target
-    0xf05e, //  0: set    y, 30           side 2
-    0x5a01, //  1: in     pins, 1         side 3 [2]
-    0x1281, //  2: jmp    y--, 1          side 2 [2]
-    0x4a01, //  3: in     pins, 1         side 1 [2]
-    0xe25e, //  4: set    y, 30           side 0 [2]
-    0x4a01, //  5: in     pins, 1         side 1 [2]
-    0x0285, //  6: jmp    y--, 5          side 0 [2]
-    0x5a01, //  7: in     pins, 1         side 3 [2]
+    0xb842, //  0: nop                    side 3
+            //     .wrap_target
+    0xf95e, //  1: set    y, 30           side 3 [1]
+    0xb242, //  2: nop                    side 2 [2]
+    0x5801, //  3: in     pins, 1         side 3
+    0x1982, //  4: jmp    y--, 2          side 3 [1]
+    0xa242, //  5: nop                    side 0 [2]
+    0x4801, //  6: in     pins, 1         side 1
+    0xe95e, //  7: set    y, 30           side 1 [1]
+    0xa242, //  8: nop                    side 0 [2]
+    0x4801, //  9: in     pins, 1         side 1
+    0x0988, // 10: jmp    y--, 8          side 1 [1]
+    0xb242, // 11: nop                    side 2 [2]
+    0x5801, // 12: in     pins, 1         side 3
             //     .wrap
 };
 
 static const uint16_t i2sin_program_left_justified_32[] = {
-    //     .wrap_target
-    0xe05e, //  0: set    y, 30           side 0
-    0x5a01, //  1: in     pins, 1         side 3 [2]
-    0x1281, //  2: jmp    y--, 1          side 2 [2]
-    0x5a01, //  3: in     pins, 1         side 3 [2]
-    0xf25e, //  4: set    y, 30           side 2 [2]
-    0x4a01, //  5: in     pins, 1         side 1 [2]
-    0x0285, //  6: jmp    y--, 5          side 0 [2]
-    0x4a01, //  7: in     pins, 1         side 1 [2]
+    0xa842, //  0: nop                    side 1
+            //     .wrap_target
+    0xe95e, //  1: set    y, 30           side 1 [1]
+    0xb242, //  2: nop                    side 2 [2]
+    0x5801, //  3: in     pins, 1         side 3
+    0x1982, //  4: jmp    y--, 2          side 3 [1]
+    0xb242, //  5: nop                    side 2 [2]
+    0x5801, //  6: in     pins, 1         side 3
+    0xf95e, //  7: set    y, 30           side 3 [1]
+    0xa242, //  8: nop                    side 0 [2]
+    0x4801, //  9: in     pins, 1         side 1
+    0x0988, // 10: jmp    y--, 8          side 1 [1]
+    0xa242, // 11: nop                    side 0 [2]
+    0x4801, // 12: in     pins, 1         side 1
             //     .wrap
 };
 
 static const uint16_t i2sin_program_swap_32[] = {
-    //     .wrap_target
-    0xe85e, //  0: set    y, 30           side 1
-    0x5a01, //  1: in     pins, 1         side 3 [2]
-    0x0a81, //  2: jmp    y--, 1          side 1 [2]
-    0x5201, //  3: in     pins, 1         side 2 [2]
-    0xe25e, //  4: set    y, 30           side 0 [2]
-    0x5201, //  5: in     pins, 1         side 2 [2]
-    0x0285, //  6: jmp    y--, 5          side 0 [2]
-    0x5a01, //  7: in     pins, 1         side 3 [2]
+    0xb842, //  0: nop                    side 3
+            //     .wrap_target
+    0xf95e, //  1: set    y, 30           side 3 [1]
+    0xaa42, //  2: nop                    side 1 [2]
+    0x5801, //  3: in     pins, 1         side 3
+    0x1982, //  4: jmp    y--, 2          side 3 [1]
+    0xa242, //  5: nop                    side 0 [2]
+    0x5001, //  6: in     pins, 1         side 2
+    0xf15e, //  7: set    y, 30           side 2 [1]
+    0xa242, //  8: nop                    side 0 [2]
+    0x5001, //  9: in     pins, 1         side 2
+    0x1188, // 10: jmp    y--, 8          side 2 [1]
+    0xaa42, // 11: nop                    side 1 [2]
+    0x5801, // 12: in     pins, 1         side 3
             //     .wrap
 };
 
 static const uint16_t i2sin_program_left_justified_swap_32[] = {
-    //     .wrap_target
-    0xe05e, //  0: set    y, 30           side 0
-    0x5a01, //  1: in     pins, 1         side 3 [2]
-    0x0a81, //  2: jmp    y--, 1          side 1 [2]
-    0x5a01, //  3: in     pins, 1         side 3 [2]
-    0xea5e, //  4: set    y, 30           side 1 [2]
-    0x5201, //  5: in     pins, 1         side 2 [2]
-    0x0285, //  6: jmp    y--, 5          side 0 [2]
-    0x5201, //  7: in     pins, 1         side 2 [2]
+    0xb042, //  0: nop                    side 2
+            //     .wrap_target
+    0xf15e, //  1: set    y, 30           side 2 [1]
+    0xaa42, //  2: nop                    side 1 [2]
+    0x5801, //  3: in     pins, 1         side 3
+    0x1982, //  4: jmp    y--, 2          side 3 [1]
+    0xaa42, //  5: nop                    side 1 [2]
+    0x5801, //  6: in     pins, 1         side 3
+    0xf95e, //  7: set    y, 30           side 3 [1]
+    0xa242, //  8: nop                    side 0 [2]
+    0x5001, //  9: in     pins, 1         side 2
+    0x1188, // 10: jmp    y--, 8          side 2 [1]
+    0xa242, // 11: nop                    side 0 [2]
+    0x5001, // 12: in     pins, 1         side 2
             //     .wrap
 };
 
@@ -216,7 +256,7 @@ void common_hal_audioi2sin_i2sin_construct(audioi2sin_i2sin_obj_t *self,
         false, // Wait for txstall
         true, 32, false, // in settings: auto-push at 32 bits, shift left (MSB first)
         false, // Not user-interruptible.
-        0, -1, // wrap settings
+        1, -1, // wrap settings
         PIO_ANY_OFFSET,
         PIO_FIFO_TYPE_DEFAULT,
         PIO_MOV_STATUS_DEFAULT,

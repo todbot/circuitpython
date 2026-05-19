@@ -12,13 +12,20 @@
                     ;        /--- BCLK
                     ;        |/-- LRCLK
                     ;        ||
-    set y 30          side 0b01
+    nop               side 0b11
+.wrap_target
+    set y 30          side 0b11 [1]
 bitloop1:
-    in pins 1         side 0b11 [2] ; Right channel first
-    jmp y-- bitloop1  side 0b01 [2]
-    in pins 1         side 0b10 [2]
-    set y 30          side 0b00 [2]
+    nop               side 0b01 [2] ; Right channel first
+    in pins 1         side 0b11
+    jmp y-- bitloop1  side 0b11 [1]
+    nop               side 0b00 [2]
+    in pins 1         side 0b10
+    set y 30          side 0b10 [1]
 bitloop0:
-    in pins 1         side 0b10 [2] ; Then left channel
-    jmp y-- bitloop0  side 0b00 [2]
-    in pins 1         side 0b11 [2]
+    nop               side 0b00 [2] ; Then left channel
+    in pins 1         side 0b10
+    jmp y-- bitloop0  side 0b10 [1]
+    nop               side 0b01 [2]
+    in pins 1         side 0b11
+.wrap
