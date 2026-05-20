@@ -624,7 +624,7 @@ bool __no_inline_not_in_flash_func(port_boot_button_pressed)(void) {
     // pressed, return is delayed until the button is released and
     // a delay has passed in order to debounce the button.
     const uint32_t CS_PIN_INDEX = 1;
-    #if defined(PICO_RP2040)
+    #if PICO_RP2040
     const uint32_t CS_BIT = 1u << 1;
     #else
     const uint32_t CS_BIT = SIO_GPIO_HI_IN_QSPI_CSN_BITS;
