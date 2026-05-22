@@ -33,7 +33,7 @@ void common_hal_audiospeed_speedchanger_construct(audiospeed_speedchanger_obj_t 
     self->base.channel_count = src_base->channel_count;
     self->base.bits_per_sample = src_base->bits_per_sample;
     self->base.samples_signed = src_base->samples_signed;
-    self->base.single_buffer = true;
+    self->base.single_buffer = false;
 
     uint8_t bytes_per_frame = (src_base->bits_per_sample / 8) * src_base->channel_count;
     self->output_buffer_length = OUTPUT_BUFFER_FRAMES * bytes_per_frame;
