@@ -311,6 +311,7 @@ MAKE_ENUM_TYPE(bitmaptools, BlendMode, bitmaptools_blendmode);
 //|     blendmode: Optional[BlendMode] = BlendMode.Normal,
 //|     skip_source1_index: Union[int, None] = None,
 //|     skip_source2_index: Union[int, None] = None,
+//|     mask: Optional[displayio.Bitmap] = None,
 //| ) -> None:
 //|     """Alpha blend the two source bitmaps into the destination.
 //|
@@ -326,6 +327,11 @@ MAKE_ENUM_TYPE(bitmaptools, BlendMode, bitmaptools_blendmode);
 //|     :param bitmaptools.BlendMode blendmode: The blend mode to use. Default is Normal.
 //|     :param int skip_source1_index: Bitmap palette or luminance index in source_bitmap_1 that will not be blended, set to None to blend all pixels
 //|     :param int skip_source2_index: Bitmap palette or luminance index in source_bitmap_2 that will not be blended, set to None to blend all pixels
+//|     :param displayio.Bitmap mask: Optional 8-bits-per-value grayscale mask bitmap controlling per-pixel opacity of ``source_bitmap_2``.
+//|         The mask must have the same width and height as the other bitmaps and a ``bits_per_value`` of 8. A mask value of 0
+//|         means ``source_bitmap_2`` is fully transparent at that pixel (only ``source_bitmap_1`` contributes); a value of 255 means
+//|         ``source_bitmap_2`` is fully opaque at that pixel (subject to ``factor2``). Intermediate values scale ``factor2`` linearly.
+//|         Pass ``None`` to disable per-pixel masking.
 //|
 //|     For the L8 colorspace, the bitmaps must have a bits-per-value of 8.
 //|     For the RGB colorspaces, they must have a bits-per-value of 16."""
@@ -333,7 +339,7 @@ MAKE_ENUM_TYPE(bitmaptools, BlendMode, bitmaptools_blendmode);
 //|
 
 static mp_obj_t bitmaptools_alphablend(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
-    enum {ARG_dest_bitmap, ARG_source_bitmap_1, ARG_source_bitmap_2, ARG_colorspace, ARG_factor_1, ARG_factor_2, ARG_blendmode, ARG_skip_source1_index, ARG_skip_source2_index};
+    enum {ARG_dest_bitmap, ARG_source_bitmap_1, ARG_source_bitmap_2, ARG_colorspace, ARG_factor_1, ARG_factor_2, ARG_blendmode, ARG_skip_source1_index, ARG_skip_source2_index, ARG_mask};
 
     static const mp_arg_t allowed_args[] = {
         {MP_QSTR_dest_bitmap, MP_ARG_REQUIRED | MP_ARG_OBJ, {.u_obj = NULL}},
@@ -345,6 +351,7 @@ static mp_obj_t bitmaptools_alphablend(size_t n_args, const mp_obj_t *pos_args, 
         {MP_QSTR_blendmode, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = (void *)&bitmaptools_blendmode_Normal_obj}},
         {MP_QSTR_skip_source1_index, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = mp_const_none} },
         {MP_QSTR_skip_source2_index, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = mp_const_none} },
+        {MP_QSTR_mask, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = mp_const_none} },
     };
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
     mp_arg_parse_all(n_args, pos_args, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
@@ -411,8 +418,19 @@ static mp_obj_t bitmaptools_alphablend(size_t n_args, const mp_obj_t *pos_args, 
         skip_source2_index_none = false;
     }
 
+    displayio_bitmap_t *mask = NULL;
+    if (args[ARG_mask].u_obj != mp_const_none) {
+        mask = MP_OBJ_TO_PTR(mp_arg_validate_type(args[ARG_mask].u_obj, &displayio_bitmap_type, MP_QSTR_mask));
+        if (mask->width != destination->width || mask->height != destination->height) {
+            mp_raise_ValueError(MP_ERROR_TEXT("Mask bitmap size must match the other bitmaps"));
+        }
+        if (mask->bits_per_value != 8) {
+            mp_raise_ValueError(MP_ERROR_TEXT("Mask bitmap must have 8 bits per pixel"));
+        }
+    }
+
     common_hal_bitmaptools_alphablend(destination, source1, source2, colorspace, factor1, factor2, blendmode, skip_source1_index,
-        skip_source1_index_none, skip_source2_index, skip_source2_index_none);
+        skip_source1_index_none, skip_source2_index, skip_source2_index_none, mask);
 
     return mp_const_none;
 }
