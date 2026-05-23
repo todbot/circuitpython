@@ -40,8 +40,8 @@ void common_hal_audiofilters_filter_construct(audiofilters_filter_obj_t *self,
     self->last_buf_idx = 1; // Which buffer to use first, toggle between 0 and 1
 
     // This buffer will be used to process samples through the biquad filter
-    self->filter_buffer = m_malloc_without_collect(SYNTHIO_MAX_DUR * sizeof(int32_t));
-    memset(self->filter_buffer, 0, SYNTHIO_MAX_DUR * sizeof(int32_t));
+    self->filter_buffer = m_malloc_without_collect(SYNTHIO_MAX_DUR * self->base.channel_count * sizeof(int32_t));
+    memset(self->filter_buffer, 0, SYNTHIO_MAX_DUR * self->base.channel_count * sizeof(int32_t));
 
     // Initialize other values most effects will need.
     self->sample = NULL; // The current playing sample
@@ -106,9 +106,9 @@ void common_hal_audiofilters_filter_set_filter(audiofilters_filter_obj_t *self, 
     self->filter_objs = filter_objs;
     self->filter_states = m_renew(biquad_filter_state,
         self->filter_states,
-        self->filter_states_len,
-        n_items);
-    self->filter_states_len = n_items;
+        self->filter_objs_len * self->base.channel_count,
+        n_items * self->base.channel_count);
+    self->filter_objs_len = n_items;
 }
 
 mp_obj_t common_hal_audiofilters_filter_get_filter(audiofilters_filter_obj_t *self) {
@@ -129,10 +129,10 @@ void audiofilters_filter_reset_buffer(audiofilters_filter_obj_t *self,
 
     memset(self->buffer[0], 0, self->buffer_len);
     memset(self->buffer[1], 0, self->buffer_len);
-    memset(self->filter_buffer, 0, SYNTHIO_MAX_DUR * sizeof(int32_t));
+    memset(self->filter_buffer, 0, SYNTHIO_MAX_DUR * self->base.channel_count * sizeof(int32_t));
 
     if (self->filter_states) {
-        for (uint8_t i = 0; i < self->filter_states_len; i++) {
+        for (uint8_t i = 0; i < self->filter_objs_len * self->base.channel_count; i++) {
             synthio_biquad_filter_reset(&self->filter_states[i]);
         }
     }
@@ -207,7 +207,7 @@ audioio_get_buffer_result_t audiofilters_filter_get_buffer(audiofilters_filter_o
             (void)synthio_block_slot_get(&self->mix);
 
             // Tick biquad filters
-            for (uint8_t j = 0; j < self->filter_states_len; j++) {
+            for (uint8_t j = 0; j < self->filter_objs_len; j++) {
                 common_hal_synthio_biquad_tick(self->filter_objs[j]);
             }
             if (self->base.samples_signed) {
@@ -248,46 +248,52 @@ audioio_get_buffer_result_t audiofilters_filter_get_buffer(audiofilters_filter_o
             } else {
                 uint32_t i = 0;
                 while (i < n) {
-                    uint32_t n_samples = MIN(SYNTHIO_MAX_DUR, n - i);
+                    uint32_t n_samples = MIN(SYNTHIO_MAX_DUR, (n - i) >> (self->base.channel_count - 1));
 
                     // Fill filter buffer with samples
-                    for (uint32_t j = 0; j < n_samples; j++) {
+                    for (uint32_t j = 0; j < n_samples * self->base.channel_count; j++) {
+                        bool buf_offset = (j % self->base.channel_count) == 1;
+                        uint32_t k = j / self->base.channel_count;
                         if (MP_LIKELY(self->base.bits_per_sample == 16)) {
-                            self->filter_buffer[j] = sample_src[i + j];
+                            self->filter_buffer[k + SYNTHIO_MAX_DUR * buf_offset] = sample_src[i + j];
                         } else {
                             if (self->base.samples_signed) {
-                                self->filter_buffer[j] = sample_hsrc[i + j];
+                                self->filter_buffer[k + SYNTHIO_MAX_DUR * buf_offset] = sample_hsrc[i + j];
                             } else {
                                 // Be careful here changing from an 8 bit unsigned to signed into a 32-bit signed
-                                self->filter_buffer[j] = (int8_t)(((uint8_t)sample_hsrc[i + j]) ^ 0x80);
+                                self->filter_buffer[k + SYNTHIO_MAX_DUR * buf_offset] = (int8_t)(((uint8_t)sample_hsrc[i + j]) ^ 0x80);
                             }
                         }
                     }
 
                     // Process biquad filters
-                    for (uint8_t j = 0; j < self->filter_states_len; j++) {
+                    for (uint8_t j = 0; j < self->filter_objs_len; j++) {
                         mp_obj_t filter_obj = self->filter_objs[j];
                         common_hal_synthio_biquad_tick(filter_obj);
-                        synthio_biquad_filter_samples(filter_obj, &self->filter_states[j], self->filter_buffer, n_samples);
+                        for (uint8_t k = 0; k < self->base.channel_count; k++) {
+                            synthio_biquad_filter_samples(filter_obj, &self->filter_states[j * self->base.channel_count + k], self->filter_buffer + k * SYNTHIO_MAX_DUR, n_samples);
+                        }
                     }
 
                     // Mix processed signal with original sample and transfer to output buffer
-                    for (uint32_t j = 0; j < n_samples; j++) {
+                    for (uint32_t j = 0; j < n_samples * self->base.channel_count; j++) {
+                        bool buf_offset = (j % self->base.channel_count) == 1;
+                        uint32_t k = j / self->base.channel_count;
                         if (MP_LIKELY(self->base.bits_per_sample == 16)) {
-                            word_buffer[i + j] = synthio_mix_down_sample((int32_t)((sample_src[i + j] * (MICROPY_FLOAT_CONST(1.0) - mix)) + (self->filter_buffer[j] * mix)), SYNTHIO_MIX_DOWN_SCALE(2));
+                            word_buffer[i + j] = synthio_mix_down_sample((int32_t)((sample_src[i + j] * (MICROPY_FLOAT_CONST(1.0) - mix)) + (self->filter_buffer[k + SYNTHIO_MAX_DUR * buf_offset] * mix)), SYNTHIO_MIX_DOWN_SCALE(2));
                             if (!self->base.samples_signed) {
                                 word_buffer[i + j] ^= 0x8000;
                             }
                         } else {
                             if (self->base.samples_signed) {
-                                hword_buffer[i + j] = (int8_t)((sample_hsrc[i + j] * (MICROPY_FLOAT_CONST(1.0) - mix)) + (self->filter_buffer[j] * mix));
+                                hword_buffer[i + j] = (int8_t)((sample_hsrc[i + j] * (MICROPY_FLOAT_CONST(1.0) - mix)) + (self->filter_buffer[k + SYNTHIO_MAX_DUR * buf_offset] * mix));
                             } else {
-                                hword_buffer[i + j] = (uint8_t)(((int8_t)(((uint8_t)sample_hsrc[i + j]) ^ 0x80) * (MICROPY_FLOAT_CONST(1.0) - mix)) + (self->filter_buffer[j] * mix)) ^ 0x80;
+                                hword_buffer[i + j] = (uint8_t)(((int8_t)(((uint8_t)sample_hsrc[i + j]) ^ 0x80) * (MICROPY_FLOAT_CONST(1.0) - mix)) + (self->filter_buffer[k + SYNTHIO_MAX_DUR * buf_offset] * mix)) ^ 0x80;
                             }
                         }
                     }
 
-                    i += n_samples;
+                    i += n_samples * self->base.channel_count;
                 }
             }
 

@@ -21,7 +21,7 @@ typedef struct {
     synthio_block_slot_t mix;
 
     mp_obj_t *filter_objs;
-    size_t filter_states_len;
+    size_t filter_objs_len;
     biquad_filter_state *filter_states;
 
     int8_t *buffer[2];
