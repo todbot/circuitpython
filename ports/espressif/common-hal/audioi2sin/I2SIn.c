@@ -142,18 +142,22 @@ static inline uint32_t i2sin_read_raw(const uint8_t *src, uint8_t in_depth) {
     return v;
 }
 
-// Convert `raw` from `in_depth` to `out_depth` (shift-only semantics, sign-
-// preserving for signed) and write it to `buffer` at sample index `idx`.
+// Convert `raw` from `in_depth` to `out_depth` (sign-preserving for signed) and
+// write it to `buffer` at sample index `idx`. When upscaling, the value is
+// right-justified: the meaningful data stays in the low `in_depth` bits with the
+// upper bits carrying the sign, so a wider output uses a larger container without
+// scaling the magnitude up. (This means 24-bit-in-32-bit output is
+// right-justified)
 // Output element size: 1 byte at 8, 2 bytes at 16, 4 bytes at 24 or 32.
 static inline void i2sin_write_converted(void *buffer, uint32_t idx,
     uint32_t raw, uint8_t in_depth, uint8_t out_depth, bool samples_signed) {
     int32_t s = i2sin_normalize_signed(raw, in_depth);
     int32_t shifted;
     if (out_depth >= in_depth) {
-        // Left-justify: place the input's bits in the high bits of the wider
-        // output and leave the new low bits as zero. The API contract is that
-        // for upscaled output the meaningful data is the high `in_depth` bits.
-        shifted = s << (out_depth - in_depth);
+        // Right-justify: keep the value as-is so the meaningful bits stay in the
+        // low `in_depth` bits (upper bits already sign-extended). The wider
+        // output just provides a larger container.
+        shifted = s;
     } else {
         shifted = s >> (in_depth - out_depth);
     }
