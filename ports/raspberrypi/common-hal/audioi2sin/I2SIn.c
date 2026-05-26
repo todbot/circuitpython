@@ -398,8 +398,10 @@ static inline int32_t i2sin_normalize_signed(uint32_t raw, uint8_t in_depth,
 }
 
 // Write `raw` (input-depth bits, just-read FIFO sample) to `buffer` at sample
-// index `idx`, converting from `in_depth` to `out_depth` and (if needed)
-// flipping the sign bit for the unsigned-WAV convention. Output element size
+// index `idx`, converting from `in_depth` to `out_depth` (shift-only
+// semantics, sign-preserving for signed) and (if needed) flipping the sign bit
+// for the unsigned-WAV convention. When upscaling, the input occupies the high
+// `in_depth` bits and the new low bits are left as zero. Output element size
 // follows `out_depth`: 1 byte at 8, 2 bytes at 16, 4 bytes at 24 or 32.
 //
 // For signed 24-bit output, the int32 slot holds the sign-extended value
@@ -412,19 +414,10 @@ static inline void i2sin_write_converted(void *buffer, uint32_t idx,
     int32_t s = i2sin_normalize_signed(raw, in_depth, left_justified);
     int32_t shifted;
     if (out_depth >= in_depth) {
-        // Bit-replicate the input across the wider output so that full-scale
-        // input maps to full-scale output (e.g. 8-bit 0xFF -> 16-bit 0xFFFF),
-        // rather than leaving the new low bits as zero.
-        uint32_t in_mask = (in_depth >= 32) ? 0xffffffffu : ((1u << in_depth) - 1u);
-        uint32_t in_bits = (uint32_t)s & in_mask;
-        uint32_t result = 0;
-        int remaining = out_depth;
-        while (remaining > 0) {
-            int take = (remaining >= (int)in_depth) ? (int)in_depth : remaining;
-            result = (result << take) | (in_bits >> (in_depth - take));
-            remaining -= take;
-        }
-        shifted = (int32_t)result;
+        // Left-justify: place the input's bits in the high bits of the wider
+        // output and leave the new low bits as zero. The API contract is that
+        // for upscaled output the meaningful data is the high `in_depth` bits.
+        shifted = s << (out_depth - in_depth);
     } else {
         shifted = s >> (in_depth - out_depth);
     }

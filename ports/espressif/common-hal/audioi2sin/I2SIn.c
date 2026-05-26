@@ -150,19 +150,10 @@ static inline void i2sin_write_converted(void *buffer, uint32_t idx,
     int32_t s = i2sin_normalize_signed(raw, in_depth);
     int32_t shifted;
     if (out_depth >= in_depth) {
-        // Bit-replicate the input across the wider output so that full-scale
-        // input maps to full-scale output (e.g. 8-bit 0xFF -> 16-bit 0xFFFF),
-        // rather than leaving the new low bits as zero.
-        uint32_t in_mask = (in_depth >= 32) ? 0xffffffffu : ((1u << in_depth) - 1u);
-        uint32_t in_bits = (uint32_t)s & in_mask;
-        uint32_t result = 0;
-        int remaining = out_depth;
-        while (remaining > 0) {
-            int take = (remaining >= (int)in_depth) ? (int)in_depth : remaining;
-            result = (result << take) | (in_bits >> (in_depth - take));
-            remaining -= take;
-        }
-        shifted = (int32_t)result;
+        // Left-justify: place the input's bits in the high bits of the wider
+        // output and leave the new low bits as zero. The API contract is that
+        // for upscaled output the meaningful data is the high `in_depth` bits.
+        shifted = s << (out_depth - in_depth);
     } else {
         shifted = s >> (in_depth - out_depth);
     }
