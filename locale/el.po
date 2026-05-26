@@ -1467,6 +1467,14 @@ msgstr ""
 msgid "Mapping must be a tuple"
 msgstr ""
 
+#: shared-bindings/bitmaptools/__init__.c
+msgid "Mask bitmap must have 8 bits per pixel"
+msgstr ""
+
+#: shared-bindings/bitmaptools/__init__.c
+msgid "Mask bitmap size must match the other bitmaps"
+msgstr ""
+
 #: py/persistentcode.c
 msgid "MicroPython .mpy file; use CircuitPython mpy-cross"
 msgstr ""
