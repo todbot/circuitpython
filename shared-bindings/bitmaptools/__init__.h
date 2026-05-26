@@ -69,7 +69,8 @@ void common_hal_bitmaptools_arrayblit(displayio_bitmap_t *self, void *data, int 
 void common_hal_bitmaptools_dither(displayio_bitmap_t *dest_bitmap, displayio_bitmap_t *source_bitmap, displayio_colorspace_t colorspace, bitmaptools_dither_algorithm_t algorithm);
 
 void common_hal_bitmaptools_alphablend(displayio_bitmap_t *destination, displayio_bitmap_t *source1, displayio_bitmap_t *source2, displayio_colorspace_t colorspace, mp_float_t factor1, mp_float_t factor2,
-    bitmaptools_blendmode_t blendmode, uint32_t skip_source1_index, bool skip_source1_index_none, uint32_t skip_source2_index, bool skip_source2_index_none);
+    bitmaptools_blendmode_t blendmode, uint32_t skip_source1_index, bool skip_source1_index_none, uint32_t skip_source2_index, bool skip_source2_index_none,
+    displayio_bitmap_t *mask);
 
 typedef struct {
     union {
