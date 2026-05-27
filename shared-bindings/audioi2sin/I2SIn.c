@@ -69,7 +69,7 @@
 //|           transported in 32-bit slots, so use ``bit_depth=32`` and an ``'I'`` buffer.
 //|         :param int output_bit_depth: If set, recorded samples are bit-shifted from
 //|           ``bit_depth`` to this width before being written to the destination buffer
-//|           (8, 16, 24, or 32). Widening pads the new LSBs with zero; narrowing arithmetic-
+//|           (8, 16, 24, or 32). Widening pads the new MSBs with zero; narrowing arithmetic-
 //|           shifts the value right (sign-preserving when ``samples_signed`` is True). When
 //|           ``None`` (the default) the destination buffer holds samples at ``bit_depth``.
 //|         :param bool mono: True when capturing a single channel of audio, captures two channels otherwise.
