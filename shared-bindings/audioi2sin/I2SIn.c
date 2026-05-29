@@ -69,9 +69,12 @@
 //|           transported in 32-bit slots, so use ``bit_depth=32`` and an ``'I'`` buffer.
 //|         :param int output_bit_depth: If set, recorded samples are bit-shifted from
 //|           ``bit_depth`` to this width before being written to the destination buffer
-//|           (8, 16, 24, or 32). Widening pads the new MSBs with zero; narrowing arithmetic-
-//|           shifts the value right (sign-preserving when ``samples_signed`` is True). When
-//|           ``None`` (the default) the destination buffer holds samples at ``bit_depth``.
+//|           (8, 16, 24, or 32). Widening keeps the value right-justified: for signed
+//|           samples the new MSBs replicate the sign bit (zeros for positive values, ones
+//|           for negative), while for unsigned samples the new MSBs are zero. Narrowing
+//|           arithmetic-shifts the value right (sign-preserving when ``samples_signed`` is
+//|           True). When ``None`` (the default) the destination buffer holds samples at
+//|           ``bit_depth``.
 //|         :param bool mono: True when capturing a single channel of audio, captures two channels otherwise.
 //|         :param bool left_justified: True when data bits are aligned with the word select clock. False
 //|           when they are shifted by one to match classic I2S protocol. Set True for mics like the SPH0645LM4H.
