@@ -339,6 +339,9 @@ CIRCUITPY_AUDIOIO = 0
 endif
 #### end chip-specific choices ########################################
 
+# By default, enable dualbank, and it'll be disabled for small flash sizes
+CIRCUITPY_DUALBANK = 1
+
 # No room for large modules on 2MB boards
 # 2MB boards have a single firmware partition, and can't do dualbank.
 ifeq ($(CIRCUITPY_ESP_FLASH_SIZE),2MB)
