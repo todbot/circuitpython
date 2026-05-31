@@ -527,11 +527,23 @@ def qstr_escape(qst):
 
 def parse_qstrs(infile):
     r = {}
-    rx = re.compile(r'QDEF[01]\([A-Za-z0-9_]+,\s*\d+,\s*\d+,\s*(?P<cstr>"(?:[^"\\\\]*|\\.)")\)')
+    rx = re.compile(
+        r'QDEF(?P<pool>[01])\([A-Za-z0-9_]+,\s*\d+,\s*\d+,\s*(?P<cstr>"(?:[^"\\\\]|\\.)*")\)'
+    )
     content = infile.read()
-    for i, mat in enumerate(rx.findall(content, re.M)):
-        mat = eval(mat)
-        r[mat] = i
+    matches = rx.finditer(content)
+    static_qstrs = []
+    dynamic_qstrs = []
+    for match in matches:
+        qstr = eval(match.group("cstr"))
+        if match.group("pool") == "0":
+            static_qstrs.append(qstr)
+        else:
+            dynamic_qstrs.append(qstr)
+    for i, qstr in enumerate(static_qstrs):
+        r[qstr] = i
+    for i, qstr in enumerate(dynamic_qstrs, start=len(static_qstrs)):
+        r[qstr] = i
     return r
 
 
