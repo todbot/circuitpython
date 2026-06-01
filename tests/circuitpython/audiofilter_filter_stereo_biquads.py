@@ -16,7 +16,7 @@ def stereo_filter():
             Biquad(FilterMode.LOW_PASS, 400),
             Biquad(FilterMode.HIGH_PASS, 300, Q=8),
         ],
-        **args
+        **args,
     )
     mixer = Mixer(**args)
     mixer.voice[0].panning = LFO()
