@@ -122,6 +122,9 @@ MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(alarm_light_sleep_until_alarms_obj, 1, MP_OB
 //|
 //|     If no alarms are specified, the microcontroller will deep sleep until reset.
 //|
+//|     You cannot initiate a deep sleep from the REPL.
+//|     You must call `exit_and_deep_sleep_until_alarms()` from a program file.
+//|
 //|     :param circuitpython_typing.Alarm alarms: the alarms that can wake the microcontroller.
 //|     :param Sequence[digitalio.DigitalInOut] preserve_dios: A sequence of `DigitalInOut` objects
 //|       whose state should be preserved during deep sleep.
