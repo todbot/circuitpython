@@ -83,7 +83,7 @@
 //|
 //|     Once you release a builtin display (one that is initialized automatically, not by user code),
 //|     the display will remain released even if you restart the CircuitPython VM, for instance by typing ctrl-D.
-//|     The display is not re-initialized until you do a hard reset.
+//|     The display is not re-initialized until you do a hard reset or manually initialize it again.
 //|     """
 //|     ...
 //|
