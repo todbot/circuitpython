@@ -532,17 +532,17 @@ def parse_qstrs(infile):
     )
     content = infile.read()
     matches = rx.finditer(content)
-    static_qstrs = []
-    dynamic_qstrs = []
+    qdef0_qstrs = []
+    qdef1_qstrs = []
     for match in matches:
         qstr = eval(match.group("cstr"))
         if match.group("pool") == "0":
-            static_qstrs.append(qstr)
+            qdef0_qstrs.append(qstr)
         else:
-            dynamic_qstrs.append(qstr)
-    for i, qstr in enumerate(static_qstrs):
+            qdef1_qstrs.append(qstr)
+    for i, qstr in enumerate(qdef0_qstrs):
         r[qstr] = i
-    for i, qstr in enumerate(dynamic_qstrs, start=len(static_qstrs)):
+    for i, qstr in enumerate(qdef1_qstrs, start=len(qdef0_qstrs)):
         r[qstr] = i
     return r
 
