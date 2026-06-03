@@ -197,6 +197,15 @@ msgstr "%q musí být %d-%d"
 msgid "%q must be 1 when %q is True"
 msgstr "%q musí být 1, pokud %q je True"
 
+#: ports/raspberrypi/common-hal/audioi2sin/I2SIn.c
+msgid "%q must be 16, 24, or 32"
+msgstr ""
+
+#: ports/espressif/common-hal/audiobusio/PDMIn.c
+#: shared-bindings/audioi2sin/I2SIn.c
+msgid "%q must be 8, 16, 24, or 32"
+msgstr ""
+
 #: py/argcheck.c shared-bindings/gifio/GifWriter.c
 #: shared-module/gifio/OnDiskGif.c
 msgid "%q must be <= %d"
@@ -673,6 +682,7 @@ msgid "Below minimum frame rate"
 msgstr "Pod minimální obnovovací frekvencí"
 
 #: ports/raspberrypi/common-hal/audiobusio/I2SOut.c
+#: ports/raspberrypi/common-hal/audioi2sin/I2SIn.c
 msgid "Bit clock and word select must be sequential GPIO pins"
 msgstr ""
 
@@ -820,7 +830,7 @@ msgstr ""
 msgid "Cannot pull on input-only pin."
 msgstr "Nelze aktivovat pull rezistor na pinu, který je pouze pro vstup."
 
-#: shared-bindings/audiobusio/PDMIn.c
+#: shared-bindings/audiobusio/PDMIn.c shared-bindings/audioi2sin/I2SIn.c
 msgid "Cannot record to a file"
 msgstr "Nelze nahrávat do souboru"
 
@@ -944,7 +954,7 @@ msgid "Deep sleep pins must use a rising edge with pulldown"
 msgstr ""
 "Piny pro hluboký spánek musí používat náběžnou hranu s pulldown rezistorem"
 
-#: shared-bindings/audiobusio/PDMIn.c
+#: shared-bindings/audiobusio/PDMIn.c shared-bindings/audioi2sin/I2SIn.c
 msgid "Destination capacity is smaller than destination_length."
 msgstr "Cílová kapacita je menší než destination_length."
 
@@ -1836,6 +1846,7 @@ msgid "Parameter error"
 msgstr ""
 
 #: ports/espressif/common-hal/audiobusio/__init__.c
+#: ports/espressif/common-hal/audioi2sin/I2SIn.c
 msgid "Peripheral in use"
 msgstr "Periférie je používána"
 
@@ -2733,10 +2744,6 @@ msgstr ""
 msgid "binary op %q not implemented"
 msgstr ""
 
-#: ports/espressif/common-hal/audiobusio/PDMIn.c
-msgid "bit_depth must be 8, 16, 24, or 32."
-msgstr ""
-
 #: shared-module/bitmapfilter/__init__.c
 msgid "bitmap size and depth must match"
 msgstr ""
@@ -3546,6 +3553,11 @@ msgstr "chybné bits_per_pixel %d, musí být 1, 2, 4, 8, 16, 24, or 32"
 #: shared-module/ssl/SSLSocket.c
 msgid "invalid cert"
 msgstr "špatný certifikár"
+
+#: shared-bindings/audioi2sin/I2SIn.c
+#, c-format
+msgid "invalid destination buffer, must be an array of type: %c"
+msgstr ""
 
 #: shared-bindings/bitmaptools/__init__.c
 #, c-format

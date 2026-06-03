@@ -199,6 +199,15 @@ msgstr "%q, %d-%d olmalıdır"
 msgid "%q must be 1 when %q is True"
 msgstr "%q 1 olmalı, %q True olduğu zaman"
 
+#: ports/raspberrypi/common-hal/audioi2sin/I2SIn.c
+msgid "%q must be 16, 24, or 32"
+msgstr ""
+
+#: ports/espressif/common-hal/audiobusio/PDMIn.c
+#: shared-bindings/audioi2sin/I2SIn.c
+msgid "%q must be 8, 16, 24, or 32"
+msgstr ""
+
 #: py/argcheck.c shared-bindings/gifio/GifWriter.c
 #: shared-module/gifio/OnDiskGif.c
 msgid "%q must be <= %d"
@@ -675,6 +684,7 @@ msgid "Below minimum frame rate"
 msgstr "Minimum kare hızından altında"
 
 #: ports/raspberrypi/common-hal/audiobusio/I2SOut.c
+#: ports/raspberrypi/common-hal/audioi2sin/I2SIn.c
 msgid "Bit clock and word select must be sequential GPIO pins"
 msgstr ""
 
@@ -820,7 +830,7 @@ msgstr "Genişletilmiş, bağlanabilir reklamlar için tarama yanıtları yapıl
 msgid "Cannot pull on input-only pin."
 msgstr ""
 
-#: shared-bindings/audiobusio/PDMIn.c
+#: shared-bindings/audiobusio/PDMIn.c shared-bindings/audioi2sin/I2SIn.c
 msgid "Cannot record to a file"
 msgstr "Dosyaya kayıt yapılamıyor"
 
@@ -942,7 +952,7 @@ msgstr ""
 msgid "Deep sleep pins must use a rising edge with pulldown"
 msgstr ""
 
-#: shared-bindings/audiobusio/PDMIn.c
+#: shared-bindings/audiobusio/PDMIn.c shared-bindings/audioi2sin/I2SIn.c
 msgid "Destination capacity is smaller than destination_length."
 msgstr "Hedef kapasitesi, hedef_uzunluğundan daha küçük."
 
@@ -1836,6 +1846,7 @@ msgid "Parameter error"
 msgstr ""
 
 #: ports/espressif/common-hal/audiobusio/__init__.c
+#: ports/espressif/common-hal/audioi2sin/I2SIn.c
 msgid "Peripheral in use"
 msgstr ""
 
@@ -2728,10 +2739,6 @@ msgstr ""
 msgid "binary op %q not implemented"
 msgstr ""
 
-#: ports/espressif/common-hal/audiobusio/PDMIn.c
-msgid "bit_depth must be 8, 16, 24, or 32."
-msgstr ""
-
 #: shared-module/bitmapfilter/__init__.c
 msgid "bitmap size and depth must match"
 msgstr ""
@@ -3540,6 +3547,11 @@ msgstr ""
 
 #: shared-module/ssl/SSLSocket.c
 msgid "invalid cert"
+msgstr ""
+
+#: shared-bindings/audioi2sin/I2SIn.c
+#, c-format
+msgid "invalid destination buffer, must be an array of type: %c"
 msgstr ""
 
 #: shared-bindings/bitmaptools/__init__.c

@@ -201,6 +201,15 @@ msgstr "%q πρέπει να είναι %d-%d"
 msgid "%q must be 1 when %q is True"
 msgstr "%q πρέπει να είναι 1 όταν %q είναι True"
 
+#: ports/raspberrypi/common-hal/audioi2sin/I2SIn.c
+msgid "%q must be 16, 24, or 32"
+msgstr ""
+
+#: ports/espressif/common-hal/audiobusio/PDMIn.c
+#: shared-bindings/audioi2sin/I2SIn.c
+msgid "%q must be 8, 16, 24, or 32"
+msgstr ""
+
 #: py/argcheck.c shared-bindings/gifio/GifWriter.c
 #: shared-module/gifio/OnDiskGif.c
 msgid "%q must be <= %d"
@@ -677,6 +686,7 @@ msgid "Below minimum frame rate"
 msgstr "Χαμηλότερο από το ελάχιστο frame rate"
 
 #: ports/raspberrypi/common-hal/audiobusio/I2SOut.c
+#: ports/raspberrypi/common-hal/audioi2sin/I2SIn.c
 msgid "Bit clock and word select must be sequential GPIO pins"
 msgstr "Ρολόι bit και ορισμού λέξης πρέπει να είναι διαδοχικά GPIO pins"
 
@@ -825,7 +835,7 @@ msgstr ""
 msgid "Cannot pull on input-only pin."
 msgstr "Δεν γίνεται pull σε pin μόνο για εισόδο."
 
-#: shared-bindings/audiobusio/PDMIn.c
+#: shared-bindings/audiobusio/PDMIn.c shared-bindings/audioi2sin/I2SIn.c
 msgid "Cannot record to a file"
 msgstr "Δεν μπορεί να γίνει καταγραφή σε αρχείο"
 
@@ -949,7 +959,7 @@ msgstr "Τα δεδομένα είναι πολύ μεγάλα για πακέτ
 msgid "Deep sleep pins must use a rising edge with pulldown"
 msgstr "Τα pins βαθύ ύπνου πρέπει να χρησιμοποιούν rising edge με pulldown"
 
-#: shared-bindings/audiobusio/PDMIn.c
+#: shared-bindings/audiobusio/PDMIn.c shared-bindings/audioi2sin/I2SIn.c
 msgid "Destination capacity is smaller than destination_length."
 msgstr ""
 "Το μέγεθος προορισμού πρέπει να είναι μικρότερο από το destination_length."
@@ -1841,6 +1851,7 @@ msgid "Parameter error"
 msgstr ""
 
 #: ports/espressif/common-hal/audiobusio/__init__.c
+#: ports/espressif/common-hal/audioi2sin/I2SIn.c
 msgid "Peripheral in use"
 msgstr ""
 
@@ -2732,10 +2743,6 @@ msgstr ""
 msgid "binary op %q not implemented"
 msgstr ""
 
-#: ports/espressif/common-hal/audiobusio/PDMIn.c
-msgid "bit_depth must be 8, 16, 24, or 32."
-msgstr ""
-
 #: shared-module/bitmapfilter/__init__.c
 msgid "bitmap size and depth must match"
 msgstr ""
@@ -3544,6 +3551,11 @@ msgstr ""
 
 #: shared-module/ssl/SSLSocket.c
 msgid "invalid cert"
+msgstr ""
+
+#: shared-bindings/audioi2sin/I2SIn.c
+#, c-format
+msgid "invalid destination buffer, must be an array of type: %c"
 msgstr ""
 
 #: shared-bindings/bitmaptools/__init__.c
