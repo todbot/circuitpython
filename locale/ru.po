@@ -201,6 +201,15 @@ msgstr "%q должно быть %d-%d"
 msgid "%q must be 1 when %q is True"
 msgstr "%q должен быть равен 1, если %q имеет значение True"
 
+#: ports/raspberrypi/common-hal/audioi2sin/I2SIn.c
+msgid "%q must be 16, 24, or 32"
+msgstr ""
+
+#: ports/espressif/common-hal/audiobusio/PDMIn.c
+#: shared-bindings/audioi2sin/I2SIn.c
+msgid "%q must be 8, 16, 24, or 32"
+msgstr ""
+
 #: py/argcheck.c shared-bindings/gifio/GifWriter.c
 #: shared-module/gifio/OnDiskGif.c
 msgid "%q must be <= %d"
@@ -677,6 +686,7 @@ msgid "Below minimum frame rate"
 msgstr "Ниже минимальной частоты кадров"
 
 #: ports/raspberrypi/common-hal/audiobusio/I2SOut.c
+#: ports/raspberrypi/common-hal/audioi2sin/I2SIn.c
 msgid "Bit clock and word select must be sequential GPIO pins"
 msgstr "Несколько часов и слов должны быть последовательными GPIO пинами"
 
@@ -827,7 +837,7 @@ msgstr ""
 msgid "Cannot pull on input-only pin."
 msgstr "Невозможно вытащить контакт только для ввода."
 
-#: shared-bindings/audiobusio/PDMIn.c
+#: shared-bindings/audiobusio/PDMIn.c shared-bindings/audioi2sin/I2SIn.c
 msgid "Cannot record to a file"
 msgstr "Невозможно записать в файл"
 
@@ -954,7 +964,7 @@ msgstr ""
 "Выводы глубокого сна должны использовать сигнал по возрастанию с подтяжкой к "
 "земле"
 
-#: shared-bindings/audiobusio/PDMIn.c
+#: shared-bindings/audiobusio/PDMIn.c shared-bindings/audioi2sin/I2SIn.c
 msgid "Destination capacity is smaller than destination_length."
 msgstr "Емкость места назначения меньше длины места назначения."
 
@@ -1862,6 +1872,7 @@ msgid "Parameter error"
 msgstr "Ошибка параметра"
 
 #: ports/espressif/common-hal/audiobusio/__init__.c
+#: ports/espressif/common-hal/audioi2sin/I2SIn.c
 msgid "Peripheral in use"
 msgstr "Периферийные устройства в использовании"
 
@@ -2776,10 +2787,6 @@ msgstr "Неверный шрифт"
 msgid "binary op %q not implemented"
 msgstr "двоичная операция %q не реализована"
 
-#: ports/espressif/common-hal/audiobusio/PDMIn.c
-msgid "bit_depth must be 8, 16, 24, or 32."
-msgstr "Глубина_бита должна быть равна 8, 16, 24 или 32."
-
 #: shared-module/bitmapfilter/__init__.c
 msgid "bitmap size and depth must match"
 msgstr "Размер и глубина растрового изображения должны совпадать"
@@ -3600,6 +3607,11 @@ msgstr "неверный бит_на_пиксель %d, должно быть 1,
 #: shared-module/ssl/SSLSocket.c
 msgid "invalid cert"
 msgstr "Неверный сертификат"
+
+#: shared-bindings/audioi2sin/I2SIn.c
+#, c-format
+msgid "invalid destination buffer, must be an array of type: %c"
+msgstr ""
 
 #: shared-bindings/bitmaptools/__init__.c
 #, c-format
@@ -4691,6 +4703,9 @@ msgstr "zi должно быть типа float"
 #: extmod/ulab/code/scipy/signal/signal.c
 msgid "zi must be of shape (n_section, 2)"
 msgstr "zi должен иметь форму (n_section, 2)"
+
+#~ msgid "bit_depth must be 8, 16, 24, or 32."
+#~ msgstr "Глубина_бита должна быть равна 8, 16, 24 или 32."
 
 #~ msgid "%q renamed %q"
 #~ msgstr "%q переименован %q"
