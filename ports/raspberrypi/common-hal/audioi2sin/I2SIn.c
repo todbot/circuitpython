@@ -14,6 +14,7 @@
 #include "common-hal/audioi2sin/I2SIn.h"
 #include "shared-bindings/audioi2sin/I2SIn.h"
 #include "shared-bindings/microcontroller/Pin.h"
+#include "shared-module/audioi2sin/__init__.h"
 #include "bindings/rp2pio/StateMachine.h"
 #include "supervisor/port.h"
 
@@ -397,17 +398,12 @@ static inline int32_t i2sin_normalize_signed(uint32_t raw, uint8_t in_depth,
     return (int16_t)(raw & 0xffffu);
 }
 
-// Write `raw` (input-depth bits, just-read FIFO sample) to `buffer` at sample
-// index `idx`, converting from `in_depth` to the explicitly-requested
-// `out_depth` (sign-preserving for signed) and (if needed) flipping the sign
-// bit for the unsigned-WAV convention. This path runs only when the caller set
-// `output_bit_depth`, i.e. asked for a real bit-depth rescale: upscaling
-// bit-replicates so full-scale input maps to full-scale output (e.g. 16-bit
-// 0xFFFF -> 24-bit 0xFFFFFF) and downscaling arithmetic-shifts right. This is
-// distinct from the implicit container width set by the array typecode (e.g. a
-// 24-bit sample carried in a 32-bit 'i' slot), which only sign-extends and is
-// handled by the default `movesign24` path. Output element size follows
-// `out_depth`: 1 byte at 8, 2 bytes at 16, 4 bytes at 24 or 32.
+// Normalize `raw` (input-depth bits, just-read FIFO sample) for this port's wire
+// format, then hand off to the shared converter to rescale `in_depth` ->
+// `out_depth` and write it to `buffer` at sample index `idx`. The depth
+// conversion + unsigned-WAV flip + container store live in
+// `shared_audioi2sin_write_converted` (shared with other ports); see that helper
+// for the upscale/downscale semantics.
 //
 // For signed 24-bit output, the int32 slot holds the sign-extended value
 // (range -2^23 .. 2^23-1) — unlike the default `output_bit_depth=bit_depth=24`
@@ -417,49 +413,7 @@ static inline void i2sin_write_converted(void *buffer, uint32_t idx,
     uint32_t raw, uint8_t in_depth, uint8_t out_depth,
     bool samples_signed, bool left_justified) {
     int32_t s = i2sin_normalize_signed(raw, in_depth, left_justified);
-    int32_t shifted;
-    if (out_depth > in_depth) {
-        // Explicit upscale: bit-replicate the input across the wider output so
-        // that full-scale input maps to full-scale output (e.g. 16-bit 0xFFFF
-        // -> 24-bit 0xFFFFFF), filling out_depth bits rather than leaving the
-        // new low bits zero.
-        uint32_t in_mask = (in_depth >= 32) ? 0xffffffffu : ((1u << in_depth) - 1u);
-        uint32_t in_bits = (uint32_t)s & in_mask;
-        uint32_t result = 0;
-        int remaining = out_depth;
-        while (remaining > 0) {
-            int take = (remaining >= (int)in_depth) ? (int)in_depth : remaining;
-            result = (result << take) | (in_bits >> (in_depth - take));
-            remaining -= take;
-        }
-        // Sign-extend the out_depth-bit result up to int32 so a 24-bit value in
-        // a 32-bit container decodes correctly; harmless when out_depth == 32.
-        shifted = (int32_t)(result << (32 - out_depth)) >> (32 - out_depth);
-    } else if (out_depth == in_depth) {
-        shifted = s;
-    } else {
-        shifted = s >> (in_depth - out_depth);
-    }
-    uint32_t u = (uint32_t)shifted;
-    if (!samples_signed) {
-        if (out_depth >= 32) {
-            u ^= 0x80000000u;
-        } else {
-            uint32_t mask = (1u << out_depth) - 1u;
-            u = (u & mask) ^ (1u << (out_depth - 1));
-        }
-    }
-    switch (out_depth) {
-        case 8:
-            ((uint8_t *)buffer)[idx] = (uint8_t)(u & 0xffu);
-            break;
-        case 16:
-            ((uint16_t *)buffer)[idx] = (uint16_t)(u & 0xffffu);
-            break;
-        default: // 24 or 32
-            ((uint32_t *)buffer)[idx] = u;
-            break;
-    }
+    shared_audioi2sin_write_converted(buffer, idx, s, in_depth, out_depth, samples_signed);
 }
 
 uint32_t common_hal_audioi2sin_i2sin_record_to_buffer(audioi2sin_i2sin_obj_t *self,
