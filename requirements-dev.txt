@@ -43,5 +43,3 @@ tomlkit
 pytest
 pytest-rerunfailures
 perfetto
-# Perfetto Python package doesn't correctly pin its protobuf version so we add it here.
-protobuf==6.33.5
