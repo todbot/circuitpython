@@ -820,9 +820,7 @@ void bleio_adapter_gc_collect(bleio_adapter_obj_t *adapter) {
 
 void bleio_adapter_reset(bleio_adapter_obj_t *adapter) {
     common_hal_bleio_adapter_stop_scan(adapter);
-    if (common_hal_bleio_adapter_get_advertising(adapter)) {
-        common_hal_bleio_adapter_stop_advertising(adapter);
-    }
+    common_hal_bleio_adapter_stop_advertising(adapter);
 
     adapter->connection_objs = NULL;
     for (size_t i = 0; i < BLEIO_TOTAL_CONNECTION_COUNT; i++) {
