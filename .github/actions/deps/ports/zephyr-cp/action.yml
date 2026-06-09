@@ -26,3 +26,6 @@ runs:
       run: west zephyr-export
       shell: bash
       working-directory: ports/zephyr-cp
+    - name: Install Zephyr protobuf dependency
+      run: pip install protobuf==6.33.5
+      shell: bash
