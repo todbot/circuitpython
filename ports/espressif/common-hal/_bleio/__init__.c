@@ -32,9 +32,9 @@ static uint64_t _timeout_start_time;
 background_callback_t bleio_background_callback;
 
 void bleio_user_reset(void) {
-    // Stop any user scanning or advertising.
-    common_hal_bleio_adapter_stop_scan(&common_hal_bleio_adapter_obj);
-    common_hal_bleio_adapter_stop_advertising(&common_hal_bleio_adapter_obj);
+    // Stop any user scanning or advertising, and stop all connections.
+    // TODO: Don't stop BLE workflow connection.
+    bleio_adapter_reset(&common_hal_bleio_adapter_obj);
 
     ble_event_remove_heap_handlers();
 

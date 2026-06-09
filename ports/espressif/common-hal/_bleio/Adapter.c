@@ -561,10 +561,6 @@ uint32_t _common_hal_bleio_adapter_start_advertising(bleio_adapter_obj_t *self,
     bool high_duty_directed = directed_to != NULL && interval <= 3.5 && timeout <= 1; // Really 1.3, but it's an int
 
     uint32_t timeout_ms = timeout * 1000;
-    if (timeout_ms == 0) {
-        timeout_ms = BLE_HS_FOREVER;
-    }
-
 
     #if MYNEWT_VAL(BLE_EXT_ADV)
     bool extended = advertising_data_len > BLE_ADV_LEGACY_DATA_MAX_LEN ||
@@ -626,8 +622,12 @@ uint32_t _common_hal_bleio_adapter_start_advertising(bleio_adapter_obj_t *self,
         }
     }
 
+    // If timeout_ms is zero, it means advertise forever. This is different than ble_gap_adv_start().
     rc = ble_gap_ext_adv_start(0, timeout_ms, 0);
+
     #else
+    // Extended advertising not enabled.
+
     uint8_t conn_mode = connectable ? BLE_GAP_CONN_MODE_UND : BLE_GAP_CONN_MODE_NON;
     if (directed_to != NULL) {
         conn_mode = BLE_GAP_CONN_MODE_DIR;
@@ -654,8 +654,10 @@ uint32_t _common_hal_bleio_adapter_start_advertising(bleio_adapter_obj_t *self,
             return rc;
         }
     }
-    rc = ble_gap_adv_start(own_addr_type, directed_to != NULL ? &peer: NULL,
-        timeout_ms,
+    // If timeout_ms is BLE_HS_FOREVER, it means advertise forever. This is different than ble_gap_ext_adv_start().
+    rc = ble_gap_adv_start(own_addr_type,
+        directed_to != NULL ? &peer: NULL,
+        timeout_ms == 0 ? BLE_HS_FOREVER : timeout_ms,
         &adv_params,
         _advertising_event, self);
     #endif
@@ -739,7 +741,7 @@ bool common_hal_bleio_adapter_get_advertising(bleio_adapter_obj_t *self) {
 bool common_hal_bleio_adapter_get_connected(bleio_adapter_obj_t *self) {
     for (size_t i = 0; i < BLEIO_TOTAL_CONNECTION_COUNT; i++) {
         bleio_connection_internal_t *connection = &bleio_connections[i];
-        if (connection->conn_handle != BLEIO_HANDLE_INVALID && connection->mtu != 0) {
+        if (connection->conn_handle != BLEIO_HANDLE_INVALID) {
             return true;
         }
     }
@@ -754,7 +756,7 @@ mp_obj_t common_hal_bleio_adapter_get_connections(bleio_adapter_obj_t *self) {
     mp_obj_t items[BLEIO_TOTAL_CONNECTION_COUNT];
     for (size_t i = 0; i < BLEIO_TOTAL_CONNECTION_COUNT; i++) {
         bleio_connection_internal_t *connection = &bleio_connections[i];
-        if (connection->conn_handle != BLEIO_HANDLE_INVALID && connection->mtu != 0) {
+        if (connection->conn_handle != BLEIO_HANDLE_INVALID) {
             if (connection->connection_obj == mp_const_none) {
                 connection->connection_obj = bleio_connection_new_from_internal(connection);
             }
@@ -818,9 +820,7 @@ void bleio_adapter_gc_collect(bleio_adapter_obj_t *adapter) {
 
 void bleio_adapter_reset(bleio_adapter_obj_t *adapter) {
     common_hal_bleio_adapter_stop_scan(adapter);
-    if (common_hal_bleio_adapter_get_advertising(adapter)) {
-        common_hal_bleio_adapter_stop_advertising(adapter);
-    }
+    common_hal_bleio_adapter_stop_advertising(adapter);
 
     adapter->connection_objs = NULL;
     for (size_t i = 0; i < BLEIO_TOTAL_CONNECTION_COUNT; i++) {
