@@ -69,6 +69,7 @@ PORT_DEPS = {
     "mimxrt10xx": ["extmod/ulab/", "lib/tinyusb/", "lib/tlsf", "data/nvm.toml/"],
     "nordic": [
         "extmod/ulab/",
+        "lib/mbedtls/",
         "lib/mp3/",
         "lib/protomatter/",
         "lib/tinyusb/",

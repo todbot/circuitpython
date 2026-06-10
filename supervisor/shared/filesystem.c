@@ -327,12 +327,23 @@ bool filesystem_lock(fs_user_mount_t *fs_mount) {
         return false;
     }
     fs_mount->lock_count += 1;
+    // CIRCUITPY-CHANGE: while a non-USB-MSC writer (BLE file transfer, web
+    // workflow, storage.remount) holds the filesystem lock, allow the
+    // FatFS f_open(FA_WRITE) path to bypass STA_PROTECT. Without this, the
+    // disk_ioctl(IOCTL_STATUS) -> filesystem_is_writable_by_python() check
+    // added by #10659 always sets STA_PROTECT on USB-device-capable boards,
+    // so even after the lock is held, f_open returns FR_WRITE_PROTECTED.
+    // USB MSC takes the lock via blockdev_lock() directly, NOT via
+    // filesystem_lock(), so this flag is never set on its behalf.
+    fs_mount->blockdev.flags |= MP_BLOCKDEV_FLAG_IGNORE_WRITE_PROTECTION;
     return true;
 }
 
 void filesystem_unlock(fs_user_mount_t *fs_mount) {
     fs_mount->lock_count -= 1;
     if (fs_mount->lock_count == 0) {
+        // CIRCUITPY-CHANGE: clear the bypass when releasing the lock.
+        fs_mount->blockdev.flags &= ~MP_BLOCKDEV_FLAG_IGNORE_WRITE_PROTECTION;
         blockdev_unlock(fs_mount);
     }
 }
