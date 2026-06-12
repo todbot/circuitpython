@@ -68,14 +68,69 @@ static void rp2pio_statemachine_set_pull(pio_pinmask_t pull_pin_up, pio_pinmask_
     }
 }
 
+// audio_dma and rp2pio cooperate on DMA_IRQ_0 using the SDK's shared interrupt
+// handlers. We add our handler when we enable our first channel and remove it
+// when our last channel is disabled. See the DMA IRQ allocation notes in
+// common-hal/microcontroller/__init__.c.
+
+// Shared DMA_IRQ_0 handler for rp2pio background reads and writes. It
+// acknowledges and services only its own channels, leaving any other channels'
+// interrupts (e.g. audio) for the other shared handlers to acknowledge.
+static void __not_in_flash_func(rp2pio_dma_irq_handler)(void) {
+    for (size_t i = 0; i < NUM_DMA_CHANNELS; i++) {
+        uint32_t mask = 1 << i;
+        if ((dma_hw->ints0 & mask) == 0) {
+            continue;
+        }
+        rp2pio_statemachine_obj_t *read = MP_STATE_PORT(background_pio_read)[i];
+        rp2pio_statemachine_obj_t *write = MP_STATE_PORT(background_pio_write)[i];
+        if (read == NULL && write == NULL) {
+            // Not one of our channels; leave it for another shared handler.
+            continue;
+        }
+        // Acknowledge the interrupt early; see the comment in audio_dma.c.
+        dma_hw->ints0 = mask;
+        if (read != NULL) {
+            rp2pio_statemachine_dma_complete_read(read, i);
+        }
+        if (write != NULL) {
+            rp2pio_statemachine_dma_complete_write(write, i);
+        }
+    }
+}
+
+// Channels (bitmask) rp2pio currently has enabled on DMA_IRQ_0. Used to decide
+// when to add/remove our shared interrupt handler.
+static uint32_t rp2pio_dma_irq0_channel_mask = 0;
+
+static void rp2pio_dma_enable_irq(uint channel) {
+    // Clear any latent interrupt so that we don't immediately re-trigger.
+    dma_hw->ints0 = 1u << channel;
+    if (rp2pio_dma_irq0_channel_mask == 0) {
+        irq_add_shared_handler(DMA_IRQ_0, rp2pio_dma_irq_handler,
+            PICO_SHARED_IRQ_HANDLER_DEFAULT_ORDER_PRIORITY);
+    }
+    rp2pio_dma_irq0_channel_mask |= 1u << channel;
+    dma_irqn_set_channel_enabled(0, channel, true);
+    irq_set_enabled(DMA_IRQ_0, true);
+}
+
+static void rp2pio_dma_disable_irq(uint channel) {
+    dma_irqn_set_channel_enabled(0, channel, false);
+    rp2pio_dma_irq0_channel_mask &= ~(1u << channel);
+    if (rp2pio_dma_irq0_channel_mask == 0) {
+        irq_remove_handler(DMA_IRQ_0, rp2pio_dma_irq_handler);
+    }
+    // Turn off the IRQ line entirely once no one (audio or rp2pio) needs it.
+    if (dma_hw->inte0 == 0) {
+        irq_set_enabled(DMA_IRQ_0, false);
+    }
+}
+
 static void rp2pio_statemachine_clear_dma_write(int pio_index, int sm) {
     if (SM_DMA_ALLOCATED_WRITE(pio_index, sm)) {
         int channel_write = SM_DMA_GET_CHANNEL_WRITE(pio_index, sm);
-        uint32_t channel_mask_write = 1u << channel_write;
-        dma_hw->inte0 &= ~channel_mask_write;
-        if (!dma_hw->inte0) {
-            irq_set_mask_enabled(1 << DMA_IRQ_0, false);
-        }
+        rp2pio_dma_disable_irq(channel_write);
         MP_STATE_PORT(background_pio_write)[channel_write] = NULL;
         dma_channel_abort(channel_write);
         dma_channel_unclaim(channel_write);
@@ -86,11 +141,7 @@ static void rp2pio_statemachine_clear_dma_write(int pio_index, int sm) {
 static void rp2pio_statemachine_clear_dma_read(int pio_index, int sm) {
     if (SM_DMA_ALLOCATED_READ(pio_index, sm)) {
         int channel_read = SM_DMA_GET_CHANNEL_READ(pio_index, sm);
-        uint32_t channel_mask_read = 1u << channel_read;
-        dma_hw->inte0 &= ~channel_mask_read;
-        if (!dma_hw->inte0) {
-            irq_set_mask_enabled(1 << DMA_IRQ_0, false);
-        }
+        rp2pio_dma_disable_irq(channel_read);
         MP_STATE_PORT(background_pio_read)[channel_read] = NULL;
         dma_channel_abort(channel_read);
         dma_channel_unclaim(channel_read);
@@ -1274,12 +1325,8 @@ bool common_hal_rp2pio_statemachine_background_write(rp2pio_statemachine_obj_t *
 
     common_hal_mcu_disable_interrupts();
 
-    // Acknowledge any previous pending interrupt
-    dma_hw->ints0 |= 1u << channel_write;
     MP_STATE_PORT(background_pio_write)[channel_write] = self;
-    dma_hw->inte0 |= 1u << channel_write;
-
-    irq_set_mask_enabled(1 << DMA_IRQ_0, true);
+    rp2pio_dma_enable_irq(channel_write);
     dma_start_channel_mask(1u << channel_write);
     common_hal_mcu_enable_interrupts();
 
@@ -1438,11 +1485,8 @@ bool common_hal_rp2pio_statemachine_background_read(rp2pio_statemachine_obj_t *s
         false);
 
     common_hal_mcu_disable_interrupts();
-    // Acknowledge any previous pending interrupt
-    dma_hw->ints0 |= 1u << channel_read;
     MP_STATE_PORT(background_pio_read)[channel_read] = self;
-    dma_hw->inte0 |= 1u << channel_read;
-    irq_set_mask_enabled(1 << DMA_IRQ_0, true);
+    rp2pio_dma_enable_irq(channel_read);
     dma_start_channel_mask((1u << channel_read));
     common_hal_mcu_enable_interrupts();
 
