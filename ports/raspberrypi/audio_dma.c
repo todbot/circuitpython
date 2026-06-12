@@ -9,17 +9,22 @@
 #include "shared-bindings/audiocore/RawSample.h"
 #include "shared-bindings/audiocore/WaveFile.h"
 #include "shared-bindings/microcontroller/__init__.h"
-#include "bindings/rp2pio/StateMachine.h"
 #include "supervisor/background_callback.h"
 
 #include "py/mpstate.h"
 #include "py/runtime.h"
 
 #include "hardware/irq.h"
-#include "hardware/regs/intctrl.h" // For isr_ macro.
 
 
 #if CIRCUITPY_AUDIOCORE
+
+// audio_dma and rp2pio cooperate on DMA_IRQ_0 using the SDK's shared interrupt
+// handlers. We add our handler when we enable our first channel and remove it
+// when our last channel is disabled. See the DMA IRQ allocation notes in
+// common-hal/microcontroller/__init__.c.
+static void audio_dma_enable_irq(uint channel);
+static void audio_dma_disable_irq(uint channel);
 
 void audio_dma_reset(void) {
     for (size_t channel = 0; channel < NUM_DMA_CHANNELS; channel++) {
@@ -335,12 +340,10 @@ audio_dma_result audio_dma_setup_playback(
             1, // transaction count
             false); // trigger
     } else {
-        // Clear any latent interrupts so that we don't immediately disable channels.
-        dma_hw->ints0 |= (1 << dma->channel[0]) | (1 << dma->channel[1]);
         // Enable our DMA channels on DMA_IRQ_0 to the CPU. This will wake us up when
         // we're WFI.
-        dma_hw->inte0 |= (1 << dma->channel[0]) | (1 << dma->channel[1]);
-        irq_set_mask_enabled(1 << DMA_IRQ_0, true);
+        audio_dma_enable_irq(dma->channel[0]);
+        audio_dma_enable_irq(dma->channel[1]);
     }
 
     dma->playing_in_progress = true;
@@ -353,16 +356,11 @@ void audio_dma_stop(audio_dma_t *dma) {
     dma->paused = true;
 
     // Disable our interrupts.
-    uint32_t channel_mask = 0;
     if (dma->channel[0] < NUM_DMA_CHANNELS) {
-        channel_mask |= 1 << dma->channel[0];
+        audio_dma_disable_irq(dma->channel[0]);
     }
     if (dma->channel[1] < NUM_DMA_CHANNELS) {
-        channel_mask |= 1 << dma->channel[1];
-    }
-    dma_hw->inte0 &= ~channel_mask;
-    if (!dma_hw->inte0) {
-        irq_set_mask_enabled(1 << DMA_IRQ_0, false);
+        audio_dma_disable_irq(dma->channel[1]);
     }
 
     // Run any remaining audio tasks because we remove ourselves from
@@ -532,10 +530,18 @@ static void dma_callback_fun(void *arg) {
     }
 }
 
-void __not_in_flash_func(isr_dma_0)(void) {
+// Shared DMA_IRQ_0 handler for audio. It acknowledges and services only audio
+// channels, leaving any other channels' interrupts for the other shared
+// handlers (e.g. rp2pio) to acknowledge.
+static void __not_in_flash_func(audio_dma_irq_handler)(void) {
     for (size_t i = 0; i < NUM_DMA_CHANNELS; i++) {
         uint32_t mask = 1 << i;
         if ((dma_hw->ints0 & mask) == 0) {
+            continue;
+        }
+        audio_dma_t *dma = MP_STATE_PORT(playing_audio)[i];
+        if (dma == NULL) {
+            // Not one of our channels; leave it for another shared handler.
             continue;
         }
         // acknowledge interrupt early. Doing so late means that you could lose an
@@ -543,23 +549,40 @@ void __not_in_flash_func(isr_dma_0)(void) {
         // completed by the time callback_add() / dma_complete() returned. This
         // affected PIO continuous write more than audio.
         dma_hw->ints0 = mask;
-        if (MP_STATE_PORT(playing_audio)[i] != NULL) {
-            audio_dma_t *dma = MP_STATE_PORT(playing_audio)[i];
-            // Record all channels whose DMA has completed; they need loading.
-            dma->channels_to_load_mask |= mask;
-            // Disable the channel so that we don't play it without filling it.
-            dma_hw->ch[i].al1_ctrl &= ~DMA_CH0_CTRL_TRIG_EN_BITS;
-            // This is a noop if the callback is already queued.
-            background_callback_add(&dma->callback, dma_callback_fun, (void *)dma);
-        }
-        if (MP_STATE_PORT(background_pio_read)[i] != NULL) {
-            rp2pio_statemachine_obj_t *pio = MP_STATE_PORT(background_pio_read)[i];
-            rp2pio_statemachine_dma_complete_read(pio, i);
-        }
-        if (MP_STATE_PORT(background_pio_write)[i] != NULL) {
-            rp2pio_statemachine_obj_t *pio = MP_STATE_PORT(background_pio_write)[i];
-            rp2pio_statemachine_dma_complete_write(pio, i);
-        }
+        // Record all channels whose DMA has completed; they need loading.
+        dma->channels_to_load_mask |= mask;
+        // Disable the channel so that we don't play it without filling it.
+        dma_hw->ch[i].al1_ctrl &= ~DMA_CH0_CTRL_TRIG_EN_BITS;
+        // This is a noop if the callback is already queued.
+        background_callback_add(&dma->callback, dma_callback_fun, (void *)dma);
+    }
+}
+
+// Channels (bitmask) audio currently has enabled on DMA_IRQ_0. Used to decide
+// when to add/remove our shared interrupt handler.
+static uint32_t audio_dma_irq0_channel_mask = 0;
+
+static void audio_dma_enable_irq(uint channel) {
+    // Clear any latent interrupt so that we don't immediately disable the channel.
+    dma_hw->ints0 = 1u << channel;
+    if (audio_dma_irq0_channel_mask == 0) {
+        irq_add_shared_handler(DMA_IRQ_0, audio_dma_irq_handler,
+            PICO_SHARED_IRQ_HANDLER_DEFAULT_ORDER_PRIORITY);
+    }
+    audio_dma_irq0_channel_mask |= 1u << channel;
+    dma_irqn_set_channel_enabled(0, channel, true);
+    irq_set_enabled(DMA_IRQ_0, true);
+}
+
+static void audio_dma_disable_irq(uint channel) {
+    dma_irqn_set_channel_enabled(0, channel, false);
+    audio_dma_irq0_channel_mask &= ~(1u << channel);
+    if (audio_dma_irq0_channel_mask == 0) {
+        irq_remove_handler(DMA_IRQ_0, audio_dma_irq_handler);
+    }
+    // Turn off the IRQ line entirely once no one (audio or rp2pio) needs it.
+    if (dma_hw->inte0 == 0) {
+        irq_set_enabled(DMA_IRQ_0, false);
     }
 }
 
