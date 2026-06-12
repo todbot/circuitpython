@@ -183,8 +183,8 @@ static volatile int _last_discovery_status;
 
 static uint64_t _discovery_start_time;
 
-// Give 20 seconds for each discovery step.
-#define DISCOVERY_TIMEOUT_MS 20000
+// Give 3 seconds for each discovery step.
+#define DISCOVERY_TIMEOUT_MS 3000
 
 static void _start_discovery_timeout(void) {
     _discovery_start_time = common_hal_time_monotonic_ms();
@@ -294,6 +294,10 @@ static int _discovered_characteristic_cb(uint16_t conn_handle,
     // Set def_handle directly since it is only used in discovery.
     characteristic->def_handle = chr->def_handle;
 
+    #if CIRCUITPY_VERBOSE_BLE
+    mp_printf(&mp_plat_print, "_discovered_characteristic_cb: char handle: %d\n", characteristic->handle);
+    #endif
+
     mp_obj_list_append(MP_OBJ_FROM_PTR(service->characteristic_list),
         MP_OBJ_FROM_PTR(characteristic));
     return 0;
@@ -307,6 +311,12 @@ static int _discovered_descriptor_cb(uint16_t conn_handle,
     bleio_characteristic_obj_t *characteristic = (bleio_characteristic_obj_t *)arg;
 
     if (error->status != 0) {
+
+        #if CIRCUITPY_VERBOSE_BLE
+        mp_printf(&mp_plat_print, "_discovered_descriptor_cb error->status: %d, handle: %d\n",
+            error->status, error->att_handle);
+        #endif
+
         // BLE_HS_EDONE or some error has occurred.
         _set_discovery_step_status(error->status);
         return 0;
@@ -339,6 +349,11 @@ static int _discovered_descriptor_cb(uint16_t conn_handle,
         SECURITY_MODE_OPEN, SECURITY_MODE_OPEN,
         GATT_MAX_DATA_LENGTH, false, mp_const_empty_bytes);
     descriptor->handle = dsc->handle;
+
+    #if CIRCUITPY_VERBOSE_BLE
+    mp_printf(&mp_plat_print, "_discovered_descriptor_cb: char handle: %d, desc handle: %d, uuid type: %d, u16 value: 0x%x\n",
+        characteristic->handle, descriptor->handle, dsc->uuid.u.type, dsc->uuid.u16.value);
+    #endif
 
     mp_obj_list_append(MP_OBJ_FROM_PTR(characteristic->descriptor_list),
         MP_OBJ_FROM_PTR(descriptor));
