@@ -181,17 +181,11 @@ void common_hal_bleio_connection_set_connection_interval(bleio_connection_intern
 // Zero when discovery is in process. BLE_HS_EDONE or a BLE_HS_ error code when done.
 static volatile int _last_discovery_status;
 
-static uint64_t _discovery_start_time;
-
-// Give 3 seconds for each discovery step.
-#define DISCOVERY_TIMEOUT_MS 3000
-
-static void _start_discovery_timeout(void) {
-    _discovery_start_time = common_hal_time_monotonic_ms();
-}
+// Give 20 seconds for each step of discovery: services, characteristics, attributes.
+#define DISCOVERY_TIMEOUT_MS 20000
 
 static int _wait_for_discovery_step_done(void) {
-    const uint64_t timeout_time_ms = _discovery_start_time + DISCOVERY_TIMEOUT_MS;
+    const uint64_t timeout_time_ms = common_hal_time_monotonic_ms() + DISCOVERY_TIMEOUT_MS;
     while ((_last_discovery_status == 0) && (common_hal_time_monotonic_ms() < timeout_time_ms)) {
         RUN_BACKGROUND_TASKS;
         if (mp_hal_is_interrupted()) {
@@ -364,13 +358,9 @@ static void discover_remote_services(bleio_connection_internal_t *self, mp_obj_t
     // Start over with an empty list.
     self->remote_service_list = mp_obj_new_list(0, NULL);
 
-    // Start timeout in case discovery gets stuck.
-    _start_discovery_timeout();
-
     if (service_uuids_whitelist == mp_const_none) {
         // Reset discovery status before starting callbacks
         _set_discovery_step_status(0);
-        _start_discovery_timeout();
 
         CHECK_NIMBLE_ERROR(ble_gattc_disc_all_svcs(self->conn_handle, _discovered_service_cb, self));
 
@@ -389,7 +379,6 @@ static void discover_remote_services(bleio_connection_internal_t *self, mp_obj_t
 
             // Reset discovery status before starting callbacks
             _set_discovery_step_status(0);
-            _start_discovery_timeout();
 
             CHECK_NIMBLE_ERROR(ble_gattc_disc_svc_by_uuid(self->conn_handle, &uuid->nimble_ble_uuid.u,
                 _discovered_service_cb, self));
@@ -407,7 +396,6 @@ static void discover_remote_services(bleio_connection_internal_t *self, mp_obj_t
 
         // Reset discovery status before starting callbacks
         _set_discovery_step_status(0);
-        _start_discovery_timeout();
 
         CHECK_NIMBLE_ERROR(ble_gattc_disc_all_chrs(self->conn_handle,
             service->start_handle,
@@ -443,7 +431,6 @@ static void discover_remote_services(bleio_connection_internal_t *self, mp_obj_t
 
             // Reset discovery status before starting callbacks
             _set_discovery_step_status(0);
-            _start_discovery_timeout();
 
             // The descriptor handle inclusive range is [characteristic->handle + 1, end_handle],
             // but ble_gattc_disc_all_dscs() requires starting with characteristic->handle.
