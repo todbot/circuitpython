@@ -183,7 +183,7 @@ static volatile int _last_discovery_status;
 
 static uint64_t _discovery_start_time;
 
-// Give 20 seconds for discovery
+// Give 20 seconds for each discovery step.
 #define DISCOVERY_TIMEOUT_MS 20000
 
 static void _start_discovery_timeout(void) {
@@ -199,12 +199,26 @@ static int _wait_for_discovery_step_done(void) {
             _last_discovery_status = BLE_HS_EDONE;
         }
     }
+    if (_last_discovery_status == 0) {
+        return BLE_HS_ETIMEOUT;
+    }
     return _last_discovery_status;
 }
 
 // Record result of last discovery step: services, characteristics, descriptors.
 static void _set_discovery_step_status(int status) {
     _last_discovery_status = status;
+}
+
+static void _check_discovery_status(int status) {
+    if (status == BLE_HS_EDONE) {
+        return;
+    }
+    if (status < BLE_HS_ERR_ATT_BASE) {
+        CHECK_NIMBLE_ERROR(status);
+        return;
+    }
+    CHECK_BLE_ERROR(status);
 }
 
 static int _discovered_service_cb(uint16_t conn_handle,
@@ -280,10 +294,6 @@ static int _discovered_characteristic_cb(uint16_t conn_handle,
     // Set def_handle directly since it is only used in discovery.
     characteristic->def_handle = chr->def_handle;
 
-    #if CIRCUITPY_VERBOSE_BLE
-    mp_printf(&mp_plat_print, "_discovered_characteristic_cb: char handle: %d\n", characteristic->handle);
-    #endif
-
     mp_obj_list_append(MP_OBJ_FROM_PTR(service->characteristic_list),
         MP_OBJ_FROM_PTR(characteristic));
     return 0;
@@ -297,12 +307,6 @@ static int _discovered_descriptor_cb(uint16_t conn_handle,
     bleio_characteristic_obj_t *characteristic = (bleio_characteristic_obj_t *)arg;
 
     if (error->status != 0) {
-
-        #if CIRCUITPY_VERBOSE_BLE
-        mp_printf(&mp_plat_print, "_discovered_descriptor_cb error->status: %d, handle: %d\n",
-            error->status, error->att_handle);
-        #endif
-
         // BLE_HS_EDONE or some error has occurred.
         _set_discovery_step_status(error->status);
         return 0;
@@ -336,11 +340,6 @@ static int _discovered_descriptor_cb(uint16_t conn_handle,
         GATT_MAX_DATA_LENGTH, false, mp_const_empty_bytes);
     descriptor->handle = dsc->handle;
 
-    #if CIRCUITPY_VERBOSE_BLE
-    mp_printf(&mp_plat_print, "_discovered_descriptor_cb: char handle: %d, desc handle: %d, uuid type: %d, u16 value: 0x%x\n",
-        characteristic->handle, descriptor->handle, dsc->uuid.u.type, dsc->uuid.u16.value);
-    #endif
-
     mp_obj_list_append(MP_OBJ_FROM_PTR(characteristic->descriptor_list),
         MP_OBJ_FROM_PTR(descriptor));
     return 0;
@@ -356,14 +355,13 @@ static void discover_remote_services(bleio_connection_internal_t *self, mp_obj_t
     if (service_uuids_whitelist == mp_const_none) {
         // Reset discovery status before starting callbacks
         _set_discovery_step_status(0);
+        _start_discovery_timeout();
 
         CHECK_NIMBLE_ERROR(ble_gattc_disc_all_svcs(self->conn_handle, _discovered_service_cb, self));
 
         // Wait for _discovered_service_cb() to be called multiple times until it's done.
         int status = _wait_for_discovery_step_done();
-        if (status != BLE_HS_EDONE) {
-            CHECK_BLE_ERROR(status);
-        }
+        _check_discovery_status(status);
     } else {
         mp_obj_iter_buf_t iter_buf;
         mp_obj_t iterable = mp_getiter(service_uuids_whitelist, &iter_buf);
@@ -376,15 +374,14 @@ static void discover_remote_services(bleio_connection_internal_t *self, mp_obj_t
 
             // Reset discovery status before starting callbacks
             _set_discovery_step_status(0);
+            _start_discovery_timeout();
 
             CHECK_NIMBLE_ERROR(ble_gattc_disc_svc_by_uuid(self->conn_handle, &uuid->nimble_ble_uuid.u,
                 _discovered_service_cb, self));
 
             // Wait for _discovered_service_cb() to be called multiple times until it's done.
             int status = _wait_for_discovery_step_done();
-            if (status != BLE_HS_EDONE) {
-                CHECK_BLE_ERROR(status);
-            }
+            _check_discovery_status(status);
         }
     }
 
@@ -395,6 +392,7 @@ static void discover_remote_services(bleio_connection_internal_t *self, mp_obj_t
 
         // Reset discovery status before starting callbacks
         _set_discovery_step_status(0);
+        _start_discovery_timeout();
 
         CHECK_NIMBLE_ERROR(ble_gattc_disc_all_chrs(self->conn_handle,
             service->start_handle,
@@ -404,9 +402,7 @@ static void discover_remote_services(bleio_connection_internal_t *self, mp_obj_t
 
         // Wait for _discovered_characteristic_cb() to be called multiple times until it's done.
         int status = _wait_for_discovery_step_done();
-        if (status != BLE_HS_EDONE) {
-            CHECK_BLE_ERROR(status);
-        }
+        _check_discovery_status(status);
 
         // Got characteristics for this service. Now discover descriptors for each characteristic.
         size_t char_list_len = service->characteristic_list->len;
@@ -423,7 +419,7 @@ static void discover_remote_services(bleio_connection_internal_t *self, mp_obj_t
 
             uint16_t end_handle = next_characteristic == NULL
                 ? service->end_handle
-                : next_characteristic->handle - 1;
+                : next_characteristic->def_handle - 1;
 
             // Pre-check if there are no descriptors to discover so descriptor discovery doesn't fail
             if (end_handle <= characteristic->handle) {
@@ -432,6 +428,7 @@ static void discover_remote_services(bleio_connection_internal_t *self, mp_obj_t
 
             // Reset discovery status before starting callbacks
             _set_discovery_step_status(0);
+            _start_discovery_timeout();
 
             // The descriptor handle inclusive range is [characteristic->handle + 1, end_handle],
             // but ble_gattc_disc_all_dscs() requires starting with characteristic->handle.
@@ -441,9 +438,7 @@ static void discover_remote_services(bleio_connection_internal_t *self, mp_obj_t
 
             // Wait for _discovered_descriptor_cb to be called multiple times until it's done.
             status = _wait_for_discovery_step_done();
-            if (status != BLE_HS_EDONE) {
-                CHECK_BLE_ERROR(status);
-            }
+            _check_discovery_status(status);
         }
     }
 }
