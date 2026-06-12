@@ -819,6 +819,9 @@ void bleio_adapter_gc_collect(bleio_adapter_obj_t *adapter) {
 }
 
 void bleio_adapter_reset(bleio_adapter_obj_t *adapter) {
+    if (!common_hal_bleio_adapter_get_enabled(&common_hal_bleio_adapter_obj)) {
+        return;
+    }
     common_hal_bleio_adapter_stop_scan(adapter);
     common_hal_bleio_adapter_stop_advertising(adapter);
 
