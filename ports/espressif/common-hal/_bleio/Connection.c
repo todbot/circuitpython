@@ -181,17 +181,11 @@ void common_hal_bleio_connection_set_connection_interval(bleio_connection_intern
 // Zero when discovery is in process. BLE_HS_EDONE or a BLE_HS_ error code when done.
 static volatile int _last_discovery_status;
 
-static uint64_t _discovery_start_time;
-
-// Give 20 seconds for discovery
+// Give 20 seconds for each step of discovery: services, characteristics, attributes.
 #define DISCOVERY_TIMEOUT_MS 20000
 
-static void _start_discovery_timeout(void) {
-    _discovery_start_time = common_hal_time_monotonic_ms();
-}
-
 static int _wait_for_discovery_step_done(void) {
-    const uint64_t timeout_time_ms = _discovery_start_time + DISCOVERY_TIMEOUT_MS;
+    const uint64_t timeout_time_ms = common_hal_time_monotonic_ms() + DISCOVERY_TIMEOUT_MS;
     while ((_last_discovery_status == 0) && (common_hal_time_monotonic_ms() < timeout_time_ms)) {
         RUN_BACKGROUND_TASKS;
         if (mp_hal_is_interrupted()) {
@@ -199,12 +193,26 @@ static int _wait_for_discovery_step_done(void) {
             _last_discovery_status = BLE_HS_EDONE;
         }
     }
+    if (_last_discovery_status == 0) {
+        return BLE_HS_ETIMEOUT;
+    }
     return _last_discovery_status;
 }
 
 // Record result of last discovery step: services, characteristics, descriptors.
 static void _set_discovery_step_status(int status) {
     _last_discovery_status = status;
+}
+
+static void _check_discovery_status(int status) {
+    if (status == BLE_HS_EDONE) {
+        return;
+    }
+    if (status < BLE_HS_ERR_ATT_BASE) {
+        CHECK_NIMBLE_ERROR(status);
+        return;
+    }
+    CHECK_BLE_ERROR(status);
 }
 
 static int _discovered_service_cb(uint16_t conn_handle,
@@ -350,9 +358,6 @@ static void discover_remote_services(bleio_connection_internal_t *self, mp_obj_t
     // Start over with an empty list.
     self->remote_service_list = mp_obj_new_list(0, NULL);
 
-    // Start timeout in case discovery gets stuck.
-    _start_discovery_timeout();
-
     if (service_uuids_whitelist == mp_const_none) {
         // Reset discovery status before starting callbacks
         _set_discovery_step_status(0);
@@ -361,9 +366,7 @@ static void discover_remote_services(bleio_connection_internal_t *self, mp_obj_t
 
         // Wait for _discovered_service_cb() to be called multiple times until it's done.
         int status = _wait_for_discovery_step_done();
-        if (status != BLE_HS_EDONE) {
-            CHECK_BLE_ERROR(status);
-        }
+        _check_discovery_status(status);
     } else {
         mp_obj_iter_buf_t iter_buf;
         mp_obj_t iterable = mp_getiter(service_uuids_whitelist, &iter_buf);
@@ -382,9 +385,7 @@ static void discover_remote_services(bleio_connection_internal_t *self, mp_obj_t
 
             // Wait for _discovered_service_cb() to be called multiple times until it's done.
             int status = _wait_for_discovery_step_done();
-            if (status != BLE_HS_EDONE) {
-                CHECK_BLE_ERROR(status);
-            }
+            _check_discovery_status(status);
         }
     }
 
@@ -404,9 +405,7 @@ static void discover_remote_services(bleio_connection_internal_t *self, mp_obj_t
 
         // Wait for _discovered_characteristic_cb() to be called multiple times until it's done.
         int status = _wait_for_discovery_step_done();
-        if (status != BLE_HS_EDONE) {
-            CHECK_BLE_ERROR(status);
-        }
+        _check_discovery_status(status);
 
         // Got characteristics for this service. Now discover descriptors for each characteristic.
         size_t char_list_len = service->characteristic_list->len;
@@ -423,7 +422,7 @@ static void discover_remote_services(bleio_connection_internal_t *self, mp_obj_t
 
             uint16_t end_handle = next_characteristic == NULL
                 ? service->end_handle
-                : next_characteristic->handle - 1;
+                : next_characteristic->def_handle - 1;
 
             // Pre-check if there are no descriptors to discover so descriptor discovery doesn't fail
             if (end_handle <= characteristic->handle) {
@@ -441,9 +440,7 @@ static void discover_remote_services(bleio_connection_internal_t *self, mp_obj_t
 
             // Wait for _discovered_descriptor_cb to be called multiple times until it's done.
             status = _wait_for_discovery_step_done();
-            if (status != BLE_HS_EDONE) {
-                CHECK_BLE_ERROR(status);
-            }
+            _check_discovery_status(status);
         }
     }
 }

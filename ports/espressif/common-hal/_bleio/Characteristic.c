@@ -92,7 +92,7 @@ void common_hal_bleio_characteristic_construct(bleio_characteristic_obj_t *self,
     self->max_length = max_length;
     self->fixed_length = fixed_length;
 
-    if (initial_value_bufinfo != NULL) {
+    if (!service->is_remote && initial_value_bufinfo != NULL) {
         common_hal_bleio_characteristic_set_value(self, initial_value_bufinfo);
     }
 
