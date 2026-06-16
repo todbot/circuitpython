@@ -96,7 +96,7 @@ void automount_sd_card(void) {
         return;
     }
     if (mp_obj_is_type(cs_obj, &mcu_pin_type)) {
-        common_hal_digitalio_digitalinout_never_reset(MP_OBJ_TO_PTR(&sdcard.cs));
+        common_hal_digitalio_digitalinout_never_reset(MP_OBJ_TO_PTR(sdcard.cs));
     }
     fs_user_mount_t *vfs = &_sdcard_usermount;
     vfs->base.type = &mp_fat_vfs_type;
