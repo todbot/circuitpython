@@ -6,7 +6,7 @@
 
 // Micropython setup
 
-#define MICROPY_HW_BOARD_NAME       "senseBox-eye ESP32S3"
+#define MICROPY_HW_BOARD_NAME       "senseBox MCU Eye ESP32S3"
 #define MICROPY_HW_MCU_NAME         "ESP32S3"
 
 #define MICROPY_HW_NEOPIXEL (&pin_GPIO45)
