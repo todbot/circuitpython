@@ -10,12 +10,8 @@
 
 extern const mp_obj_type_t audiospeed_resampler_type;
 
-void common_hal_audiospeed_resampler_construct(audiospeed_resampler_obj_t *self);
+void common_hal_audiospeed_resampler_construct(audiospeed_resampler_obj_t *self, mp_obj_t source);
 void common_hal_audiospeed_resampler_deinit(audiospeed_resampler_obj_t *self);
-
-bool common_hal_audiospeed_resampler_get_playing(audiospeed_resampler_obj_t *self);
-void common_hal_audiospeed_resampler_play(audiospeed_resampler_obj_t *self, mp_obj_t sample);
-void common_hal_audiospeed_resampler_stop(audiospeed_resampler_obj_t *self);
 
 mp_obj_t common_hal_audiospeed_resampler_get_rate(audiospeed_resampler_obj_t *self);
 

@@ -25,52 +25,35 @@ mp_obj_t audiospeed_fp_to_rate(uint32_t rate_fp) {
     return mp_obj_new_float((mp_float_t)rate_fp / (1 << SPEED_SHIFT));
 }
 
-void audiospeed_construct(audiospeed_base_t *self, mp_obj_t rate_obj) {
+void audiospeed_construct(audiospeed_base_t *self, mp_obj_t source, mp_obj_t rate_obj) {
+    audiosample_base_t *src_base = audiosample_check(source);
+
+    self->source = source;
     self->src_buffer = NULL;
     self->src_buffer_length = 0;
     self->src_sample_count = 0;
     self->source_done = false;
     self->source_exhausted = false;
 
-    self->base.channel_count = 1;
-    self->base.single_buffer = false;
-
-    audiospeed_set_rate(&self->speed, rate_obj);
-    audiospeed_reset_phase(&self->speed);
-
-    self->output_buffer_length = 0;
-    self->output_buffer = NULL;
-}
-
-void audiospeed_assign_source(audiospeed_base_t *self, mp_obj_t source) {
-    audiosample_base_t *src_base = audiosample_check(source);
-
-    self->source = source;
 
     // Copy format from source
     self->base.sample_rate = src_base->sample_rate;
     self->base.channel_count = src_base->channel_count;
     self->base.bits_per_sample = src_base->bits_per_sample;
     self->base.samples_signed = src_base->samples_signed;
+    self->base.single_buffer = false;
+
+    audiospeed_set_rate(&self->speed, rate_obj);
+    audiospeed_reset_phase(&self->speed);
 
     uint8_t bytes_per_frame = (src_base->bits_per_sample / 8) * src_base->channel_count;
-    uint32_t output_buffer_length = OUTPUT_BUFFER_FRAMES * bytes_per_frame;
-
-    if (self->output_buffer != NULL && output_buffer_length != self->output_buffer_length) {
-        self->output_buffer = m_realloc(self->output_buffer,
-            #if MICROPY_MALLOC_USES_ALLOCATED_SIZE
-            self->output_buffer_length,
-            #endif
-            output_buffer_length);
-    } else if (self->output_buffer == NULL) {
-        self->output_buffer = m_malloc_without_collect(output_buffer_length);
-    }
-    if (self->output_buffer == NULL) {
-        m_malloc_fail(output_buffer_length);
-    }
-
-    self->output_buffer_length = output_buffer_length;
+    self->output_buffer_length = OUTPUT_BUFFER_FRAMES * bytes_per_frame;
     self->base.max_buffer_length = self->output_buffer_length;
+
+    self->output_buffer = m_malloc_without_collect(self->output_buffer_length);
+    if (self->output_buffer == NULL) {
+        m_malloc_fail(self->output_buffer_length);
+    }
 }
 
 void audiospeed_deinit(audiospeed_base_t *self) {

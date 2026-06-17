@@ -15,8 +15,7 @@
 
 void common_hal_audiospeed_speedchanger_construct(audiospeed_speedchanger_obj_t *self,
     mp_obj_t source, mp_obj_t rate_obj) {
-    audiospeed_construct(self, rate_obj);
-    audiospeed_assign_source(self, source);
+    audiospeed_construct(self, source, rate_obj);
 }
 
 void common_hal_audiospeed_speedchanger_deinit(audiospeed_speedchanger_obj_t *self) {

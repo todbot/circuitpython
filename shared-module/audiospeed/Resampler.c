@@ -14,26 +14,13 @@ static void calculate_rate(audiospeed_base_t *self, uint32_t sample_rate) {
     }
 }
 
-void common_hal_audiospeed_resampler_construct(audiospeed_resampler_obj_t *self) {
-    audiospeed_construct(&self->base, mp_const_none); // default rate 1.0
+void common_hal_audiospeed_resampler_construct(audiospeed_resampler_obj_t *self, mp_obj_t source) {
+    audiospeed_construct(&self->base, source, mp_const_none); // default rate 1.0
     self->sample_rate = 0;
 }
 
 void common_hal_audiospeed_resampler_deinit(audiospeed_resampler_obj_t *self) {
     audiospeed_deinit(&self->base);
-}
-
-bool common_hal_audiospeed_resampler_get_playing(audiospeed_resampler_obj_t *self) {
-    return self->base.source != NULL;
-}
-
-void common_hal_audiospeed_resampler_play(audiospeed_resampler_obj_t *self, mp_obj_t sample) {
-    audiospeed_assign_source(&self->base, sample);
-    calculate_rate(&self->base, self->sample_rate);
-}
-
-void common_hal_audiospeed_resampler_stop(audiospeed_resampler_obj_t *self) {
-    self->base.source = NULL;
 }
 
 mp_obj_t common_hal_audiospeed_resampler_get_rate(audiospeed_resampler_obj_t *self) {

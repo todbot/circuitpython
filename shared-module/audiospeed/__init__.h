@@ -64,9 +64,8 @@ typedef struct {
     bool source_exhausted; // source DONE and we consumed all of it
 } audiospeed_base_t;
 
-void audiospeed_construct(audiospeed_base_t *self, mp_obj_t rate_obj);
+void audiospeed_construct(audiospeed_base_t *self, mp_obj_t source, mp_obj_t rate_obj);
 void audiospeed_deinit(audiospeed_base_t *self);
-void audiospeed_assign_source(audiospeed_base_t *self, mp_obj_t source);
 bool audiospeed_fetch_source_buffer(audiospeed_base_t *self);
 void audiospeed_reset_buffer(audiospeed_base_t *self, bool single_channel_output, uint8_t channel);
 audioio_get_buffer_result_t audiospeed_get_buffer(audiospeed_base_t *self, bool single_channel_output, uint8_t channel,

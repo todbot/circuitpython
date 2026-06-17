@@ -45,8 +45,19 @@
 //|
 static mp_obj_t audiospeed_resampler_make_new(const mp_obj_type_t *type,
     size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
+    enum { ARG_source };
+    static const mp_arg_t allowed_args[] = {
+        { MP_QSTR_source, MP_ARG_REQUIRED | MP_ARG_OBJ },
+    };
+    mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
+    mp_arg_parse_all_kw_array(n_args, n_kw, all_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
+
+    // Validate source implements audiosample protocol
+    mp_obj_t source = args[ARG_source].u_obj;
+    audiosample_check(source);
+
     audiospeed_resampler_obj_t *self = mp_obj_malloc(audiospeed_resampler_obj_t, &audiospeed_resampler_type);
-    common_hal_audiospeed_resampler_construct(self);
+    common_hal_audiospeed_resampler_construct(self, source);
     return MP_OBJ_FROM_PTR(self);
 }
 
@@ -60,58 +71,6 @@ static mp_obj_t audiospeed_resampler_deinit(mp_obj_t self_in) {
     return mp_const_none;
 }
 static MP_DEFINE_CONST_FUN_OBJ_1(audiospeed_resampler_deinit_obj, audiospeed_resampler_deinit);
-
-//|     playing: bool
-//|     """True when the resampler is playing a sample. (read-only)"""
-//|
-static mp_obj_t audiospeed_resampler_obj_get_playing(mp_obj_t self_in) {
-    audiospeed_resampler_obj_t *self = MP_OBJ_TO_PTR(self_in);
-    audiosample_check_for_deinit(&self->base.base);
-    return mp_obj_new_bool(common_hal_audiospeed_resampler_get_playing(self));
-}
-MP_DEFINE_CONST_FUN_OBJ_1(audiospeed_resampler_get_playing_obj, audiospeed_resampler_obj_get_playing);
-
-MP_PROPERTY_GETTER(audiospeed_resampler_playing_obj,
-    (mp_obj_t)&audiospeed_resampler_get_playing_obj);
-
-//|     def play(self, sample: circuitpython_typing.AudioSample, *, loop: bool = False) -> Resampler:
-//|         """Plays the sample. Use an `audiomixer.Mixer` object to enable looping.
-//|         Does not block. Use `playing` to block.
-//|
-//|         :return: The resampler object itself. Can be used for chaining, ie:
-//|           ``mixer.play(resampler.play(sample))``.
-//|         :rtype: Resampler"""
-//|         ...
-//|
-static mp_obj_t audiospeed_resampler_obj_play(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
-    enum { ARG_sample, ARG_loop };
-    static const mp_arg_t allowed_args[] = {
-        { MP_QSTR_sample,    MP_ARG_OBJ | MP_ARG_REQUIRED, {} },
-    };
-    audiospeed_resampler_obj_t *self = MP_OBJ_TO_PTR(pos_args[0]);
-    audiosample_check_for_deinit(&self->base.base);
-    mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
-    mp_arg_parse_all(n_args - 1, pos_args + 1, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
-
-    mp_obj_t sample = args[ARG_sample].u_obj;
-    common_hal_audiospeed_resampler_play(self, sample);
-
-    return MP_OBJ_FROM_PTR(self);
-}
-MP_DEFINE_CONST_FUN_OBJ_KW(audiospeed_resampler_play_obj, 1, audiospeed_resampler_obj_play);
-
-//|     def stop(self) -> None:
-//|         """Stops playback of the sample."""
-//|         ...
-//|
-//|
-static mp_obj_t audiospeed_resampler_obj_stop(mp_obj_t self_in) {
-    audiospeed_resampler_obj_t *self = MP_OBJ_TO_PTR(self_in);
-
-    common_hal_audiospeed_resampler_stop(self);
-    return mp_const_none;
-}
-MP_DEFINE_CONST_FUN_OBJ_1(audiospeed_resampler_stop_obj, audiospeed_resampler_obj_stop);
 
 //|     rate: float
 //|     """Playback speed multiplier."""
@@ -131,12 +90,10 @@ static const mp_rom_map_elem_t audiospeed_resampler_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&audiospeed_resampler_deinit_obj) },
     { MP_ROM_QSTR(MP_QSTR___enter__), MP_ROM_PTR(&default___enter___obj) },
     { MP_ROM_QSTR(MP_QSTR___exit__), MP_ROM_PTR(&default___exit___obj) },
-    { MP_ROM_QSTR(MP_QSTR_play), MP_ROM_PTR(&audiospeed_resampler_play_obj) },
-    { MP_ROM_QSTR(MP_QSTR_stop), MP_ROM_PTR(&audiospeed_resampler_stop_obj) },
 
     // Properties
-    { MP_ROM_QSTR(MP_QSTR_playing), MP_ROM_PTR(&audiospeed_resampler_playing_obj) },
     { MP_ROM_QSTR(MP_QSTR_rate), MP_ROM_PTR(&audiospeed_resampler_rate_obj) },
+    AUDIOSAMPLE_FIELDS,
 };
 static MP_DEFINE_CONST_DICT(audiospeed_resampler_locals_dict, audiospeed_resampler_locals_dict_table);
 
