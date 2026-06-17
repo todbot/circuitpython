@@ -64,10 +64,10 @@ CIRCUITPY_LIBC_STRING0 = 0
 # These modules are implemented in ports/<port>/common-hal:
 CIRCUITPY__EVE ?= 1
 CIRCUITPY_ALARM ?= 1
-CIRCUITPY_ALARM_TOUCH ?= 0
+CIRCUITPY_ALARM_TOUCH ?= 1
 CIRCUITPY_ANALOGBUFIO ?= 1
 CIRCUITPY_AUDIOBUSIO ?= 1
-CIRCUITPY_AUDIOBUSIO_PDMIN ?= 0
+CIRCUITPY_AUDIOBUSIO_PDMIN ?= 1
 CIRCUITPY_AUDIOI2SIN ?= 1
 CIRCUITPY_AUDIOIO ?= 1
 CIRCUITPY_BLEIO_HCI = 0
@@ -80,7 +80,7 @@ CIRCUITPY_ESPULP ?= 1
 CIRCUITPY_FRAMEBUFFERIO ?= 1
 CIRCUITPY_FREQUENCYIO ?= 1
 CIRCUITPY_HASHLIB ?= 1
-CIRCUITPY_I2CTARGET ?= 0
+CIRCUITPY_I2CTARGET = 0
 CIRCUITPY_MAX3421E ?= 1
 CIRCUITPY_MEMORYMAP ?= 1
 CIRCUITPY_RCLCPY ?= 0
@@ -101,7 +101,6 @@ CIRCUITPY_SOCKETPOOL_IPV6 ?= 1
 #### esp32 ############################################################
 ifeq ($(IDF_TARGET),esp32)
 # Modules
-CIRCUITPY_ALARM_TOUCH = 1
 CIRCUITPY_RGBMATRIX = 0
 
 # Has no USB
@@ -116,6 +115,9 @@ else ifeq ($(IDF_TARGET),esp32c2)
 CIRCUITPY_ESPCAMERA = 0
 CIRCUITPY_ESPULP = 0
 CIRCUITPY_MEMORYMAP = 0
+
+# No capacitive touch peripheral
+CIRCUITPY_ALARM_TOUCH = 0
 
 # No I80 support from the IDF
 CIRCUITPY_PARALLELDISPLAYBUS = 0
@@ -162,8 +164,14 @@ CIRCUITPY_MEMORYMAP = 0
 # No I80 support from the IDF
 CIRCUITPY_PARALLELDISPLAYBUS = 0
 
+# No capacitive touch peripheral
+CIRCUITPY_ALARM_TOUCH = 0
+
 # No DAC
 CIRCUITPY_AUDIOIO = 0
+
+# No I2S peripheral PDM-to-PCM hardware support
+CIRCUITPY_AUDIOBUSIO_PDMIN = 0
 
 # No PCNT peripheral
 CIRCUITPY_FREQUENCYIO = 0
@@ -187,8 +195,14 @@ CIRCUITPY_ESPULP = 0
 CIRCUITPY_MEMORYMAP = 0
 CIRCUITPY_RGBMATRIX = 0
 
+# No capacitive touch peripheral
+CIRCUITPY_ALARM_TOUCH = 0
+
 # No DAC
 CIRCUITPY_AUDIOIO = 0
+
+# No I2S peripheral PDM-to-PCM hardware support
+CIRCUITPY_AUDIOBUSIO_PDMIN = 0
 
 # No space for this
 CIRCUITPY_AUDIOBUSIO = 0
@@ -212,6 +226,9 @@ CIRCUITPY_ESPCAMERA = 0
 CIRCUITPY_ESPULP = 0
 CIRCUITPY_MEMORYMAP = 0
 CIRCUITPY_RGBMATRIX = 0
+
+# No capacitive touch peripheral
+CIRCUITPY_ALARM_TOUCH = 0
 
 # No DAC
 CIRCUITPY_AUDIOIO = 0
@@ -252,8 +269,14 @@ CIRCUITPY_ESPULP = 0
 CIRCUITPY_MEMORYMAP = 0
 CIRCUITPY_RGBMATRIX = 0
 
+# No capacitive touch peripheral
+CIRCUITPY_ALARM_TOUCH = 0
+
 # No DAC
 CIRCUITPY_AUDIOIO = 0
+
+# No I2S peripheral PDM-to-PCM hardware support
+CIRCUITPY_AUDIOBUSIO_PDMIN = 0
 
 # No I80 support from the IDF
 CIRCUITPY_PARALLELDISPLAYBUS = 0
@@ -283,7 +306,7 @@ CIRCUITPY_BLEIO_NATIVE = 0
 CIRCUITPY_WIFI = 0
 CIRCUITPY_SSL = 0
 
-CIRCUITPY_TOUCHIO = 1
+CIRCUITPY_TOUCHIO ?= 1
 CIRCUITPY_TOUCHIO_USE_NATIVE = 0
 
 # Second stage bootloader doesn't work when the factory partition is empty due to
@@ -316,8 +339,10 @@ CIRCUITPY_MIPIDSI = 1
 #### esp32s2 ##########################################################
 else ifeq ($(IDF_TARGET),esp32s2)
 # Modules
-CIRCUITPY_ALARM_TOUCH = $(CIRCUITPY_ALARM)
 CIRCUITPY_AUDIOIO ?= 1
+
+# No I2S peripheral PDM-to-PCM hardware support
+CIRCUITPY_AUDIOBUSIO_PDMIN = 0
 
 # No BLE in hw
 CIRCUITPY_BLEIO_NATIVE = 0
@@ -331,8 +356,6 @@ CIRCUITPY_ESP_USB_SERIAL_JTAG ?= 0
 else ifeq ($(IDF_TARGET),esp32s3)
 
 # Modules
-CIRCUITPY_ALARM_TOUCH = $(CIRCUITPY_ALARM)
-CIRCUITPY_AUDIOBUSIO_PDMIN = 1
 CIRCUITPY_ESP_USB_SERIAL_JTAG ?= 0
 
 # No DAC
@@ -342,7 +365,7 @@ endif
 #### end chip-specific choices ########################################
 
 # By default, enable dualbank, and it'll be disabled for small flash sizes
-CIRCUITPY_DUALBANK = 1
+CIRCUITPY_DUALBANK ?= 1
 
 # No room for large modules on 2MB boards
 # 2MB boards have a single firmware partition, and can't do dualbank.
