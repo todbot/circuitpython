@@ -74,6 +74,8 @@ void peripherals_touch_init(const int channel_id) {
         touch_sensor_sample_config_t sample_cfg = TOUCH_SENSOR_V2_DEFAULT_SAMPLE_CONFIG(500, TOUCH_VOLT_LIM_L_0V5, TOUCH_VOLT_LIM_H_2V2);
         #elif SOC_TOUCH_SENSOR_VERSION == 3
         touch_sensor_sample_config_t sample_cfg = TOUCH_SENSOR_V3_DEFAULT_SAMPLE_CONFIG2(3, 29, 8, 3);
+        #else
+        #error bad SOC_TOUCH_SENSOR_VERSION
         #endif
         touch_sensor_config_t sens_cfg = TOUCH_SENSOR_DEFAULT_BASIC_CONFIG(1, &sample_cfg);
         touch_sensor_new_controller(&sens_cfg, &touch_controller);
@@ -86,12 +88,19 @@ void peripherals_touch_init(const int channel_id) {
         .init_charge_volt = TOUCH_INIT_CHARGE_VOLT_DEFAULT,
         .group = TOUCH_CHAN_TRIG_GROUP_BOTH,
     };
-    #else
+    #elif SOC_TOUCH_SENSOR_VERSION == 2
     touch_channel_config_t chan_cfg = {
         .active_thresh = {2000},
         .charge_speed = TOUCH_CHARGE_SPEED_7,
         .init_charge_volt = TOUCH_INIT_CHARGE_VOLT_DEFAULT,
     };
+    #elif SOC_TOUCH_SENSOR_VERSION == 3
+    // Values are similar to an ESP-IDF example: 1000, 2500, 5000.
+    touch_channel_config_t chan_cfg = {
+        .active_thresh = {1000, 2000, 5000},
+    };
+    #else
+    #error bad SOC_TOUCH_SENSOR_VERSION
     #endif
 
     touch_sensor_new_channel(touch_controller, channel_id, &chan_cfg, &touch_channels[idx]);
