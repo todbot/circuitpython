@@ -151,6 +151,7 @@ SRC_PATTERNS += audiomp3/%
 endif
 ifeq ($(CIRCUITPY_AUDIOSPEED),1)
 SRC_PATTERNS += audiospeed/%
+CFLAGS += -DCIRCUITPY_AUDIOSPEED
 endif
 ifeq ($(CIRCUITPY_AURORA_EPAPER),1)
 SRC_PATTERNS += aurora_epaper/%
