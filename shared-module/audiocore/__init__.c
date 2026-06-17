@@ -13,6 +13,8 @@
 #include "shared-module/audiocore/RawSample.h"
 #include "shared-module/audiocore/WaveFile.h"
 
+#include "shared-bindings/audiospeed/Resampler.h"
+
 #include "shared-bindings/audiomixer/Mixer.h"
 #include "shared-module/audiomixer/Mixer.h"
 
@@ -198,7 +200,7 @@ void audiosample_convert_s16s_u8s(uint8_t *buffer_out, const int16_t *buffer_in,
 
 void audiosample_must_match(audiosample_base_t *self, mp_obj_t other_in, bool allow_mono_to_stereo) {
     const audiosample_base_t *other = audiosample_check(other_in);
-    if (other->sample_rate != self->sample_rate) {
+    if (other->sample_rate != self->sample_rate && !mp_obj_is_type(other_in, &audiospeed_resampler_type)) {
         mp_raise_ValueError_varg(MP_ERROR_TEXT("The sample's %q does not match"), MP_QSTR_sample_rate);
     }
     if ((!allow_mono_to_stereo || (allow_mono_to_stereo && self->channel_count != 2)) && other->channel_count != self->channel_count) {
@@ -209,5 +211,10 @@ void audiosample_must_match(audiosample_base_t *self, mp_obj_t other_in, bool al
     }
     if (other->samples_signed != self->samples_signed) {
         mp_raise_ValueError_varg(MP_ERROR_TEXT("The sample's %q does not match"), MP_QSTR_signedness);
+    }
+
+    if (mp_obj_is_type(other_in, &audiospeed_resampler_type)) {
+        audiospeed_resampler_obj_t *other_resampler = MP_OBJ_TO_PTR(other_in);
+        audiospeed_resampler_set_sample_rate(other_resampler, self->sample_rate);
     }
 }

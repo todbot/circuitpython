@@ -9,12 +9,14 @@
 #include "py/obj.h"
 #include "py/runtime.h"
 
+#include "shared-bindings/audiospeed/Resampler.h"
 #include "shared-bindings/audiospeed/SpeedChanger.h"
 
 //| """Audio processing tools"""
 
 static const mp_rom_map_elem_t audiospeed_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_audiospeed) },
+    { MP_ROM_QSTR(MP_QSTR_Resampler), MP_ROM_PTR(&audiospeed_resampler_type) },
     { MP_ROM_QSTR(MP_QSTR_SpeedChanger), MP_ROM_PTR(&audiospeed_speedchanger_type) },
 };
 

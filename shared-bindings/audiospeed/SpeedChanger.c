@@ -12,18 +12,8 @@
 #include "shared-bindings/audiospeed/SpeedChanger.h"
 #include "shared-bindings/audiocore/__init__.h"
 #include "shared-bindings/util.h"
+#include "shared-module/audiospeed/__init__.h"
 #include "shared-module/audiospeed/SpeedChanger.h"
-
-// Convert a Python float to 16.16 fixed-point rate
-static uint32_t rate_to_fp(mp_obj_t rate_obj) {
-    mp_float_t rate = mp_arg_validate_obj_float_range(rate_obj, 0.001, 1000.0, MP_QSTR_rate);
-    return (uint32_t)(rate * (1 << 16));
-}
-
-// Convert 16.16 fixed-point rate to Python float
-static mp_obj_t fp_to_rate(uint32_t rate_fp) {
-    return mp_obj_new_float((mp_float_t)rate_fp / (1 << 16));
-}
 
 //| class SpeedChanger:
 //|     """Wraps an audio sample to play it back at a different speed.
@@ -70,13 +60,8 @@ static mp_obj_t audiospeed_speedchanger_make_new(const mp_obj_type_t *type,
     mp_obj_t source = args[ARG_source].u_obj;
     audiosample_check(source);
 
-    uint32_t rate_fp = 1 << 16; // default 1.0
-    if (args[ARG_rate].u_obj != mp_const_none) {
-        rate_fp = rate_to_fp(args[ARG_rate].u_obj);
-    }
-
     audiospeed_speedchanger_obj_t *self = mp_obj_malloc(audiospeed_speedchanger_obj_t, &audiospeed_speedchanger_type);
-    common_hal_audiospeed_speedchanger_construct(self, source, rate_fp);
+    common_hal_audiospeed_speedchanger_construct(self, source, args[ARG_rate].u_obj);
     return MP_OBJ_FROM_PTR(self);
 }
 
@@ -97,14 +82,14 @@ static MP_DEFINE_CONST_FUN_OBJ_1(audiospeed_speedchanger_deinit_obj, audiospeed_
 static mp_obj_t audiospeed_speedchanger_obj_get_rate(mp_obj_t self_in) {
     audiospeed_speedchanger_obj_t *self = MP_OBJ_TO_PTR(self_in);
     audiosample_check_for_deinit(&self->base);
-    return fp_to_rate(common_hal_audiospeed_speedchanger_get_rate(self));
+    return common_hal_audiospeed_speedchanger_get_rate(self);
 }
 MP_DEFINE_CONST_FUN_OBJ_1(audiospeed_speedchanger_get_rate_obj, audiospeed_speedchanger_obj_get_rate);
 
 static mp_obj_t audiospeed_speedchanger_obj_set_rate(mp_obj_t self_in, mp_obj_t rate_obj) {
     audiospeed_speedchanger_obj_t *self = MP_OBJ_TO_PTR(self_in);
     audiosample_check_for_deinit(&self->base);
-    common_hal_audiospeed_speedchanger_set_rate(self, rate_to_fp(rate_obj));
+    common_hal_audiospeed_speedchanger_set_rate(self, rate_obj);
     return mp_const_none;
 }
 MP_DEFINE_CONST_FUN_OBJ_2(audiospeed_speedchanger_set_rate_obj, audiospeed_speedchanger_obj_set_rate);

@@ -701,6 +701,7 @@ SRC_SHARED_MODULE_ALL = \
 	audiocore/RawSample.c \
 	audiocore/WaveFile.c \
 	audiocore/__init__.c \
+	audiospeed/Resampler.c \
 	audiospeed/SpeedChanger.c \
 	audiospeed/__init__.c \
 	audiodelays/Echo.c \
