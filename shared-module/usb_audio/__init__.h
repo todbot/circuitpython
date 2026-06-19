@@ -24,9 +24,15 @@ bool shared_module_usb_audio_disable(void);
 // True once enable() has been called successfully.
 bool usb_audio_enabled(void);
 
-// True while the host has opened the AudioStreaming alternate setting, i.e. it is
-// actively listening. This is the real "stream the audio now" signal.
+// True while the host has opened either AudioStreaming alternate setting, i.e. it
+// is actively listening or sending. This is the real "stream the audio now"
+// signal.
 bool usb_audio_streaming(void);
+
+// True while the host has the speaker (host -> board OUT) stream open. Distinct
+// from usb_audio_streaming() so USBSpeaker can report its own direction even when
+// it shares a headset function with a microphone.
+bool usb_audio_speaker_streaming(void);
 
 // Negotiated audio format, valid when usb_audio_enabled() is true.
 extern uint32_t usb_audio_sample_rate;

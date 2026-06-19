@@ -64,8 +64,9 @@ bool common_hal_usb_audio_usbspeaker_deinited(usb_audio_usbspeaker_obj_t *self) 
 bool common_hal_usb_audio_usbspeaker_get_connected(usb_audio_usbspeaker_obj_t *self) {
     (void)self;
     // True while the host has opened the OUT streaming interface, i.e. it is
-    // actively sending audio.
-    return usb_audio_streaming();
+    // actively sending audio. Speaker-specific so it stays correct when a mic
+    // shares the same headset function.
+    return usb_audio_speaker_streaming();
 }
 
 // --------------------------------------------------------------------+

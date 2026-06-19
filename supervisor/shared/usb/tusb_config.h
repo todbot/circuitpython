@@ -122,13 +122,16 @@ extern "C" {
 #if CIRCUITPY_USB_AUDIO
 #include "shared-module/usb_audio/usb_audio_descriptors.h"
 
-// Single audio function: 1 AudioStreaming interface, 1 isochronous endpoint.
-// The emitted descriptor (mic IN vs. speaker OUT) is chosen at boot from the
-// stored direction, so size the class driver's descriptor buffer for the
-// larger of the two. They are equal today, but TU_MAX keeps it correct if the
-// speaker descriptor grows (e.g. stereo) independently of the mic.
-#define CFG_TUD_AUDIO_FUNC_1_DESC_LEN               TU_MAX(TUD_AUDIO_MIC_ONE_CH_DESC_LEN, USB_AUDIO_SPEAKER_DESC_LEN)
-#define CFG_TUD_AUDIO_FUNC_1_N_AS_INT               1
+// Single audio function. The emitted descriptor is chosen at boot from the
+// stored direction: a mic (1 AS interface, IN endpoint), a speaker (1 AS
+// interface, OUT endpoint), or a combined headset (2 AS interfaces, one IN and
+// one OUT endpoint). Size the class driver's descriptor buffer and AS-interface
+// arrays for the largest case so any of them fits.
+#define CFG_TUD_AUDIO_FUNC_1_DESC_LEN               TU_MAX(TU_MAX(TUD_AUDIO_MIC_ONE_CH_DESC_LEN, USB_AUDIO_SPEAKER_DESC_LEN), USB_AUDIO_HEADSET_DESC_LEN)
+// The headset presents two AudioStreaming interfaces; the single-direction
+// descriptors use only the first. The class driver sizes its per-interface alt
+// tracking from this, so it must cover the largest case.
+#define CFG_TUD_AUDIO_FUNC_1_N_AS_INT               2
 // EP0 buffer for class-specific control requests (sample-freq range, volume range, ...).
 #define CFG_TUD_AUDIO_FUNC_1_CTRL_BUF_SZ            64
 

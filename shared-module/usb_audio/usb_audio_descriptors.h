@@ -40,6 +40,20 @@
 #define USB_AUDIO_ENTITY_OUTPUT_TERMINAL (0x03)
 #define USB_AUDIO_ENTITY_CLOCK_SOURCE (0x04)
 
+// Combined headset (Direction.INPUT_OUTPUT) topology. A single audio function
+// carries both a speaker chain (host -> board) and a mic chain (board -> host),
+// so every unit/terminal needs an ID unique across the whole function -- unlike
+// the single-direction descriptors above, which can reuse the same small set.
+// The clock source is shared by both chains. (USB_AUDIO_HEADSET_DESCRIPTOR in
+// __init__.c bakes these in.)
+#define USB_AUDIO_HS_ENTITY_CLOCK_SOURCE (0x04)
+#define USB_AUDIO_HS_ENTITY_SPK_INPUT_TERMINAL (0x01)   // USB streaming in from host
+#define USB_AUDIO_HS_ENTITY_SPK_FEATURE_UNIT (0x02)
+#define USB_AUDIO_HS_ENTITY_SPK_OUTPUT_TERMINAL (0x03)  // desktop speaker
+#define USB_AUDIO_HS_ENTITY_MIC_INPUT_TERMINAL (0x05)   // generic microphone
+#define USB_AUDIO_HS_ENTITY_MIC_FEATURE_UNIT (0x06)
+#define USB_AUDIO_HS_ENTITY_MIC_OUTPUT_TERMINAL (0x07)  // USB streaming out to host
+
 // Length of the no-feedback mono speaker descriptor. It uses the same set of
 // sub-descriptors as TUD_AUDIO_MIC_ONE_CH_DESCRIPTOR (one isochronous data
 // endpoint, no feedback endpoint), so this is identical to
@@ -55,6 +69,42 @@
     + TUD_AUDIO_DESC_INPUT_TERM_LEN \
     + TUD_AUDIO_DESC_OUTPUT_TERM_LEN \
     + TUD_AUDIO_DESC_FEATURE_UNIT_ONE_CHANNEL_LEN \
+    + TUD_AUDIO_DESC_STD_AS_INT_LEN \
+    + TUD_AUDIO_DESC_STD_AS_INT_LEN \
+    + TUD_AUDIO_DESC_CS_AS_INT_LEN \
+    + TUD_AUDIO_DESC_TYPE_I_FORMAT_LEN \
+    + TUD_AUDIO_DESC_STD_AS_ISO_EP_LEN \
+    + TUD_AUDIO_DESC_CS_AS_ISO_EP_LEN)
+
+// Length of the combined headset descriptor (Direction.INPUT_OUTPUT): one IAD
+// wrapping a single AudioControl interface plus two AudioStreaming interfaces
+// (speaker OUT + mic IN). The AC interface declares one shared clock, plus an
+// input terminal / feature unit / output terminal for each of the two chains;
+// each AS interface contributes a zero-bandwidth alt 0 and a streaming alt 1
+// with one isochronous data endpoint (no feedback endpoint, matching the
+// single-direction descriptors). See USB_AUDIO_HEADSET_DESCRIPTOR in __init__.c.
+// Expanded only where TinyUSB's usbd.h is already included (never at the point
+// tusb_config.h includes us), so this header stays dependency-free.
+#define USB_AUDIO_HEADSET_DESC_LEN (TUD_AUDIO_DESC_IAD_LEN \
+    + TUD_AUDIO_DESC_STD_AC_LEN \
+    + TUD_AUDIO_DESC_CS_AC_LEN \
+    + TUD_AUDIO_DESC_CLK_SRC_LEN \
+    /* speaker chain: USB-streaming input terminal -> feature unit -> speaker */ \
+    + TUD_AUDIO_DESC_INPUT_TERM_LEN \
+    + TUD_AUDIO_DESC_FEATURE_UNIT_ONE_CHANNEL_LEN \
+    + TUD_AUDIO_DESC_OUTPUT_TERM_LEN \
+    /* mic chain: microphone input terminal -> feature unit -> USB-streaming out */ \
+    + TUD_AUDIO_DESC_INPUT_TERM_LEN \
+    + TUD_AUDIO_DESC_FEATURE_UNIT_ONE_CHANNEL_LEN \
+    + TUD_AUDIO_DESC_OUTPUT_TERM_LEN \
+    /* speaker AudioStreaming interface (alt 0 + alt 1 with OUT endpoint) */ \
+    + TUD_AUDIO_DESC_STD_AS_INT_LEN \
+    + TUD_AUDIO_DESC_STD_AS_INT_LEN \
+    + TUD_AUDIO_DESC_CS_AS_INT_LEN \
+    + TUD_AUDIO_DESC_TYPE_I_FORMAT_LEN \
+    + TUD_AUDIO_DESC_STD_AS_ISO_EP_LEN \
+    + TUD_AUDIO_DESC_CS_AS_ISO_EP_LEN \
+    /* mic AudioStreaming interface (alt 0 + alt 1 with IN endpoint) */ \
     + TUD_AUDIO_DESC_STD_AS_INT_LEN \
     + TUD_AUDIO_DESC_STD_AS_INT_LEN \
     + TUD_AUDIO_DESC_CS_AS_INT_LEN \
