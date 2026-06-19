@@ -791,9 +791,9 @@ msgstr ""
 msgid "Can't set CCCD on local Characteristic"
 msgstr "Nelze nastavit CCCD na místní charakteristiku"
 
-#: shared-bindings/storage/__init__.c shared-bindings/usb_cdc/__init__.c
-#: shared-bindings/usb_hid/__init__.c shared-bindings/usb_midi/__init__.c
-#: shared-bindings/usb_video/__init__.c
+#: shared-bindings/storage/__init__.c shared-bindings/usb_audio/__init__.c
+#: shared-bindings/usb_cdc/__init__.c shared-bindings/usb_hid/__init__.c
+#: shared-bindings/usb_midi/__init__.c shared-bindings/usb_video/__init__.c
 msgid "Cannot change USB devices now"
 msgstr "Nelze změnit USB zařízení"
 
@@ -1706,6 +1706,7 @@ msgstr "Nepřipojený"
 
 #: shared-bindings/audiobusio/I2SOut.c shared-bindings/audioio/AudioOut.c
 #: shared-bindings/audiopwmio/PWMAudioOut.c shared-bindings/mcp4822/MCP4822.c
+#: shared-bindings/usb_audio/USBMicrophone.c
 msgid "Not playing"
 msgstr "Nehraje"
 
@@ -2171,7 +2172,7 @@ msgstr "Výše uvedená výjimka byla přímá příčina následující výjimk
 msgid "The length of rgb_pins must be 6, 12, 18, 24, or 30"
 msgstr "Počet prvků rgb_pin musí být 6, 12, 18, 24, nebo 30"
 
-#: shared-module/audiocore/__init__.c
+#: shared-module/audiocore/__init__.c shared-module/usb_audio/USBMicrophone.c
 msgid "The sample's %q does not match"
 msgstr ""
 
@@ -2293,6 +2294,10 @@ msgstr "Zápis na UART"
 #: main.c
 msgid "UID:"
 msgstr "UID:"
+
+#: shared-bindings/usb_audio/USBMicrophone.c
+msgid "USB audio not enabled in boot.py"
+msgstr ""
 
 #: shared-module/usb_hid/Device.c
 msgid "USB busy"
