@@ -125,12 +125,19 @@ void alarm_touch_touchalarm_set_alarm(const bool deep_sleep, const size_t n_alar
             .init_charge_volt = TOUCH_INIT_CHARGE_VOLT_DEFAULT,
             .group = TOUCH_CHAN_TRIG_GROUP_BOTH,
         };
-        #else
+        #elif SOC_TOUCH_SENSOR_VERSION == 2
         touch_channel_config_t chan_cfg = {
             .active_thresh = {(uint32_t)(benchmark / 10)},
             .charge_speed = TOUCH_CHARGE_SPEED_7,
             .init_charge_volt = TOUCH_INIT_CHARGE_VOLT_DEFAULT,
         };
+        #elif SOC_TOUCH_SENSOR_VERSION == 3
+        // Values are similar to an ESP-IDF example: 1000, 2500, 5000.
+        touch_channel_config_t chan_cfg = {
+            .active_thresh = {(uint32_t)(benchmark / 10), (uint32_t)(benchmark / 4), (uint32_t)(benchmark / 2)},
+        };
+        #else
+        #error bad SOC_TOUCH_SENSOR_VERSION
         #endif
         touch_sensor_reconfig_channel(chan, &chan_cfg);
     }

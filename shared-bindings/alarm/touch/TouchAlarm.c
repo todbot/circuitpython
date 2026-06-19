@@ -21,6 +21,7 @@
 //|           may be limited due to hardware restrictions, particularly for deep-sleep alarms.
 //|
 //|         **Limitations:** Not available on SAMD, Nordic, or RP2040.
+//|         On Espressif, only available on ESP32, ESP32-S2, ESP32-S3, and ESP32-P4.
 //|         """
 //|         ...
 //|

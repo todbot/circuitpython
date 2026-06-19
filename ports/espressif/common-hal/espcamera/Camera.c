@@ -86,8 +86,11 @@ void common_hal_espcamera_camera_construct(
     self->camera_config.pin_reset = reset_pin ? common_hal_mcu_pin_number(reset_pin) : NO_PIN;
     self->camera_config.pin_xclk = external_clock_pin ? common_hal_mcu_pin_number(external_clock_pin) : NO_PIN;
 
-    self->camera_config.pin_sccb_sda = common_hal_mcu_pin_number(i2c->sda_pin);
-    self->camera_config.pin_sccb_scl = common_hal_mcu_pin_number(i2c->scl_pin);
+    // Reuse the I2C bus that CircuitPython already created on these pins instead of letting
+    // esp32-camera create a second master bus on the same pins, which doesn't work.
+    self->camera_config.pin_sccb_sda = -1;
+    self->camera_config.pin_sccb_scl = -1;
+    self->camera_config.sccb_i2c_port = i2c->port;
 
     self->camera_config.pin_d7 = data_pins[7];
     self->camera_config.pin_d6 = data_pins[6];
@@ -154,7 +157,7 @@ bool common_hal_espcamera_camera_deinited(espcamera_camera_obj_t *self) {
 }
 
 bool common_hal_espcamera_camera_available(espcamera_camera_obj_t *self) {
-    return esp_camera_fb_available();
+    return esp_camera_available_frames();
 }
 
 camera_fb_t *common_hal_espcamera_camera_take(espcamera_camera_obj_t *self, int timeout_ms) {
