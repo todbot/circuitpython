@@ -197,6 +197,11 @@ void usb_audio_task(void) {
         return;
     }
 
+    if (usb_audio_direction_is_output()) {
+        usb_audio_speaker_task();
+        return;
+    }
+
     // Pace production by the IN FIFO level. Each pass we top the software FIFO
     // back up to its half-full setpoint, generating only the samples the host has
     // actually drained since the last pass. This limits our production rate to the
