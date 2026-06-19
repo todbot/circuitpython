@@ -2271,7 +2271,12 @@ msgstr ""
 msgid "UID:"
 msgstr ""
 
+#: shared-bindings/usb_audio/USBSpeaker.c
+msgid "USB audio not enabled for output in boot.py"
+msgstr ""
+
 #: shared-bindings/usb_audio/USBMicrophone.c
+#: shared-bindings/usb_audio/USBSpeaker.c
 msgid "USB audio not enabled in boot.py"
 msgstr ""
 
@@ -3115,6 +3120,10 @@ msgstr ""
 
 #: shared-bindings/audiobusio/PDMIn.c
 msgid "destination buffer must be an array of type 'H' for bit_depth = 16"
+msgstr ""
+
+#: shared-bindings/usb_audio/USBSpeaker.c
+msgid "destination must be an array of type 'h'"
 msgstr ""
 
 #: py/objdict.c

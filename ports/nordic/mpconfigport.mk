@@ -9,6 +9,15 @@ CIRCUITPY_BUILD_EXTENSIONS ?= uf2
 # Number of USB endpoint pairs.
 USB_NUM_ENDPOINT_PAIRS = 8
 
+# The nRF52 USBD implements isochronous transfers only on the fixed, dedicated
+# endpoint number 8 (EP_ISO_NUM in TinyUSB's dcd_nrf5x.c); dcd_edpt_open() rejects
+# an ISO endpoint on any other number, so a usb_audio mic/speaker placed on a
+# sequentially-allocated endpoint would enumerate but never transfer data. Force
+# the usb_audio isochronous endpoint onto endpoint 8. (Only read by usb_audio
+# code, so it is harmless when CIRCUITPY_USB_AUDIO is off; defined unconditionally
+# to stay independent of where that flag gets set in the include order.)
+CFLAGS += -DUSB_AUDIO_ISO_EP_NUM=8
+
 # All nRF ports have longints.
 LONGINT_IMPL = MPZ
 
@@ -48,6 +57,7 @@ CIRCUITPY_SERIAL_BLE ?= 1
 
 CIRCUITPY_COMPUTED_GOTO_SAVE_SPACE ?= 1
 
+CIRCUITPY_USB_AUDIO ?= 1
 
 # nRF52840-specific
 
