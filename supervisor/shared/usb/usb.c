@@ -39,6 +39,10 @@
 #include "shared-module/usb_video/__init__.h"
 #endif
 
+#if CIRCUITPY_USB_AUDIO
+#include "shared-module/usb_audio/__init__.h"
+#endif
+
 #endif
 
 #include "tusb.h"
@@ -173,6 +177,9 @@ void usb_background(void) {
         #endif
         #if CIRCUITPY_USB_DEVICE && CIRCUITPY_USB_VIDEO
         usb_video_task();
+        #endif
+        #if CIRCUITPY_USB_DEVICE && CIRCUITPY_USB_AUDIO
+        usb_audio_task();
         #endif
     }
 }
