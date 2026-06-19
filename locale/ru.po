@@ -796,9 +796,9 @@ msgstr ""
 msgid "Can't set CCCD on local Characteristic"
 msgstr "Невозможно установить CCCD для локальной характеристики"
 
-#: shared-bindings/storage/__init__.c shared-bindings/usb_cdc/__init__.c
-#: shared-bindings/usb_hid/__init__.c shared-bindings/usb_midi/__init__.c
-#: shared-bindings/usb_video/__init__.c
+#: shared-bindings/storage/__init__.c shared-bindings/usb_audio/__init__.c
+#: shared-bindings/usb_cdc/__init__.c shared-bindings/usb_hid/__init__.c
+#: shared-bindings/usb_midi/__init__.c shared-bindings/usb_video/__init__.c
 msgid "Cannot change USB devices now"
 msgstr "Невозможно изменить USB устройство сейчас"
 
@@ -1729,6 +1729,7 @@ msgstr "Не подключено"
 
 #: shared-bindings/audiobusio/I2SOut.c shared-bindings/audioio/AudioOut.c
 #: shared-bindings/audiopwmio/PWMAudioOut.c shared-bindings/mcp4822/MCP4822.c
+#: shared-bindings/usb_audio/USBMicrophone.c
 msgid "Not playing"
 msgstr "Не воспроизводится (Not playing)"
 
@@ -2204,7 +2205,7 @@ msgstr ""
 msgid "The length of rgb_pins must be 6, 12, 18, 24, or 30"
 msgstr "Длина rgb_pins должна быть 6, 12, 18, 24 или 30"
 
-#: shared-module/audiocore/__init__.c
+#: shared-module/audiocore/__init__.c shared-module/usb_audio/USBMicrophone.c
 msgid "The sample's %q does not match"
 msgstr "%q образца не совпадает"
 
@@ -2327,6 +2328,10 @@ msgstr "Запись UART"
 #: main.c
 msgid "UID:"
 msgstr "UID:"
+
+#: shared-bindings/usb_audio/USBMicrophone.c
+msgid "USB audio not enabled in boot.py"
+msgstr ""
 
 #: shared-module/usb_hid/Device.c
 msgid "USB busy"
