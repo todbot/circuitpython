@@ -125,9 +125,14 @@ extern "C" {
 // Single audio function. The emitted descriptor is chosen at boot from the
 // stored direction: a mic (1 AS interface, IN endpoint), a speaker (1 AS
 // interface, OUT endpoint), or a combined headset (2 AS interfaces, one IN and
-// one OUT endpoint). Size the class driver's descriptor buffer and AS-interface
-// arrays for the largest case so any of them fits.
-#define CFG_TUD_AUDIO_FUNC_1_DESC_LEN               TU_MAX(TU_MAX(TUD_AUDIO_MIC_ONE_CH_DESC_LEN, USB_AUDIO_SPEAKER_DESC_LEN), USB_AUDIO_HEADSET_DESC_LEN)
+// one OUT endpoint). The class driver returns this length to the device core as
+// the span of config descriptor the function owns, so it must equal the
+// descriptor we actually emitted -- the three directions differ in length, so a
+// compile-time maximum would over-report for the shorter ones and make the core
+// skip the interfaces that follow audio. usb_audio_descriptor_length() returns
+// the live length for the stored direction; it is only read at enumeration time
+// (audiod_open), by which point usb_audio.enable() has fixed the direction.
+#define CFG_TUD_AUDIO_FUNC_1_DESC_LEN               usb_audio_descriptor_length()
 // The headset presents two AudioStreaming interfaces; the single-direction
 // descriptors use only the first. The class driver sizes its per-interface alt
 // tracking from this, so it must cover the largest case.
