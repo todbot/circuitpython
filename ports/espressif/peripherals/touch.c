@@ -74,6 +74,8 @@ void peripherals_touch_init(const int channel_id) {
         touch_sensor_sample_config_t sample_cfg = TOUCH_SENSOR_V2_DEFAULT_SAMPLE_CONFIG(500, TOUCH_VOLT_LIM_L_0V5, TOUCH_VOLT_LIM_H_2V2);
         #elif SOC_TOUCH_SENSOR_VERSION == 3
         touch_sensor_sample_config_t sample_cfg = TOUCH_SENSOR_V3_DEFAULT_SAMPLE_CONFIG2(3, 29, 8, 3);
+        #else
+        #error bad SOC_TOUCH_SENSOR_VERSION
         #endif
         touch_sensor_config_t sens_cfg = TOUCH_SENSOR_DEFAULT_BASIC_CONFIG(1, &sample_cfg);
         touch_sensor_new_controller(&sens_cfg, &touch_controller);
@@ -86,12 +88,19 @@ void peripherals_touch_init(const int channel_id) {
         .init_charge_volt = TOUCH_INIT_CHARGE_VOLT_DEFAULT,
         .group = TOUCH_CHAN_TRIG_GROUP_BOTH,
     };
-    #else
+    #elif SOC_TOUCH_SENSOR_VERSION == 2
     touch_channel_config_t chan_cfg = {
         .active_thresh = {2000},
         .charge_speed = TOUCH_CHARGE_SPEED_7,
         .init_charge_volt = TOUCH_INIT_CHARGE_VOLT_DEFAULT,
     };
+    #elif SOC_TOUCH_SENSOR_VERSION == 3
+    // Values are similar to an ESP-IDF example: 1000, 2500, 5000.
+    touch_channel_config_t chan_cfg = {
+        .active_thresh = {1000, 2000, 5000},
+    };
+    #else
+    #error bad SOC_TOUCH_SENSOR_VERSION
     #endif
 
     touch_sensor_new_channel(touch_controller, channel_id, &chan_cfg, &touch_channels[idx]);
@@ -110,19 +119,29 @@ uint16_t peripherals_touch_read(int channel_id) {
     }
 
     uint32_t touch_value = 0;
-    touch_channel_read_data(touch_channels[idx], TOUCH_CHAN_DATA_TYPE_RAW, &touch_value);
 
     #if SOC_TOUCH_SENSOR_VERSION == 1
     // ESP32 touch reads a lower value when touched.
     // Flip the values to be consistent with TouchIn assumptions.
+    touch_channel_read_data(touch_channels[idx], TOUCH_CHAN_DATA_TYPE_RAW, &touch_value);
     if (touch_value > UINT16_MAX) {
         return 0;
     }
     return UINT16_MAX - (uint16_t)touch_value;
-    #else
+    touch_channel_read_data(touch_channels[idx], TOUCH_CHAN_DATA_TYPE_RAW, &touch_value);
+    return UINT16_MAX - (uint16_t)touch_value;
+    #elif SOC_TOUCH_SENSOR_VERSION == 2
     if (touch_value > UINT16_MAX) {
         return UINT16_MAX;
     }
     return (uint16_t)touch_value;
+    #elif SOC_TOUCH_SENSOR_VERSION == 3
+    touch_channel_read_data(touch_channels[idx], TOUCH_CHAN_DATA_TYPE_SMOOTH, &touch_value);
+    if (touch_value > UINT16_MAX) {
+        return UINT16_MAX;
+    }
+    return (uint16_t)touch_value;
+    #else
+    #error bad SOC_TOUCH_SENSOR_VERSION
     #endif
 }

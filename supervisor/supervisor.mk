@@ -182,6 +182,18 @@ ifeq ($(CIRCUITPY_TINYUSB),1)
     CFLAGS += -DCFG_TUD_VIDEO=1 -DCFG_TUD_VIDEO_STREAMING=1 -DCFG_TUD_VIDEO_STREAMING_EP_BUFSIZE=256 -DCFG_TUD_VIDEO_STREAMING_BULK=1
   endif
 
+  ifeq ($(CIRCUITPY_USB_AUDIO), 1)
+    SRC_SUPERVISOR += \
+      shared-bindings/usb_audio/__init__.c \
+      shared-module/usb_audio/__init__.c \
+      shared-bindings/usb_audio/USBMicrophone.c \
+      shared-module/usb_audio/USBMicrophone.c \
+      lib/tinyusb/src/class/audio/audio_device.c \
+
+    # The CFG_TUD_AUDIO_* class driver settings are defined in
+    # supervisor/shared/usb/tusb_config.h, gated on CIRCUITPY_USB_AUDIO.
+  endif
+
 
   ifeq ($(CIRCUITPY_USB_VENDOR), 1)
     SRC_SUPERVISOR += \

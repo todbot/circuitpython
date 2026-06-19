@@ -10,6 +10,7 @@
 #include "py/runtime.h"
 
 #include "driver/gpio.h"
+#include "soc/soc_caps.h"
 
 #include "bindings/espidf/__init__.h"
 #include "shared-bindings/microcontroller/__init__.h"
@@ -87,6 +88,19 @@ void common_hal_busio_i2c_construct(busio_i2c_obj_t *self,
         mp_raise_ValueError(MP_ERROR_TEXT("All I2C peripherals are in use"));
     }
     CHECK_ESP_RESULT(result);
+
+    // Record which port the auto-selected bus landed on. There is no public accessor to map
+    // a bus handle back to its port, so match the handle against each initialized port.
+    // Other code (e.g. espcamera) needs the port number to reuse this same bus rather than
+    // create a second master bus on the same pins.
+    self->port = -1;
+    for (i2c_port_num_t port = 0; port < (int)SOC_HP_I2C_NUM; port++) {
+        i2c_master_bus_handle_t bus_handle;
+        if (i2c_master_get_bus_handle(port, &bus_handle) == ESP_OK && bus_handle == self->handle) {
+            self->port = port;
+            break;
+        }
+    }
 
     self->xSemaphore = xSemaphoreCreateMutex();
     if (self->xSemaphore == NULL) {

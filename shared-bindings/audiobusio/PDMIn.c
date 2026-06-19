@@ -48,7 +48,7 @@
 //|
 //|         **Limitations:** On SAMD and RP2040, supports only 8 or 16 bit mono input, with 64x oversampling.
 //|         On nRF52840, supports only 16 bit mono input at 16 kHz; oversampling is fixed at 64x. Not provided
-//|         on nRF52833 for space reasons. Not available on Espressif.
+//|         on nRF52833 for space reasons. On Espressif, only available on ESP32, ESP32-S3, and ESP32-P4.
 //|
 //|         For example, to record 8-bit unsigned samples to a buffer::
 //|

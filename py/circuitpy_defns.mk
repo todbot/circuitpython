@@ -451,6 +451,9 @@ endif
 ifeq ($(CIRCUITPY_USB_VIDEO),1)
 SRC_PATTERNS += usb_video/%
 endif
+ifeq ($(CIRCUITPY_USB_AUDIO),1)
+SRC_PATTERNS += usb_audio/%
+endif
 ifeq ($(CIRCUITPY_USB_HOST),1)
 SRC_PATTERNS += usb_host/%
 endif
