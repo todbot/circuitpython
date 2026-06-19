@@ -22,6 +22,7 @@ typedef struct {
     size_t timeout_ms;
     size_t frequency;
     i2c_master_bus_handle_t handle;
+    i2c_port_num_t port;
     SemaphoreHandle_t xSemaphore;
     bool has_lock;
 } busio_i2c_obj_t;
