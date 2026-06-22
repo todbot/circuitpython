@@ -10,6 +10,7 @@
 
 #if CIRCUITPY_AUDIOI2SIN
 #include "common-hal/audioi2sin/I2SIn.h"
+#include "shared-module/audiocore/__init__.h"
 #endif
 
 extern const mp_obj_type_t audioi2sin_i2sin_type;
@@ -28,4 +29,15 @@ uint8_t common_hal_audioi2sin_i2sin_get_bit_depth(audioi2sin_i2sin_obj_t *self);
 uint8_t common_hal_audioi2sin_i2sin_get_output_bit_depth(audioi2sin_i2sin_obj_t *self);
 uint32_t common_hal_audioi2sin_i2sin_get_sample_rate(audioi2sin_i2sin_obj_t *self);
 bool common_hal_audioi2sin_i2sin_get_samples_signed(audioi2sin_i2sin_obj_t *self);
+
+// audiosample protocol: streaming source support. fill_buffer converts the
+// frames currently available from the live mic into `buffer` (output depth,
+// interleaved), padding with silence on underrun; it never blocks.
+void common_hal_audioi2sin_i2sin_fill_buffer(audioi2sin_i2sin_obj_t *self,
+    uint8_t *buffer, uint32_t frames);
+void common_hal_audioi2sin_i2sin_reset_buffer(audioi2sin_i2sin_obj_t *self,
+    bool single_channel_output, uint8_t channel);
+audioio_get_buffer_result_t common_hal_audioi2sin_i2sin_get_buffer(
+    audioi2sin_i2sin_obj_t *self, bool single_channel_output, uint8_t channel,
+    uint8_t **buffer, uint32_t *buffer_length);
 #endif

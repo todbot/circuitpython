@@ -14,6 +14,8 @@
 #include "py/runtime.h"
 #include "shared-bindings/microcontroller/Pin.h"
 #include "shared-bindings/audioi2sin/I2SIn.h"
+#include "shared-bindings/audiocore/__init__.h"
+#include "shared-module/audiocore/__init__.h"
 #include "shared-bindings/util.h"
 
 //| class I2SIn:
@@ -237,18 +239,19 @@ static mp_obj_t audioi2sin_i2sin_obj_record(mp_obj_t self_obj, mp_obj_t destinat
 MP_DEFINE_CONST_FUN_OBJ_3(audioi2sin_i2sin_record_obj, audioi2sin_i2sin_obj_record);
 
 //|     sample_rate: int
-//|     """The actual sample rate of the recording. This may not match the constructed
-//|     sample rate due to internal clock limitations."""
+//|     """The configured (nominal) sample rate, in Hz. This is the rate reported to
+//|     the audio pipeline so it matches the output/consumer it is played into. The
+//|     true capture rate may differ from this by a fraction of a Hz due to internal
+//|     clock limitations. (Provided by the audiosample protocol via
+//|     ``AUDIOSAMPLE_FIELDS``.)"""
 //|
-static mp_obj_t audioi2sin_i2sin_obj_get_sample_rate(mp_obj_t self_in) {
-    audioi2sin_i2sin_obj_t *self = MP_OBJ_TO_PTR(self_in);
-    check_for_deinit(self);
-    return MP_OBJ_NEW_SMALL_INT(common_hal_audioi2sin_i2sin_get_sample_rate(self));
-}
-MP_DEFINE_CONST_FUN_OBJ_1(audioi2sin_i2sin_get_sample_rate_obj, audioi2sin_i2sin_obj_get_sample_rate);
-
-MP_PROPERTY_GETTER(audioi2sin_i2sin_sample_rate_obj,
-    (mp_obj_t)&audioi2sin_i2sin_get_sample_rate_obj);
+//|     bits_per_sample: int
+//|     """The number of bits per sample as it is streamed through the audio pipeline,
+//|     i.e. ``output_bit_depth``. (read-only)"""
+//|
+//|     channel_count: int
+//|     """The number of channels (1 for mono, 2 for stereo). (read-only)"""
+//|
 
 //|     bit_depth: int
 //|     """The actual bit depth of the recording. (read-only)"""
@@ -293,18 +296,40 @@ MP_DEFINE_CONST_FUN_OBJ_1(audioi2sin_i2sin_get_samples_signed_obj, audioi2sin_i2
 MP_PROPERTY_GETTER(audioi2sin_i2sin_samples_signed_obj,
     (mp_obj_t)&audioi2sin_i2sin_get_samples_signed_obj);
 
+// Thin wrappers exposing the common-hal streaming functions to the audiosample
+// protocol. get_buffer() runs in the output backend's refill interrupt, so it is
+// not exposed to Python.
+static void audioi2sin_i2sin_reset_buffer(audioi2sin_i2sin_obj_t *self,
+    bool single_channel_output, uint8_t channel) {
+    common_hal_audioi2sin_i2sin_reset_buffer(self, single_channel_output, channel);
+}
+
+static audioio_get_buffer_result_t audioi2sin_i2sin_get_buffer(audioi2sin_i2sin_obj_t *self,
+    bool single_channel_output, uint8_t channel, uint8_t **buffer, uint32_t *buffer_length) {
+    return common_hal_audioi2sin_i2sin_get_buffer(self, single_channel_output, channel,
+        buffer, buffer_length);
+}
+
 static const mp_rom_map_elem_t audioi2sin_i2sin_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&audioi2sin_i2sin_deinit_obj) },
     { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&audioi2sin_i2sin_deinit_obj) },
     { MP_ROM_QSTR(MP_QSTR___enter__), MP_ROM_PTR(&default___enter___obj) },
     { MP_ROM_QSTR(MP_QSTR___exit__), MP_ROM_PTR(&default___exit___obj) },
     { MP_ROM_QSTR(MP_QSTR_record), MP_ROM_PTR(&audioi2sin_i2sin_record_obj) },
-    { MP_ROM_QSTR(MP_QSTR_sample_rate), MP_ROM_PTR(&audioi2sin_i2sin_sample_rate_obj) },
+    // sample_rate / bits_per_sample / channel_count come from the audiosample
+    // protocol's shared property getters.
+    AUDIOSAMPLE_FIELDS,
     { MP_ROM_QSTR(MP_QSTR_bit_depth), MP_ROM_PTR(&audioi2sin_i2sin_bit_depth_obj) },
     { MP_ROM_QSTR(MP_QSTR_output_bit_depth), MP_ROM_PTR(&audioi2sin_i2sin_output_bit_depth_obj) },
     { MP_ROM_QSTR(MP_QSTR_samples_signed), MP_ROM_PTR(&audioi2sin_i2sin_samples_signed_obj) },
 };
 static MP_DEFINE_CONST_DICT(audioi2sin_i2sin_locals_dict, audioi2sin_i2sin_locals_dict_table);
+
+static const audiosample_p_t audioi2sin_i2sin_proto = {
+    MP_PROTO_IMPLEMENT(MP_QSTR_protocol_audiosample)
+    .reset_buffer = (audiosample_reset_buffer_fun)audioi2sin_i2sin_reset_buffer,
+    .get_buffer = (audiosample_get_buffer_fun)audioi2sin_i2sin_get_buffer,
+};
 #endif // CIRCUITPY_AUDIOI2SIN
 
 MP_DEFINE_CONST_OBJ_TYPE(
@@ -314,5 +339,6 @@ MP_DEFINE_CONST_OBJ_TYPE(
     make_new, audioi2sin_i2sin_make_new
     #if CIRCUITPY_AUDIOI2SIN
     , locals_dict, &audioi2sin_i2sin_locals_dict
+    , protocol, &audioi2sin_i2sin_proto
     #endif
     );

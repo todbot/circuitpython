@@ -13,6 +13,7 @@
 #include "shared/runtime/interrupt_char.h"
 #include "common-hal/audioi2sin/I2SIn.h"
 #include "shared-bindings/audioi2sin/I2SIn.h"
+#include "shared-bindings/audiocore/__init__.h"
 #include "shared-bindings/microcontroller/Pin.h"
 #include "shared-module/audioi2sin/__init__.h"
 #include "bindings/rp2pio/StateMachine.h"
@@ -278,6 +279,28 @@ void common_hal_audioi2sin_i2sin_construct(audioi2sin_i2sin_obj_t *self,
     self->dma_channel = -1;
     self->overflow = false;
 
+    // Populate the audiosample base so I2SIn can feed the audio pipeline as a
+    // streaming source. The output depth must be 8 or 16 to actually stream; we
+    // still fill base here (so sample_rate/bits_per_sample/etc. read back) and
+    // raise from reset_buffer if a 24/32-bit instance is played. The owned
+    // conversion buffer is allocated lazily on first reset_buffer().
+    uint8_t channel_count = mono ? 1 : 2;
+    // Report the *nominal* requested rate (not the PIO-derived self->sample_rate,
+    // which can be off by a fraction of a Hz). audiosample_must_match requires
+    // exact equality against the consumer, which is configured for the nominal
+    // rate; the tiny capture-clock difference shows up as the slow drift that the
+    // underrun silence-pad / overflow-drop paths in fill_buffer absorb.
+    self->base.sample_rate = sample_rate;
+    self->base.bits_per_sample = output_bit_depth;
+    self->base.channel_count = channel_count;
+    self->base.samples_signed = samples_signed;
+    self->base.single_buffer = false;
+    self->base.max_buffer_length =
+        2 * AUDIOI2SIN_STREAM_FRAMES * (output_bit_depth / 8) * channel_count;
+    self->output_buffer = NULL;
+    self->output_half_bytes = self->base.max_buffer_length / 2;
+    self->output_index = 0;
+
     // Each PIO frame produces 4 bytes in the FIFO regardless of bit depth
     // (16-bit auto-pushes one packed stereo word, 24/32-bit pushes two
     // separate 32-bit words). One stereo frame is therefore either 4 or
@@ -325,9 +348,14 @@ void common_hal_audioi2sin_i2sin_deinit(audioi2sin_i2sin_obj_t *self) {
         port_free(self->ring);
         self->ring = NULL;
     }
+    if (self->output_buffer != NULL) {
+        port_free(self->output_buffer);
+        self->output_buffer = NULL;
+    }
     self->ring_size = 0;
     self->half_size = 0;
     self->dma_channel = -1;
+    audiosample_mark_deinit(&self->base);
 }
 
 uint8_t common_hal_audioi2sin_i2sin_get_bit_depth(audioi2sin_i2sin_obj_t *self) {
@@ -576,6 +604,144 @@ uint32_t common_hal_audioi2sin_i2sin_record_to_buffer(audioi2sin_i2sin_obj_t *se
     }
 
     return output_count;
+}
+
+// Write `count` silence samples at output depth starting at sample index `idx`.
+// For signed PCM silence is 0; for unsigned (WAV) it is mid-scale.
+static void i2sin_fill_silence(void *buffer, uint32_t idx, uint32_t count,
+    uint8_t out_depth, bool samples_signed) {
+    if (out_depth == 8) {
+        uint8_t v = samples_signed ? 0 : 0x80u;
+        memset((uint8_t *)buffer + idx, v, count);
+    } else { // 16-bit (the only other streamable width)
+        uint16_t v = samples_signed ? 0 : 0x8000u;
+        uint16_t *p = (uint16_t *)buffer + idx;
+        for (uint32_t i = 0; i < count; i++) {
+            p[i] = v;
+        }
+    }
+}
+
+// Non-blocking fill: convert up to `frames` frames currently available in the
+// DMA ring into `buffer` (output depth, interleaved), padding the remainder with
+// silence on underrun rather than spinning. Used by get_buffer() from the output
+// backend's refill interrupt, so it must never block. `out_depth` is always 8 or
+// 16 here (reset_buffer rejects 24/32). Reuses the same per-sample conversion as
+// record_to_buffer via i2sin_write_converted.
+void common_hal_audioi2sin_i2sin_fill_buffer(audioi2sin_i2sin_obj_t *self,
+    uint8_t *buffer, uint32_t frames) {
+    const size_t ring_size = self->ring_size;
+    const size_t half_size = self->half_size;
+    const uint8_t in_depth = self->bit_depth;
+    const uint8_t out_depth = self->output_bit_depth;
+    const bool samples_signed = self->samples_signed;
+    const bool left_justified = self->left_justified;
+    const bool stereo = !self->mono;
+    const uint8_t channel_count = stereo ? 2 : 1;
+    const size_t frame_bytes = (in_depth == 16) ? 4 : 8;
+    const uint32_t total_samples = frames * channel_count;
+
+    uint32_t produced = 0;
+    while (produced < total_samples) {
+        size_t write_pos = i2sin_write_pos(self);
+        size_t avail = (write_pos + ring_size - self->read_pos) % ring_size;
+        if (avail > half_size) {
+            // The consumer is slower than the mic and the ring is filling up
+            // (the overflow case record_to_buffer also handles). Drop back to
+            // just behind the DMA so latency stays bounded; the discarded audio
+            // shows up as a brief discontinuity, not a hang.
+            self->overflow = true;
+            if (in_depth == 16) {
+                self->read_pos = write_pos & ~(size_t)3u;
+            } else {
+                size_t cur_half = (write_pos < half_size) ? 0 : half_size;
+                self->read_pos = (cur_half + half_size) % ring_size;
+                self->settled = false;
+            }
+            avail = (write_pos + ring_size - self->read_pos) % ring_size;
+        }
+        if (!self->settled && avail >= frame_bytes) {
+            // Drop one frame so playback starts on a settled sample and (for
+            // 24/32-bit) on the right-channel word the program emits first.
+            self->read_pos = (self->read_pos + frame_bytes) % ring_size;
+            avail -= frame_bytes;
+            self->settled = true;
+        }
+        if (avail < frame_bytes) {
+            break; // underrun: pad the rest with silence below
+        }
+        uint32_t left, right;
+        if (in_depth == 16) {
+            uint32_t fr = *(volatile uint32_t *)(self->ring + self->read_pos);
+            left = fr & 0xffffu;
+            right = fr >> 16;
+        } else {
+            right = *(volatile uint32_t *)(self->ring + self->read_pos);
+            size_t next_pos = (self->read_pos + 4) % ring_size;
+            left = *(volatile uint32_t *)(self->ring + next_pos);
+        }
+        i2sin_write_converted(buffer, produced++, left,
+            in_depth, out_depth, samples_signed, left_justified);
+        if (stereo && produced < total_samples) {
+            i2sin_write_converted(buffer, produced++, right,
+                in_depth, out_depth, samples_signed, left_justified);
+        }
+        self->read_pos = (self->read_pos + frame_bytes) % ring_size;
+    }
+    if (produced < total_samples) {
+        i2sin_fill_silence(buffer, produced, total_samples - produced,
+            out_depth, samples_signed);
+    }
+}
+
+void common_hal_audioi2sin_i2sin_reset_buffer(audioi2sin_i2sin_obj_t *self,
+    bool single_channel_output, uint8_t channel) {
+    (void)single_channel_output;
+    (void)channel;
+    // The audio pipeline only carries 8- or 16-bit samples. 24/32-bit modes can
+    // still record() but cannot stream; fail clearly the first time playback is
+    // set up rather than emitting garbage.
+    if (self->output_bit_depth != 8 && self->output_bit_depth != 16) {
+        mp_raise_ValueError_varg(
+            MP_ERROR_TEXT("%q must be 8 or 16"), MP_QSTR_output_bit_depth);
+    }
+    if (self->output_buffer == NULL) {
+        // The output backend's DMA reads this buffer directly, so it must be
+        // DMA-capable like the input ring.
+        self->output_buffer = (uint8_t *)port_malloc(self->base.max_buffer_length, true);
+        if (self->output_buffer == NULL) {
+            m_malloc_fail(self->base.max_buffer_length);
+        }
+    }
+    self->output_index = 0;
+    // Resync to live audio: snap the read cursor just behind the DMA write head
+    // (frame-aligned) and re-settle so playback begins on fresh samples.
+    size_t write_pos = i2sin_write_pos(self);
+    self->read_pos = (self->bit_depth == 16)
+        ? (write_pos & ~(size_t)3u)
+        : (write_pos & ~(size_t)7u);
+    self->settled = false;
+    self->overflow = false;
+}
+
+audioio_get_buffer_result_t common_hal_audioi2sin_i2sin_get_buffer(
+    audioi2sin_i2sin_obj_t *self, bool single_channel_output, uint8_t channel,
+    uint8_t **buffer, uint32_t *buffer_length) {
+    uint32_t half = self->output_half_bytes;
+    uint8_t *out = self->output_buffer + half * self->output_index;
+    self->output_index = 1 - self->output_index;
+
+    uint32_t bytes_per_sample = self->output_bit_depth / 8;
+    uint32_t frames = half / (bytes_per_sample * self->base.channel_count);
+    common_hal_audioi2sin_i2sin_fill_buffer(self, out, frames);
+
+    if (single_channel_output) {
+        out += (channel % self->base.channel_count) * bytes_per_sample;
+    }
+    *buffer = out;
+    *buffer_length = half;
+    // A live mic is an infinite stream; never report DONE or the backend stops.
+    return GET_BUFFER_MORE_DATA;
 }
 
 #endif // CIRCUITPY_AUDIOI2SIN

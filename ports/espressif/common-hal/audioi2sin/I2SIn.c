@@ -11,8 +11,10 @@
 #include "common-hal/audioi2sin/I2SIn.h"
 #include "py/runtime.h"
 #include "shared-bindings/audioi2sin/I2SIn.h"
+#include "shared-bindings/audiocore/__init__.h"
 #include "shared-bindings/microcontroller/Pin.h"
 #include "shared-module/audioi2sin/__init__.h"
+#include "supervisor/port.h"
 
 #include "driver/i2s_std.h"
 
@@ -67,6 +69,21 @@ void common_hal_audioi2sin_i2sin_construct(audioi2sin_i2sin_obj_t *self,
     self->mono = mono;
     self->samples_signed = samples_signed;
 
+    // Populate the audiosample base so I2SIn can stream into the audio pipeline.
+    // Streaming requires an 8- or 16-bit output depth (reset_buffer enforces it);
+    // the owned conversion buffer is allocated lazily on first reset_buffer().
+    uint8_t channel_count = mono ? 1 : 2;
+    self->base.sample_rate = sample_rate;
+    self->base.bits_per_sample = output_bit_depth;
+    self->base.channel_count = channel_count;
+    self->base.samples_signed = samples_signed;
+    self->base.single_buffer = false;
+    self->base.max_buffer_length =
+        2 * AUDIOI2SIN_STREAM_FRAMES * (output_bit_depth / 8) * channel_count;
+    self->output_buffer = NULL;
+    self->output_half_bytes = self->base.max_buffer_length / 2;
+    self->output_index = 0;
+
     claim_pin(bit_clock);
     claim_pin(word_select);
     claim_pin(data);
@@ -109,6 +126,12 @@ void common_hal_audioi2sin_i2sin_deinit(audioi2sin_i2sin_obj_t *self) {
         reset_pin_number(self->mclk->number);
     }
     self->mclk = NULL;
+
+    if (self->output_buffer != NULL) {
+        port_free(self->output_buffer);
+        self->output_buffer = NULL;
+    }
+    audiosample_mark_deinit(&self->base);
 }
 
 // Sign-extend a raw I2S sample (in the low `in_depth` bits of `raw`) to a
@@ -300,6 +323,120 @@ uint32_t common_hal_audioi2sin_i2sin_get_sample_rate(audioi2sin_i2sin_obj_t *sel
 
 bool common_hal_audioi2sin_i2sin_get_samples_signed(audioi2sin_i2sin_obj_t *self) {
     return self->samples_signed;
+}
+
+// Write `count` silence samples at output depth starting at sample index `idx`.
+// For signed PCM silence is 0; for unsigned (WAV) it is mid-scale.
+static void i2sin_fill_silence(void *buffer, uint32_t idx, uint32_t count,
+    uint8_t out_depth, bool samples_signed) {
+    if (out_depth == 8) {
+        uint8_t v = samples_signed ? 0 : 0x80u;
+        memset((uint8_t *)buffer + idx, v, count);
+    } else { // 16-bit (the only other streamable width)
+        uint16_t v = samples_signed ? 0 : 0x8000u;
+        uint16_t *p = (uint16_t *)buffer + idx;
+        for (uint32_t i = 0; i < count; i++) {
+            p[i] = v;
+        }
+    }
+}
+
+// Non-blocking fill: read whatever frames are immediately available from the I2S
+// driver and convert them into `buffer` (output depth, interleaved), padding the
+// remainder with silence on underrun. The bus is configured stereo, so each WS
+// frame yields two slots; for mono we keep the left slot. `out_depth` is always 8
+// or 16 here (reset_buffer rejects 24/32). Runs in the output backend's refill
+// (background callback) context, so i2s_channel_read is called with a 0 ms
+// timeout and never blocks.
+void common_hal_audioi2sin_i2sin_fill_buffer(audioi2sin_i2sin_obj_t *self,
+    uint8_t *buffer, uint32_t frames) {
+    const uint8_t in_depth = self->bit_depth;
+    const uint8_t out_depth = self->output_bit_depth;
+    const bool samples_signed = self->samples_signed;
+    const bool stereo = !self->mono;
+    const uint8_t channel_count = stereo ? 2 : 1;
+    size_t element_size = (in_depth == 24) ? 4 : (in_depth / 8);
+    const size_t in_frame_bytes = 2 * element_size; // bus is always stereo
+    const uint32_t total_samples = frames * channel_count;
+
+    uint8_t scratch[256];
+    const size_t scratch_frames = sizeof(scratch) / in_frame_bytes;
+
+    uint32_t produced = 0;
+    while (produced < total_samples) {
+        size_t want_frames = (total_samples - produced + channel_count - 1) / channel_count;
+        if (want_frames > scratch_frames) {
+            want_frames = scratch_frames;
+        }
+        size_t got_bytes = 0;
+        // 0 ms timeout: return immediately with whatever is buffered.
+        esp_err_t err = i2s_channel_read(self->rx_chan, scratch,
+            want_frames * in_frame_bytes, &got_bytes, 0);
+        if (err != ESP_OK && err != ESP_ERR_TIMEOUT) {
+            break;
+        }
+        size_t got_frames = got_bytes / in_frame_bytes;
+        if (got_frames == 0) {
+            break; // underrun: pad with silence below
+        }
+        for (size_t i = 0; i < got_frames && produced < total_samples; i++) {
+            const uint8_t *frame = scratch + i * in_frame_bytes;
+            uint32_t left_raw = i2sin_read_raw(frame, in_depth);
+            i2sin_write_converted(buffer, produced++, left_raw,
+                in_depth, out_depth, samples_signed);
+            if (stereo && produced < total_samples) {
+                uint32_t right_raw = i2sin_read_raw(frame + element_size, in_depth);
+                i2sin_write_converted(buffer, produced++, right_raw,
+                    in_depth, out_depth, samples_signed);
+            }
+        }
+        if (got_frames < want_frames) {
+            break;
+        }
+    }
+    if (produced < total_samples) {
+        i2sin_fill_silence(buffer, produced, total_samples - produced,
+            out_depth, samples_signed);
+    }
+}
+
+void common_hal_audioi2sin_i2sin_reset_buffer(audioi2sin_i2sin_obj_t *self,
+    bool single_channel_output, uint8_t channel) {
+    (void)single_channel_output;
+    (void)channel;
+    // The audio pipeline only carries 8- or 16-bit samples; 24/32-bit modes can
+    // still record() but cannot stream.
+    if (self->output_bit_depth != 8 && self->output_bit_depth != 16) {
+        mp_raise_ValueError_varg(
+            MP_ERROR_TEXT("%q must be 8 or 16"), MP_QSTR_output_bit_depth);
+    }
+    if (self->output_buffer == NULL) {
+        self->output_buffer = (uint8_t *)port_malloc(self->base.max_buffer_length, false);
+        if (self->output_buffer == NULL) {
+            m_malloc_fail(self->base.max_buffer_length);
+        }
+    }
+    self->output_index = 0;
+}
+
+audioio_get_buffer_result_t common_hal_audioi2sin_i2sin_get_buffer(
+    audioi2sin_i2sin_obj_t *self, bool single_channel_output, uint8_t channel,
+    uint8_t **buffer, uint32_t *buffer_length) {
+    uint32_t half = self->output_half_bytes;
+    uint8_t *out = self->output_buffer + half * self->output_index;
+    self->output_index = 1 - self->output_index;
+
+    uint32_t bytes_per_sample = self->output_bit_depth / 8;
+    uint32_t frames = half / (bytes_per_sample * self->base.channel_count);
+    common_hal_audioi2sin_i2sin_fill_buffer(self, out, frames);
+
+    if (single_channel_output) {
+        out += (channel % self->base.channel_count) * bytes_per_sample;
+    }
+    *buffer = out;
+    *buffer_length = half;
+    // A live mic is an infinite stream; never report DONE or the backend stops.
+    return GET_BUFFER_MORE_DATA;
 }
 
 #endif // CIRCUITPY_AUDIOI2SIN
