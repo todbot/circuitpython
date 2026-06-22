@@ -23,9 +23,9 @@
 //|
 //|     You cannot create an instance of `usb_audio.USBMicrophone`.
 //|
-//|     There is a single shared instance, available as ``usb_audio.USBMicrophone``
+//|     There is a single shared instance, available as ``usb_audio.usb_microphone``
 //|     once ``usb_audio.enable()`` has configured an input (microphone) stream in
-//|     ``boot.py``. Until then ``usb_audio.USBMicrophone`` is ``None``."""
+//|     ``boot.py``. Until then ``usb_audio.usb_microphone`` is ``None``."""
 //|
 
 

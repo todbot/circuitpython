@@ -25,9 +25,9 @@
 //|
 //|     You cannot create an instance of `usb_audio.USBSpeaker`.
 //|
-//|     There is a single shared instance, available as ``usb_audio.USBSpeaker``
+//|     There is a single shared instance, available as ``usb_audio.usb_speaker``
 //|     once ``usb_audio.enable()`` has configured an output (speaker) stream in
-//|     ``boot.py``. Until then ``usb_audio.USBSpeaker`` is ``None``.
+//|     ``boot.py``. Until then ``usb_audio.usb_speaker`` is ``None``.
 //|
 //|     .. code-block:: py
 //|
@@ -43,7 +43,7 @@
 //|         import usb_audio
 //|         import audiobusio
 //|
-//|         spk = usb_audio.USBSpeaker
+//|         spk = usb_audio.usb_speaker
 //|         out = audiobusio.I2SOut(board.I2S_BIT_CLOCK, board.I2S_WORD_SELECT, board.I2S_DATA)
 //|         out.play(spk, loop=True)
 //|

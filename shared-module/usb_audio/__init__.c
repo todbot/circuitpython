@@ -95,7 +95,7 @@ void usb_audio_setup_singletons(void) {
     // a GC root, so a reference from there alone would be swept). Rooting the
     // microphone also traces its bound audiosample (self->sample). They are then
     // installed in the module globals so they are reachable as the
-    // usb_audio.USBMicrophone / usb_audio.USBSpeaker attributes.
+    // usb_audio.usb_microphone / usb_audio.usb_speaker attributes.
     mp_obj_t microphone = mp_const_none;
     mp_obj_t speaker = mp_const_none;
 
@@ -120,9 +120,9 @@ void usb_audio_setup_singletons(void) {
     MP_STATE_VM(usb_audio_microphone_singleton) = microphone;
     MP_STATE_VM(usb_audio_speaker_singleton) = speaker;
 
-    mp_map_lookup(&usb_audio_module_globals.map, MP_ROM_QSTR(MP_QSTR_USBMicrophone), MP_MAP_LOOKUP)->value =
+    mp_map_lookup(&usb_audio_module_globals.map, MP_ROM_QSTR(MP_QSTR_usb_microphone), MP_MAP_LOOKUP)->value =
         microphone;
-    mp_map_lookup(&usb_audio_module_globals.map, MP_ROM_QSTR(MP_QSTR_USBSpeaker), MP_MAP_LOOKUP)->value =
+    mp_map_lookup(&usb_audio_module_globals.map, MP_ROM_QSTR(MP_QSTR_usb_speaker), MP_MAP_LOOKUP)->value =
         speaker;
 }
 

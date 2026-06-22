@@ -52,8 +52,8 @@ size_t usb_audio_add_descriptor(uint8_t *descriptor_buf, descriptor_counts_t *de
 void usb_audio_task(void);
 
 // (Re)create the USBMicrophone and USBSpeaker singleton instances for the
-// current VM and install them as the usb_audio.USBMicrophone and
-// usb_audio.USBSpeaker module attributes (or None when that direction was not
+// current VM and install them as the usb_audio.usb_microphone and
+// usb_audio.usb_speaker module attributes (or None when that direction was not
 // enabled in boot.py). Called once per VM from usb_setup_with_vm(), mirroring
 // usb_midi_setup_ports(): the instances live on the GC heap, which is reset
 // between boot.py and code.py, so they must be rebuilt each time.

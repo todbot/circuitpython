@@ -26,7 +26,7 @@
 //| `usb_hid` or `usb_midi`.
 //|
 //| To enable this mode, you must configure the audio format in ``boot.py`` and then
-//| use the `USBMicrophone` singleton instance in ``code.py``.
+//| use the `usb_microphone` singleton instance in ``code.py``.
 //|
 //| .. code-block:: py
 //|
@@ -41,11 +41,11 @@
 //|     import usb_audio
 //|     import synthio
 //|
-//|     # usb_audio.USBMicrophone is a singleton instance (created by enable() above),
+//|     # usb_audio.usb_microphone is a singleton instance (created by enable() above),
 //|     # not a class you construct. It is a consumer of an audio sample, just like
 //|     # audioio.AudioOut: the samples it pulls are streamed to the host PC instead
 //|     # of to a pin.
-//|     mic = usb_audio.USBMicrophone
+//|     mic = usb_audio.usb_microphone
 //|     synth = synthio.Synthesizer(sample_rate=16000, channel_count=1)
 //|     mic.play(synth, loop=True)
 //|
@@ -68,6 +68,17 @@
 //| This interface is experimental and may change without notice even in stable
 //| versions of CircuitPython."""
 //|
+//|
+
+//| usb_microphone: Optional[USBMicrophone]
+//| """The shared `USBMicrophone` singleton instance, or ``None`` until
+//| ``usb_audio.enable()`` has configured an input (microphone) stream in ``boot.py``.
+//| `USBMicrophone` is exposed only as a type; you do not construct it."""
+//|
+//| usb_speaker: Optional[USBSpeaker]
+//| """The shared `USBSpeaker` singleton instance, or ``None`` until
+//| ``usb_audio.enable()`` has configured an output (speaker) stream in ``boot.py``.
+//| `USBSpeaker` is exposed only as a type; you do not construct it."""
 //|
 
 //| def enable(
@@ -123,12 +134,18 @@ static MP_DEFINE_CONST_FUN_OBJ_KW(usb_audio_enable_obj, 0, usb_audio_enable);
 
 mp_map_elem_t usb_audio_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_usb_audio) },
-    // USBMicrophone and USBSpeaker are not classes you instantiate: they are
-    // pre-made singleton instances, like usb_midi.ports. usb_audio_setup_singletons()
-    // replaces these None placeholders with the real instances at the start of
-    // each VM when the matching direction was enabled in boot.py.
-    { MP_ROM_QSTR(MP_QSTR_USBMicrophone), MP_ROM_NONE },
-    { MP_ROM_QSTR(MP_QSTR_USBSpeaker), MP_ROM_NONE },
+    // USBMicrophone and USBSpeaker are the classes, exposed only for typing and
+    // isinstance() checks; you do not construct them. The usable objects are the
+    // pre-made singleton instances installed at the usb_microphone / usb_speaker
+    // attributes below.
+    { MP_ROM_QSTR(MP_QSTR_USBMicrophone), MP_OBJ_FROM_PTR(&usb_audio_USBMicrophone_type) },
+    { MP_ROM_QSTR(MP_QSTR_USBSpeaker), MP_OBJ_FROM_PTR(&usb_audio_USBSpeaker_type) },
+    // usb_microphone and usb_speaker are the singleton instances, like
+    // usb_midi.ports. usb_audio_setup_singletons() replaces these None
+    // placeholders with the real instances at the start of each VM when the
+    // matching direction was enabled in boot.py.
+    { MP_ROM_QSTR(MP_QSTR_usb_microphone), MP_ROM_NONE },
+    { MP_ROM_QSTR(MP_QSTR_usb_speaker), MP_ROM_NONE },
     { MP_ROM_QSTR(MP_QSTR_enable), MP_OBJ_FROM_PTR(&usb_audio_enable_obj) },
 };
 
