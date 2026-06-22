@@ -4,6 +4,9 @@
 //
 // SPDX-License-Identifier: MIT
 
+#include "shared-bindings/usb_audio/__init__.h"
+#include "shared-bindings/usb_audio/USBMicrophone.h"
+#include "shared-bindings/usb_audio/USBSpeaker.h"
 #include "shared-module/usb_audio/__init__.h"
 #include "shared-module/usb_audio/USBMicrophone.h"
 #include "shared-module/usb_audio/USBSpeaker.h"
@@ -12,6 +15,9 @@
 #include <string.h>
 
 #include "py/misc.h"
+#include "py/mphal.h"
+#include "py/runtime.h"
+#include "supervisor/shared/tick.h"
 #include "tusb.h"
 
 static bool usb_audio_is_enabled = false;
@@ -31,13 +37,14 @@ static uint8_t usb_audio_spk_as_itf = 0xff;
 uint32_t usb_audio_sample_rate;
 uint8_t usb_audio_channel_count;
 uint8_t usb_audio_bits_per_sample;
-usb_audio_direction_t usb_audio_direction;
+bool usb_audio_microphone_enabled;
+bool usb_audio_speaker_enabled;
 
 // Audio control state surfaced to the host. One extra entry for the master channel 0.
 static int8_t usb_audio_mute[USB_AUDIO_N_CHANNELS + 1];
 static int16_t usb_audio_volume[USB_AUDIO_N_CHANNELS + 1];
 
-bool shared_module_usb_audio_enable(mp_int_t sample_rate, mp_int_t channel_count, mp_int_t bits_per_sample, usb_audio_direction_t direction) {
+bool shared_module_usb_audio_enable(mp_int_t sample_rate, mp_int_t channel_count, mp_int_t bits_per_sample, bool microphone, bool speaker) {
     if (tud_connected()) {
         return false;
     }
@@ -45,7 +52,8 @@ bool shared_module_usb_audio_enable(mp_int_t sample_rate, mp_int_t channel_count
     usb_audio_sample_rate = sample_rate;
     usb_audio_channel_count = channel_count;
     usb_audio_bits_per_sample = bits_per_sample;
-    usb_audio_direction = direction;
+    usb_audio_microphone_enabled = microphone;
+    usb_audio_speaker_enabled = speaker;
     usb_audio_is_enabled = true;
 
     return true;
@@ -72,6 +80,50 @@ bool usb_audio_streaming(void) {
 // direction specifically even when a mic shares the same headset function.
 bool usb_audio_speaker_streaming(void) {
     return usb_audio_spk_streaming;
+}
+
+void usb_audio_setup_singletons(void) {
+    // USBMicrophone and USBSpeaker are singletons rather than constructible
+    // classes (like usb_midi.ports). The host-facing format and direction are
+    // fixed by usb_audio.enable() in boot.py and persist in C globals, but the
+    // instances themselves live on the GC heap, which is reset between boot.py
+    // and code.py, so they are rebuilt here once per VM. Each is created only
+    // when its direction was enabled; otherwise it is left as None.
+    //
+    // The objects are held in MP_STATE_VM root pointers so the GC keeps them
+    // alive for the whole VM (the module globals table is static data and is not
+    // a GC root, so a reference from there alone would be swept). Rooting the
+    // microphone also traces its bound audiosample (self->sample). They are then
+    // installed in the module globals so they are reachable as the
+    // usb_audio.USBMicrophone / usb_audio.USBSpeaker attributes.
+    mp_obj_t microphone = mp_const_none;
+    mp_obj_t speaker = mp_const_none;
+
+    if (usb_audio_is_enabled) {
+        const bool has_input = usb_audio_microphone_enabled;
+        const bool has_output = usb_audio_speaker_enabled;
+
+        if (has_input) {
+            usb_audio_usbmicrophone_obj_t *self =
+                mp_obj_malloc_with_finaliser(usb_audio_usbmicrophone_obj_t, &usb_audio_USBMicrophone_type);
+            common_hal_usb_audio_usbmicrophone_construct(self);
+            microphone = MP_OBJ_FROM_PTR(self);
+        }
+        if (has_output) {
+            usb_audio_usbspeaker_obj_t *self =
+                mp_obj_malloc_with_finaliser(usb_audio_usbspeaker_obj_t, &usb_audio_USBSpeaker_type);
+            common_hal_usb_audio_usbspeaker_construct(self);
+            speaker = MP_OBJ_FROM_PTR(self);
+        }
+    }
+
+    MP_STATE_VM(usb_audio_microphone_singleton) = microphone;
+    MP_STATE_VM(usb_audio_speaker_singleton) = speaker;
+
+    mp_map_lookup(&usb_audio_module_globals.map, MP_ROM_QSTR(MP_QSTR_USBMicrophone), MP_MAP_LOOKUP)->value =
+        microphone;
+    mp_map_lookup(&usb_audio_module_globals.map, MP_ROM_QSTR(MP_QSTR_USBSpeaker), MP_MAP_LOOKUP)->value =
+        speaker;
 }
 
 // Hand-rolled UAC2 mono speaker (host -> board) descriptor WITHOUT an async
@@ -110,7 +162,7 @@ bool usb_audio_speaker_streaming(void) {
     /* Class-Specific AS Isochronous Audio Data Endpoint Descriptor(4.10.1.2) */ \
     TUD_AUDIO_DESC_CS_AS_ISO_EP(/*_attr*/ AUDIO_CS_AS_ISO_DATA_EP_ATT_NON_MAX_PACKETS_OK, /*_ctrl*/ AUDIO_CTRL_NONE, /*_lockdelayunit*/ AUDIO_CS_AS_ISO_DATA_EP_LOCK_DELAY_UNIT_UNDEFINED, /*_lockdelay*/ 0x0000)
 
-// Hand-rolled UAC2 mono headset (Direction.INPUT_OUTPUT): one audio function
+// Hand-rolled UAC2 mono headset (microphone + speaker both enabled): one audio function
 // presenting both a speaker (host -> board OUT) and a microphone (board -> host
 // IN) at once. This combines USB_AUDIO_SPEAKER_DESCRIPTOR's speaker chain with
 // TUD_AUDIO_MIC_ONE_CH_DESCRIPTOR's mic chain under a single IAD. The two chains
@@ -170,12 +222,15 @@ bool usb_audio_speaker_streaming(void) {
     /* Class-Specific AS Isochronous Audio Data Endpoint Descriptor(4.10.1.2) */ \
     TUD_AUDIO_DESC_CS_AS_ISO_EP(/*_attr*/ AUDIO_CS_AS_ISO_DATA_EP_ATT_NON_MAX_PACKETS_OK, /*_ctrl*/ AUDIO_CTRL_NONE, /*_lockdelayunit*/ AUDIO_CS_AS_ISO_DATA_EP_LOCK_DELAY_UNIT_UNDEFINED, /*_lockdelay*/ 0x0000)
 
+// Combined headset: both a microphone (board -> host IN) and a speaker
+// (host -> board OUT) under one audio function.
 static bool usb_audio_direction_is_input_output(void) {
-    return usb_audio_direction == USB_AUDIO_DIRECTION_INPUT_OUTPUT;
+    return usb_audio_microphone_enabled && usb_audio_speaker_enabled;
 }
 
+// Speaker only (host -> board OUT), no microphone.
 static bool usb_audio_direction_is_output(void) {
-    return usb_audio_direction == USB_AUDIO_DIRECTION_OUTPUT;
+    return usb_audio_speaker_enabled && !usb_audio_microphone_enabled;
 }
 
 size_t usb_audio_descriptor_length(void) {
@@ -560,3 +615,9 @@ bool tud_audio_get_req_entity_cb(uint8_t rhport, tusb_control_request_t const *p
 
     return false;
 }
+
+// Keep the per-VM singleton instances (and, for the microphone, its bound
+// audiosample) alive for the GC. Installed in the module globals by
+// usb_audio_setup_singletons() and reset to NULL at each VM start.
+MP_REGISTER_ROOT_POINTER(mp_obj_t usb_audio_microphone_singleton);
+MP_REGISTER_ROOT_POINTER(mp_obj_t usb_audio_speaker_singleton);

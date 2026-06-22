@@ -23,15 +23,18 @@
 //|     such as `audiobusio.I2SOut`, `audiopwmio.PWMAudioOut` or `audioio.AudioOut`
 //|     (optionally through the effect modules), so the board appears as a speaker.
 //|
-//|     ``usb_audio.enable(direction=usb_audio.Direction.OUTPUT)`` must have been
-//|     called in ``boot.py`` before this object can be constructed.
+//|     You cannot create an instance of `usb_audio.USBSpeaker`.
+//|
+//|     There is a single shared instance, available as ``usb_audio.USBSpeaker``
+//|     once ``usb_audio.enable()`` has configured an output (speaker) stream in
+//|     ``boot.py``. Until then ``usb_audio.USBSpeaker`` is ``None``.
 //|
 //|     .. code-block:: py
 //|
 //|         # boot.py
 //|         import usb_audio
 //|         usb_audio.enable(sample_rate=16000, channel_count=1, bits_per_sample=16,
-//|                          direction=usb_audio.Direction.OUTPUT)
+//|                          microphone=False, speaker=True)
 //|
 //|     .. code-block:: py
 //|
@@ -40,42 +43,12 @@
 //|         import usb_audio
 //|         import audiobusio
 //|
-//|         spk = usb_audio.USBSpeaker()
+//|         spk = usb_audio.USBSpeaker
 //|         out = audiobusio.I2SOut(board.I2S_BIT_CLOCK, board.I2S_WORD_SELECT, board.I2S_DATA)
 //|         out.play(spk, loop=True)
 //|
 //|     """
-//|
-//|     def __init__(self) -> None:
-//|         """Create a USBSpeaker using the audio format configured in ``boot.py``."""
-//|         ...
-//|
-static mp_obj_t usb_audio_usbspeaker_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
-    static const mp_arg_t allowed_args[] = {};
-    mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
-    mp_arg_parse_all_kw_array(n_args, n_kw, all_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
 
-    // The audio format and USB interface are claimed by usb_audio.enable() in
-    // boot.py. Without it there is no speaker for the host to play to.
-    if (!usb_audio_enabled()) {
-        mp_raise_RuntimeError(MP_ERROR_TEXT("USB audio not enabled in boot.py"));
-    }
-    // A USBSpeaker only makes sense when the OUT endpoint is enumerated.
-    if (usb_audio_direction != USB_AUDIO_DIRECTION_OUTPUT &&
-        usb_audio_direction != USB_AUDIO_DIRECTION_INPUT_OUTPUT) {
-        mp_raise_RuntimeError(MP_ERROR_TEXT("USB audio not enabled for output in boot.py"));
-    }
-
-    usb_audio_usbspeaker_obj_t *self = mp_obj_malloc_with_finaliser(usb_audio_usbspeaker_obj_t, &usb_audio_USBSpeaker_type);
-    common_hal_usb_audio_usbspeaker_construct(self);
-
-    return MP_OBJ_FROM_PTR(self);
-}
-
-//|     def deinit(self) -> None:
-//|         """Deinitialises the USBSpeaker and releases any resources for reuse."""
-//|         ...
-//|
 static mp_obj_t usb_audio_usbspeaker_deinit(mp_obj_t self_in) {
     usb_audio_usbspeaker_obj_t *self = MP_OBJ_TO_PTR(self_in);
     common_hal_usb_audio_usbspeaker_deinit(self);
@@ -187,7 +160,6 @@ MP_DEFINE_CONST_OBJ_TYPE(
     usb_audio_USBSpeaker_type,
     MP_QSTR_USBSpeaker,
     MP_TYPE_FLAG_HAS_SPECIAL_ACCESSORS,
-    make_new, usb_audio_usbspeaker_make_new,
     locals_dict, &usb_audio_usbspeaker_locals_dict,
     protocol, &usb_audio_usbspeaker_proto
     );

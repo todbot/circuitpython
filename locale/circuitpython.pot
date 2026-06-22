@@ -625,6 +625,10 @@ msgstr ""
 msgid "Async SPI transfer in progress on this bus, keep awaiting."
 msgstr ""
 
+#: shared-bindings/usb_audio/__init__.c
+msgid "At least one of microphone and speaker must be enabled"
+msgstr ""
+
 #: shared-module/memorymonitor/AllocationAlarm.c
 #, c-format
 msgid "Attempt to allocate %d blocks"
@@ -2269,15 +2273,6 @@ msgstr ""
 
 #: main.c
 msgid "UID:"
-msgstr ""
-
-#: shared-bindings/usb_audio/USBSpeaker.c
-msgid "USB audio not enabled for output in boot.py"
-msgstr ""
-
-#: shared-bindings/usb_audio/USBMicrophone.c
-#: shared-bindings/usb_audio/USBSpeaker.c
-msgid "USB audio not enabled in boot.py"
 msgstr ""
 
 #: shared-module/usb_hid/Device.c

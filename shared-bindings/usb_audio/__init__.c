@@ -8,7 +8,6 @@
 #include "py/runtime.h"
 
 #include "shared-bindings/usb_audio/__init__.h"
-#include "shared-bindings/usb_audio/Direction.h"
 #include "shared-bindings/usb_audio/USBMicrophone.h"
 #include "shared-bindings/usb_audio/USBSpeaker.h"
 #include "shared-module/usb_audio/__init__.h"
@@ -27,7 +26,7 @@
 //| `usb_hid` or `usb_midi`.
 //|
 //| To enable this mode, you must configure the audio format in ``boot.py`` and then
-//| create a `USBMicrophone` in ``code.py``.
+//| use the `USBMicrophone` singleton instance in ``code.py``.
 //|
 //| .. code-block:: py
 //|
@@ -42,9 +41,11 @@
 //|     import usb_audio
 //|     import synthio
 //|
-//|     # A USBMicrophone is a consumer of an audio sample, just like audioio.AudioOut:
-//|     # the samples it pulls are streamed to the host PC instead of to a pin.
-//|     mic = usb_audio.USBMicrophone()
+//|     # usb_audio.USBMicrophone is a singleton instance (created by enable() above),
+//|     # not a class you construct. It is a consumer of an audio sample, just like
+//|     # audioio.AudioOut: the samples it pulls are streamed to the host PC instead
+//|     # of to a pin.
+//|     mic = usb_audio.USBMicrophone
 //|     synth = synthio.Synthesizer(sample_rate=16000, channel_count=1)
 //|     mic.play(synth, loop=True)
 //|
@@ -73,7 +74,8 @@
 //|     sample_rate: int = 16000,
 //|     channel_count: int = 1,
 //|     bits_per_sample: int = 16,
-//|     direction: Direction = Direction.INPUT,
+//|     microphone: bool = True,
+//|     speaker: bool = False,
 //| ) -> None:
 //|     """Enable the USB audio interface with the given PCM format.
 //|
@@ -82,17 +84,21 @@
 //|     :param int sample_rate: Samples per second of the streamed audio.
 //|     :param int channel_count: Number of channels. Only mono (1) is supported initially.
 //|     :param int bits_per_sample: Bits per signed PCM sample. Only 16 is supported initially.
-//|     :param Direction direction: Stream direction relative to the host. ``Direction.INPUT``
-//|         (the default) presents a microphone; ``Direction.OUTPUT`` presents a speaker."""
+//|     :param bool microphone: Present a microphone (audio flows board -> host). Enabled by default.
+//|     :param bool speaker: Present a speaker (audio flows host -> board).
+//|
+//|     Enabling both ``microphone`` and ``speaker`` presents a combined headset. At
+//|     least one of the two must be enabled."""
 //|
 //|
 static mp_obj_t usb_audio_enable(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
-    enum { ARG_sample_rate, ARG_channel_count, ARG_bits_per_sample, ARG_direction };
+    enum { ARG_sample_rate, ARG_channel_count, ARG_bits_per_sample, ARG_microphone, ARG_speaker };
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_sample_rate, MP_ARG_INT, { .u_int = 16000 } },
         { MP_QSTR_channel_count, MP_ARG_INT, { .u_int = 1 } },
         { MP_QSTR_bits_per_sample, MP_ARG_INT, { .u_int = 16 } },
-        { MP_QSTR_direction, MP_ARG_OBJ, { .u_obj = MP_OBJ_NULL } },
+        { MP_QSTR_microphone, MP_ARG_BOOL, { .u_bool = true } },
+        { MP_QSTR_speaker, MP_ARG_BOOL, { .u_bool = false } },
     };
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
     mp_arg_parse_all(n_args, pos_args, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
@@ -100,11 +106,14 @@ static mp_obj_t usb_audio_enable(size_t n_args, const mp_obj_t *pos_args, mp_map
     mp_int_t sample_rate = mp_arg_validate_int_range(args[ARG_sample_rate].u_int, 1, USB_AUDIO_MAX_SAMPLE_RATE, MP_QSTR_sample_rate);
     mp_int_t channel_count = mp_arg_validate_int_range(args[ARG_channel_count].u_int, 1, USB_AUDIO_N_CHANNELS, MP_QSTR_channel_count);
     mp_int_t bits_per_sample = mp_arg_validate_int(args[ARG_bits_per_sample].u_int, USB_AUDIO_BITS_PER_SAMPLE, MP_QSTR_bits_per_sample);
-    usb_audio_direction_t direction = args[ARG_direction].u_obj == MP_OBJ_NULL
-        ? USB_AUDIO_DIRECTION_INPUT
-        : validate_direction(args[ARG_direction].u_obj, MP_QSTR_direction);
+    bool microphone = args[ARG_microphone].u_bool;
+    bool speaker = args[ARG_speaker].u_bool;
 
-    if (!shared_module_usb_audio_enable(sample_rate, channel_count, bits_per_sample, direction)) {
+    if (!microphone && !speaker) {
+        mp_raise_ValueError(MP_ERROR_TEXT("At least one of microphone and speaker must be enabled"));
+    }
+
+    if (!shared_module_usb_audio_enable(sample_rate, channel_count, bits_per_sample, microphone, speaker)) {
         mp_raise_RuntimeError(MP_ERROR_TEXT("Cannot change USB devices now"));
     }
 
@@ -112,15 +121,19 @@ static mp_obj_t usb_audio_enable(size_t n_args, const mp_obj_t *pos_args, mp_map
 }
 static MP_DEFINE_CONST_FUN_OBJ_KW(usb_audio_enable_obj, 0, usb_audio_enable);
 
-static const mp_rom_map_elem_t usb_audio_module_globals_table[] = {
+mp_map_elem_t usb_audio_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_usb_audio) },
-    { MP_ROM_QSTR(MP_QSTR_Direction), MP_ROM_PTR(&usb_audio_direction_type) },
-    { MP_ROM_QSTR(MP_QSTR_USBMicrophone), MP_ROM_PTR(&usb_audio_USBMicrophone_type) },
-    { MP_ROM_QSTR(MP_QSTR_USBSpeaker), MP_ROM_PTR(&usb_audio_USBSpeaker_type) },
-    { MP_ROM_QSTR(MP_QSTR_enable), MP_ROM_PTR(&usb_audio_enable_obj) },
+    // USBMicrophone and USBSpeaker are not classes you instantiate: they are
+    // pre-made singleton instances, like usb_midi.ports. usb_audio_setup_singletons()
+    // replaces these None placeholders with the real instances at the start of
+    // each VM when the matching direction was enabled in boot.py.
+    { MP_ROM_QSTR(MP_QSTR_USBMicrophone), MP_ROM_NONE },
+    { MP_ROM_QSTR(MP_QSTR_USBSpeaker), MP_ROM_NONE },
+    { MP_ROM_QSTR(MP_QSTR_enable), MP_OBJ_FROM_PTR(&usb_audio_enable_obj) },
 };
 
-static MP_DEFINE_CONST_DICT(usb_audio_module_globals, usb_audio_module_globals_table);
+// This isn't const so the singleton instances can be installed dynamically.
+MP_DEFINE_MUTABLE_DICT(usb_audio_module_globals, usb_audio_module_globals_table);
 
 const mp_obj_module_t usb_audio_module = {
     .base = { &mp_type_module },

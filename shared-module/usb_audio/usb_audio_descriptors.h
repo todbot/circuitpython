@@ -54,7 +54,7 @@ size_t usb_audio_descriptor_length(void);
 #define USB_AUDIO_ENTITY_OUTPUT_TERMINAL (0x03)
 #define USB_AUDIO_ENTITY_CLOCK_SOURCE (0x04)
 
-// Combined headset (Direction.INPUT_OUTPUT) topology. A single audio function
+// Combined headset (microphone + speaker both enabled) topology. A single audio function
 // carries both a speaker chain (host -> board) and a mic chain (board -> host),
 // so every unit/terminal needs an ID unique across the whole function -- unlike
 // the single-direction descriptors above, which can reuse the same small set.
@@ -90,7 +90,7 @@ size_t usb_audio_descriptor_length(void);
     + TUD_AUDIO_DESC_STD_AS_ISO_EP_LEN \
     + TUD_AUDIO_DESC_CS_AS_ISO_EP_LEN)
 
-// Length of the combined headset descriptor (Direction.INPUT_OUTPUT): one IAD
+// Length of the combined headset descriptor (microphone + speaker both enabled): one IAD
 // wrapping a single AudioControl interface plus two AudioStreaming interfaces
 // (speaker OUT + mic IN). The AC interface declares one shared clock, plus an
 // input terminal / feature unit / output terminal for each of the two chains;

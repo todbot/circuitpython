@@ -6,4 +6,10 @@
 
 #pragma once
 
+#include "py/obj.h"
+
 #include "shared-module/usb_audio/__init__.h"
+
+// The module globals dict is mutable so the USBMicrophone and USBSpeaker
+// singleton instances can be installed at runtime (see usb_audio_setup_singletons).
+extern mp_obj_dict_t usb_audio_module_globals;

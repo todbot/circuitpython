@@ -185,7 +185,6 @@ ifeq ($(CIRCUITPY_TINYUSB),1)
   ifeq ($(CIRCUITPY_USB_AUDIO), 1)
     SRC_SUPERVISOR += \
       shared-bindings/usb_audio/__init__.c \
-      shared-bindings/usb_audio/Direction.c \
       shared-module/usb_audio/__init__.c \
       shared-bindings/usb_audio/USBMicrophone.c \
       shared-module/usb_audio/USBMicrophone.c \
