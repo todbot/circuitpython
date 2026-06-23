@@ -17,6 +17,8 @@
 
 #include "py/mperrno.h"
 #include "py/mphal.h"
+#include "py/gc.h"
+#include "supervisor/port.h"
 
 #if 0
 #define DEBUG_PRINT(...) ((void)mp_printf(&mp_plat_print,##__VA_ARGS__))
@@ -78,7 +80,7 @@ static bool lock_and_configure_bus(sdcardio_sdcard_obj_t *self) {
     }
 
     common_hal_busio_spi_configure(self->bus, self->baudrate, 0, 0, 8);
-    common_hal_digitalio_digitalinout_set_value(&self->cs, false);
+    digitalinout_protocol_set_value(self->cs, false);
     return true;
 }
 
@@ -91,7 +93,7 @@ static void lock_bus_or_throw(sdcardio_sdcard_obj_t *self) {
 static void clock_card(sdcardio_sdcard_obj_t *self, int bytes) {
     uint8_t buf[bytes];
     memset(buf, 0xff, bytes);
-    common_hal_digitalio_digitalinout_set_value(&self->cs, true);
+    digitalinout_protocol_set_value(self->cs, true);
     common_hal_busio_spi_write(self->bus, buf, bytes);
 }
 
@@ -260,7 +262,7 @@ static mp_rom_error_text_t init_card(sdcardio_sdcard_obj_t *self) {
     // and says 80 bit clocks(10*8) is common. Value below is bytes, not bits.
     clock_card(self, 10);
 
-    common_hal_digitalio_digitalinout_set_value(&self->cs, false);
+    digitalinout_protocol_set_value(self->cs, false);
 
     assert(!self->in_cmd25);
     self->in_cmd25 = false; // should be false already
@@ -336,11 +338,15 @@ static mp_rom_error_text_t init_card(sdcardio_sdcard_obj_t *self) {
     return NULL;
 }
 
-mp_rom_error_text_t sdcardio_sdcard_construct(sdcardio_sdcard_obj_t *self, busio_spi_obj_t *bus, const mcu_pin_obj_t *cs, int baudrate, bool persistent_mount) {
+mp_rom_error_text_t sdcardio_sdcard_construct(sdcardio_sdcard_obj_t *self, busio_spi_obj_t *bus, mp_obj_t cs, int baudrate, bool persistent_mount) {
     self->bus = bus;
     self->persistent_mount = persistent_mount;
-    common_hal_digitalio_digitalinout_construct(&self->cs, cs);
-    common_hal_digitalio_digitalinout_switch_to_output(&self->cs, true, DRIVE_MODE_PUSH_PULL);
+
+    // Allocate the pins in the same place as self.
+    bool use_port_allocation = !gc_alloc_possible() || !gc_ptr_on_heap(self);
+
+    self->cs = digitalinout_protocol_from_pin(cs, MP_QSTR_cs, false, use_port_allocation, &self->own_cs);
+    digitalinout_protocol_switch_to_output(self->cs, true, DRIVE_MODE_PUSH_PULL);
 
     self->cdv = 512;
     self->sectors = 0;
@@ -353,7 +359,10 @@ mp_rom_error_text_t sdcardio_sdcard_construct(sdcardio_sdcard_obj_t *self, busio
     extraclock_and_unlock_bus(self);
 
     if (result != NULL) {
-        common_hal_digitalio_digitalinout_deinit(&self->cs);
+        if (self->own_cs) {
+            digitalinout_protocol_deinit(self->cs);
+            circuitpy_free_obj(self->cs);
+        }
         return result;
     }
 
@@ -362,7 +371,7 @@ mp_rom_error_text_t sdcardio_sdcard_construct(sdcardio_sdcard_obj_t *self, busio
 }
 
 
-void common_hal_sdcardio_sdcard_construct(sdcardio_sdcard_obj_t *self, busio_spi_obj_t *bus, const mcu_pin_obj_t *cs, int baudrate) {
+void common_hal_sdcardio_sdcard_construct(sdcardio_sdcard_obj_t *self, busio_spi_obj_t *bus, mp_obj_t cs, int baudrate) {
     // User mounted, so persistent_mount=false.
     mp_rom_error_text_t result = sdcardio_sdcard_construct(self, bus, cs, baudrate, false);
     if (result != NULL) {
@@ -376,7 +385,10 @@ void common_hal_sdcardio_sdcard_deinit(sdcardio_sdcard_obj_t *self) {
     }
     common_hal_sdcardio_sdcard_sync(self);
     common_hal_sdcardio_sdcard_mark_deinit(self);
-    common_hal_digitalio_digitalinout_deinit(&self->cs);
+    if (self->own_cs) {
+        digitalinout_protocol_deinit(self->cs);
+        circuitpy_free_obj(self->cs);
+    }
 }
 
 int common_hal_sdcardio_sdcard_get_blockcount(sdcardio_sdcard_obj_t *self) {
