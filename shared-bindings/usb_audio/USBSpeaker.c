@@ -46,6 +46,8 @@
 //|         spk = usb_audio.usb_speaker
 //|         out = audiobusio.I2SOut(board.I2S_BIT_CLOCK, board.I2S_WORD_SELECT, board.I2S_DATA)
 //|         out.play(spk, loop=True)
+//|         while True:
+//|             pass
 //|
 //|     """
 
