@@ -345,10 +345,8 @@ mp_rom_error_text_t sdcardio_sdcard_construct(sdcardio_sdcard_obj_t *self, busio
     // Allocate the pins in the same place as self.
     bool use_port_allocation = !gc_alloc_possible() || !gc_ptr_on_heap(self);
 
-    self->cs = digitalinout_protocol_from_pin(cs, MP_QSTR_cs, true, use_port_allocation, &self->own_cs);
-    if (self->cs != mp_const_none) {
-        digitalinout_protocol_switch_to_output(self->cs, true, DRIVE_MODE_PUSH_PULL);
-    }
+    self->cs = digitalinout_protocol_from_pin(cs, MP_QSTR_cs, false, use_port_allocation, &self->own_cs);
+    digitalinout_protocol_switch_to_output(self->cs, true, DRIVE_MODE_PUSH_PULL);
 
     self->cdv = 512;
     self->sectors = 0;
@@ -361,7 +359,7 @@ mp_rom_error_text_t sdcardio_sdcard_construct(sdcardio_sdcard_obj_t *self, busio
     extraclock_and_unlock_bus(self);
 
     if (result != NULL) {
-        if (self->cs != mp_const_none && self->own_cs) {
+        if (self->own_cs) {
             digitalinout_protocol_deinit(self->cs);
             circuitpy_free_obj(self->cs);
         }
@@ -387,7 +385,7 @@ void common_hal_sdcardio_sdcard_deinit(sdcardio_sdcard_obj_t *self) {
     }
     common_hal_sdcardio_sdcard_sync(self);
     common_hal_sdcardio_sdcard_mark_deinit(self);
-    if (self->cs != mp_const_none && self->own_cs) {
+    if (self->own_cs) {
         digitalinout_protocol_deinit(self->cs);
         circuitpy_free_obj(self->cs);
     }
