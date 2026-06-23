@@ -25,6 +25,10 @@
 #include "shared-module/usb_midi/__init__.h"
 #endif
 
+#if CIRCUITPY_USB_AUDIO
+#include "shared-module/usb_audio/__init__.h"
+#endif
+
 #if CIRCUITPY_USB_VIDEO
 #include "shared-module/usb_video/__init__.h"
 #endif
@@ -60,6 +64,10 @@ void usb_setup_with_vm(void) {
 
     #if CIRCUITPY_USB_MIDI
     usb_midi_setup_ports();
+    #endif
+
+    #if CIRCUITPY_USB_AUDIO
+    usb_audio_setup_singletons();
     #endif
     #endif
 }

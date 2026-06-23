@@ -21,34 +21,15 @@
 //|     samples it pulls are streamed to the host PC over USB rather than to a pin,
 //|     so the board appears as a microphone.
 //|
-//|     ``usb_audio.enable()`` must have been called in ``boot.py`` before this object
-//|     can be constructed."""
+//|     You cannot create an instance of `usb_audio.USBMicrophone`.
 //|
-//|     def __init__(self) -> None:
-//|         """Create a USBMicrophone using the audio format configured in ``boot.py``."""
-//|         ...
+//|     There is a single shared instance, available as ``usb_audio.usb_microphone``
+//|     once ``usb_audio.enable()`` has configured an input (microphone) stream in
+//|     ``boot.py``. Until then ``usb_audio.usb_microphone`` is ``None``."""
 //|
-static mp_obj_t usb_audio_usbmicrophone_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
-    static const mp_arg_t allowed_args[] = {};
-    mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
-    mp_arg_parse_all_kw_array(n_args, n_kw, all_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
 
-    // The audio format is chosen by usb_audio.enable() in boot.py, which also claims
-    // the USB interface. Without it there is no microphone for the host to read.
-    if (!usb_audio_enabled()) {
-        mp_raise_RuntimeError(MP_ERROR_TEXT("USB audio not enabled in boot.py"));
-    }
 
-    usb_audio_usbmicrophone_obj_t *self = mp_obj_malloc_with_finaliser(usb_audio_usbmicrophone_obj_t, &usb_audio_USBMicrophone_type);
-    common_hal_usb_audio_usbmicrophone_construct(self);
 
-    return MP_OBJ_FROM_PTR(self);
-}
-
-//|     def deinit(self) -> None:
-//|         """Deinitialises the USBMicrophone and releases any resources for reuse."""
-//|         ...
-//|
 static mp_obj_t usb_audio_usbmicrophone_deinit(mp_obj_t self_in) {
     usb_audio_usbmicrophone_obj_t *self = MP_OBJ_TO_PTR(self_in);
     common_hal_usb_audio_usbmicrophone_deinit(self);
@@ -192,6 +173,5 @@ MP_DEFINE_CONST_OBJ_TYPE(
     usb_audio_USBMicrophone_type,
     MP_QSTR_USBMicrophone,
     MP_TYPE_FLAG_HAS_SPECIAL_ACCESSORS,
-    make_new, usb_audio_usbmicrophone_make_new,
     locals_dict, &usb_audio_usbmicrophone_locals_dict
     );
