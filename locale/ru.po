@@ -640,6 +640,10 @@ msgstr "Значения массива должны быть однобайто
 msgid "Async SPI transfer in progress on this bus, keep awaiting."
 msgstr ""
 
+#: shared-bindings/usb_audio/__init__.c
+msgid "At least one of microphone and speaker must be enabled"
+msgstr ""
+
 #: shared-module/memorymonitor/AllocationAlarm.c
 #, c-format
 msgid "Attempt to allocate %d blocks"
@@ -2329,10 +2333,6 @@ msgstr "Запись UART"
 msgid "UID:"
 msgstr "UID:"
 
-#: shared-bindings/usb_audio/USBMicrophone.c
-msgid "USB audio not enabled in boot.py"
-msgstr ""
-
 #: shared-module/usb_hid/Device.c
 msgid "USB busy"
 msgstr "USB занят"
@@ -3199,6 +3199,10 @@ msgstr ""
 msgid "destination buffer must be an array of type 'H' for bit_depth = 16"
 msgstr ""
 "буфер назначения должен быть массивом типа «H» для битовой_глубины = 16"
+
+#: shared-bindings/usb_audio/USBSpeaker.c
+msgid "destination must be an array of type 'h'"
+msgstr ""
 
 #: py/objdict.c
 msgid "dict update sequence has wrong length"
