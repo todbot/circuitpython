@@ -126,7 +126,7 @@ safe_mode_t port_init(void) {
     ;
 
     // enable TRNG (true random number generator)
-    #ifdef CIRCUITPY_RANDOM
+    #if CIRCUITPY_RANDOM
     MXC_TRNG_Init();
     #endif
 

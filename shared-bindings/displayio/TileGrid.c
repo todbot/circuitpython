@@ -17,7 +17,7 @@
 #include "shared-bindings/displayio/ColorConverter.h"
 #include "shared-bindings/displayio/OnDiskBitmap.h"
 #include "shared-bindings/displayio/Palette.h"
-#ifdef CIRCUITPY_TILEPALETTEMAPPER
+#if CIRCUITPY_TILEPALETTEMAPPER
 #include "shared-bindings/tilepalettemapper/TilePaletteMapper.h"
 #endif
 
