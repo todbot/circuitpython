@@ -267,7 +267,6 @@ void common_hal_audioi2sin_i2sin_construct(audioi2sin_i2sin_obj_t *self,
     uint32_t actual_frequency = common_hal_rp2pio_statemachine_get_frequency(&self->state_machine);
     self->sample_rate = actual_frequency / pio_clocks_per_frame;
     self->bit_depth = bit_depth;
-    self->output_bit_depth = output_bit_depth;
     self->mono = mono;
     self->samples_signed = samples_signed;
     self->left_justified = left_justified;
@@ -362,10 +361,6 @@ uint8_t common_hal_audioi2sin_i2sin_get_bit_depth(audioi2sin_i2sin_obj_t *self) 
     return self->bit_depth;
 }
 
-uint8_t common_hal_audioi2sin_i2sin_get_output_bit_depth(audioi2sin_i2sin_obj_t *self) {
-    return self->output_bit_depth;
-}
-
 uint32_t common_hal_audioi2sin_i2sin_get_sample_rate(audioi2sin_i2sin_obj_t *self) {
     return self->sample_rate;
 }
@@ -456,7 +451,7 @@ uint32_t common_hal_audioi2sin_i2sin_record_to_buffer(audioi2sin_i2sin_obj_t *se
     // convention. The default (no-conversion) path applies the flip to the
     // raw FIFO word before splitting into channels; the conversion path
     // applies the flip per output sample at output bit width.
-    const bool convert = self->output_bit_depth != self->bit_depth;
+    const bool convert = self->base.bits_per_sample != self->bit_depth;
     const uint32_t flip16 = (!convert && !self->samples_signed) ? 0x80008000u : 0u;
     const uint32_t flip32 = (!convert && !self->samples_signed)
         ? (self->bit_depth == 24 ? 0x800000u : 0x80000000u)
@@ -466,7 +461,7 @@ uint32_t common_hal_audioi2sin_i2sin_record_to_buffer(audioi2sin_i2sin_obj_t *se
         && self->samples_signed
         && !self->left_justified;
     const uint8_t in_depth = self->bit_depth;
-    const uint8_t out_depth = self->output_bit_depth;
+    const uint8_t out_depth = self->base.bits_per_sample;
     const bool left_justified = self->left_justified;
     const bool samples_signed = self->samples_signed;
 
@@ -633,7 +628,7 @@ void common_hal_audioi2sin_i2sin_fill_buffer(audioi2sin_i2sin_obj_t *self,
     const size_t ring_size = self->ring_size;
     const size_t half_size = self->half_size;
     const uint8_t in_depth = self->bit_depth;
-    const uint8_t out_depth = self->output_bit_depth;
+    const uint8_t out_depth = self->base.bits_per_sample;
     const bool samples_signed = self->samples_signed;
     const bool left_justified = self->left_justified;
     const bool stereo = !self->mono;
@@ -701,7 +696,7 @@ void common_hal_audioi2sin_i2sin_reset_buffer(audioi2sin_i2sin_obj_t *self,
     // The audio pipeline only carries 8- or 16-bit samples. 24/32-bit modes can
     // still record() but cannot stream; fail clearly the first time playback is
     // set up rather than emitting garbage.
-    if (self->output_bit_depth != 8 && self->output_bit_depth != 16) {
+    if (self->base.bits_per_sample != 8 && self->base.bits_per_sample != 16) {
         mp_raise_ValueError_varg(
             MP_ERROR_TEXT("%q must be 8 or 16"), MP_QSTR_output_bit_depth);
     }
@@ -731,7 +726,7 @@ audioio_get_buffer_result_t common_hal_audioi2sin_i2sin_get_buffer(
     uint8_t *out = self->output_buffer + half * self->output_index;
     self->output_index = 1 - self->output_index;
 
-    uint32_t bytes_per_sample = self->output_bit_depth / 8;
+    uint32_t bytes_per_sample = self->base.bits_per_sample / 8;
     uint32_t frames = half / (bytes_per_sample * self->base.channel_count);
     common_hal_audioi2sin_i2sin_fill_buffer(self, out, frames);
 
