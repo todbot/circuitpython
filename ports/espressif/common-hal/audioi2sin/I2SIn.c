@@ -65,7 +65,6 @@ void common_hal_audioi2sin_i2sin_construct(audioi2sin_i2sin_obj_t *self,
     self->mclk = main_clock;
     self->sample_rate = sample_rate;
     self->bit_depth = bit_depth;
-    self->output_bit_depth = output_bit_depth;
     self->mono = mono;
     self->samples_signed = samples_signed;
 
@@ -222,11 +221,11 @@ uint32_t common_hal_audioi2sin_i2sin_record_to_buffer(audioi2sin_i2sin_obj_t *se
         element_size = 4;
     }
 
-    if (self->output_bit_depth != self->bit_depth) {
+    if (self->base.bits_per_sample != self->bit_depth) {
         // Bit-depth conversion path: always read at input width into scratch,
         // convert each sample into the user's buffer at output width.
         const uint8_t in_depth = self->bit_depth;
-        const uint8_t out_depth = self->output_bit_depth;
+        const uint8_t out_depth = self->base.bits_per_sample;
         const bool samples_signed = self->samples_signed;
         uint8_t scratch[256];
         const size_t in_frame_bytes = 2 * element_size;
@@ -313,10 +312,6 @@ uint8_t common_hal_audioi2sin_i2sin_get_bit_depth(audioi2sin_i2sin_obj_t *self) 
     return self->bit_depth;
 }
 
-uint8_t common_hal_audioi2sin_i2sin_get_output_bit_depth(audioi2sin_i2sin_obj_t *self) {
-    return self->output_bit_depth;
-}
-
 uint32_t common_hal_audioi2sin_i2sin_get_sample_rate(audioi2sin_i2sin_obj_t *self) {
     return self->sample_rate;
 }
@@ -351,7 +346,7 @@ static void i2sin_fill_silence(void *buffer, uint32_t idx, uint32_t count,
 void common_hal_audioi2sin_i2sin_fill_buffer(audioi2sin_i2sin_obj_t *self,
     uint8_t *buffer, uint32_t frames) {
     const uint8_t in_depth = self->bit_depth;
-    const uint8_t out_depth = self->output_bit_depth;
+    const uint8_t out_depth = self->base.bits_per_sample;
     const bool samples_signed = self->samples_signed;
     const bool stereo = !self->mono;
     const uint8_t channel_count = stereo ? 2 : 1;
@@ -406,7 +401,7 @@ void common_hal_audioi2sin_i2sin_reset_buffer(audioi2sin_i2sin_obj_t *self,
     (void)channel;
     // The audio pipeline only carries 8- or 16-bit samples; 24/32-bit modes can
     // still record() but cannot stream.
-    if (self->output_bit_depth != 8 && self->output_bit_depth != 16) {
+    if (self->base.bits_per_sample != 8 && self->base.bits_per_sample != 16) {
         mp_raise_ValueError_varg(
             MP_ERROR_TEXT("%q must be 8 or 16"), MP_QSTR_output_bit_depth);
     }
@@ -426,7 +421,7 @@ audioio_get_buffer_result_t common_hal_audioi2sin_i2sin_get_buffer(
     uint8_t *out = self->output_buffer + half * self->output_index;
     self->output_index = 1 - self->output_index;
 
-    uint32_t bytes_per_sample = self->output_bit_depth / 8;
+    uint32_t bytes_per_sample = self->base.bits_per_sample / 8;
     uint32_t frames = half / (bytes_per_sample * self->base.channel_count);
     common_hal_audioi2sin_i2sin_fill_buffer(self, out, frames);
 

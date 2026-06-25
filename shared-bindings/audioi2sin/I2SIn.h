@@ -26,7 +26,6 @@ bool common_hal_audioi2sin_i2sin_deinited(audioi2sin_i2sin_obj_t *self);
 uint32_t common_hal_audioi2sin_i2sin_record_to_buffer(audioi2sin_i2sin_obj_t *self,
     void *buffer, uint32_t length);
 uint8_t common_hal_audioi2sin_i2sin_get_bit_depth(audioi2sin_i2sin_obj_t *self);
-uint8_t common_hal_audioi2sin_i2sin_get_output_bit_depth(audioi2sin_i2sin_obj_t *self);
 uint32_t common_hal_audioi2sin_i2sin_get_sample_rate(audioi2sin_i2sin_obj_t *self);
 bool common_hal_audioi2sin_i2sin_get_samples_signed(audioi2sin_i2sin_obj_t *self);
 

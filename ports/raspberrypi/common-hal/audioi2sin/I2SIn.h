@@ -20,11 +20,10 @@
 #define AUDIOI2SIN_STREAM_FRAMES (256)
 
 typedef struct {
-    // MUST be first so I2SIn can be used directly as an audiosample source.
+    // so I2SIn can be used directly as an audiosample source.
     audiosample_base_t base;
     uint32_t sample_rate;
     uint8_t bit_depth;
-    uint8_t output_bit_depth;
     bool mono;
     bool samples_signed;
     bool left_justified;

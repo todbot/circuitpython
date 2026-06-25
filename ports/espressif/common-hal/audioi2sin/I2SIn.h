@@ -21,7 +21,7 @@
 #define AUDIOI2SIN_STREAM_FRAMES (256)
 
 typedef struct {
-    // MUST be first so I2SIn can be used directly as an audiosample source.
+    // so I2SIn can be used directly as an audiosample source.
     audiosample_base_t base;
     i2s_chan_handle_t rx_chan;
     const mcu_pin_obj_t *bit_clock;
@@ -30,7 +30,6 @@ typedef struct {
     const mcu_pin_obj_t *mclk;
     uint32_t sample_rate;
     uint8_t bit_depth;
-    uint8_t output_bit_depth;
     bool mono;
     bool samples_signed;
     // Owned double-buffer of converted (output-depth, interleaved) samples,
