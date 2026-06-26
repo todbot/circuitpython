@@ -22,6 +22,10 @@ wifi_radio_obj_t common_hal_wifi_radio_obj;
 #include "supervisor/port.h"
 #include "supervisor/workflow.h"
 
+#if CIRCUITPY_SETTINGS_TOML
+#include "supervisor/shared/settings.h"
+#endif
+
 #if CIRCUITPY_STATUS_BAR
 #include "supervisor/shared/status_bar.h"
 #endif
@@ -300,14 +304,25 @@ void common_hal_wifi_init(bool user_initiated) {
         board_trim++;
     }
 
-    char cpy_default_hostname[board_len + (MAC_ADDRESS_LENGTH * 2) + 6];
-    struct net_linkaddr *mac = net_if_get_link_addr(self->sta_netif);
-    if (mac->len < MAC_ADDRESS_LENGTH) {
-        printk("MAC address too short");
+    #if CIRCUITPY_SETTINGS_TOML
+    char hostname[NET_HOSTNAME_MAX_LEN];
+    if (settings_get_str("CIRCUITPY_WIFI_HOSTNAME", hostname, sizeof(hostname)) == SETTINGS_OK) {
+        CHECK_ZEPHYR_RESULT(net_hostname_set(hostname, strlen(hostname)));
     }
-    snprintf(cpy_default_hostname, sizeof(cpy_default_hostname), "cpy-%s-%02x%02x%02x%02x%02x%02x", CIRCUITPY_BOARD_ID + board_trim, mac->addr[0], mac->addr[1], mac->addr[2], mac->addr[3], mac->addr[4], mac->addr[5]);
+    #else
+    if (false) {
+    }
+    #endif
+    else {
+        char cpy_default_hostname[board_len + (MAC_ADDRESS_LENGTH * 2) + 6];
+        struct net_linkaddr *mac = net_if_get_link_addr(self->sta_netif);
+        if (mac->len < MAC_ADDRESS_LENGTH) {
+            printk("MAC address too short");
+        }
+        snprintf(cpy_default_hostname, sizeof(cpy_default_hostname), "cpy-%s-%02x%02x%02x%02x%02x%02x", CIRCUITPY_BOARD_ID + board_trim, mac->addr[0], mac->addr[1], mac->addr[2], mac->addr[3], mac->addr[4], mac->addr[5]);
 
-    CHECK_ZEPHYR_RESULT(net_hostname_set(cpy_default_hostname, strlen(cpy_default_hostname)));
+        CHECK_ZEPHYR_RESULT(net_hostname_set(cpy_default_hostname, strlen(cpy_default_hostname)));
+    }
     #else
     printk("Hostname support disabled in Zephyr config\n");
     #endif
