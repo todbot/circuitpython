@@ -18,6 +18,10 @@
 #include "supervisor/shared/translate/translate.h"
 #include "supervisor/shared/tick.h"
 
+#if CIRCUITPY_SETTINGS_TOML
+#include "supervisor/shared/settings.h"
+#endif
+
 #ifdef __ZEPHYR__
 #include <zephyr/kernel.h>
 #endif
@@ -65,10 +69,22 @@ safe_mode_t wait_for_safe_mode_reset(void) {
     #if CIRCUITPY_STATUS_LED
     status_led_init();
     #endif
+
+    uint32_t safe_mode_delay_msecs = 1000;
+
+    #if CIRCUITPY_SETTINGS_TOML
+    mp_float_t safe_mode_delay_secs = 1.0f;
+    // Will update delay_secs if setting is present.
+    settings_get_float("CIRCUITPY_SAFE_MODE_DELAY", &safe_mode_delay_secs);
+    if (safe_mode_delay_secs >= 0.0f && safe_mode_delay_secs <= (mp_float_t)UINT32_MAX) {
+        safe_mode_delay_msecs = safe_mode_delay_secs * 1000;
+    }
+    #endif
+
     uint64_t start_ticks = supervisor_ticks_ms64();
     uint64_t diff = 0;
     bool boot_in_safe_mode = false;
-    while (diff < 1000) {
+    while (diff < safe_mode_delay_msecs) {
         #if CIRCUITPY_STATUS_LED
         // Blink on for 100, off for 100
         bool led_on = (diff % 250) < 125;
