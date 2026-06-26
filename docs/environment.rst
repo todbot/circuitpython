@@ -205,6 +205,13 @@ Example: Configure the display to 640x480 black and white (1 bit per pixel):
 `Adafruit Feather RP2350 <https://circuitpython.org/board/adafruit_feather_rp2350/>`_
 `Adafruit Metro RP2350 <https://circuitpython.org/board/adafruit_metro_rp2350/>`_
 
+CIRCUITPY_SAFEMODE_DELAY
+~~~~~~~~~~~~~~~~~~~~~~~~
+Wait for the specified amount of time, in seconds (as a float), for the user to press the reset button
+to initiate safe mode after a hard reset.
+The status LED blinks during this time.
+If not specified, use the default delay, which is one second.
+
 CIRCUITPY_TERMINAL_SCALE
 ~~~~~~~~~~~~~~~~~~~~~~~~
 Allows the entry of a display scaling factor used during the terminalio console construction.

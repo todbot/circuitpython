@@ -1022,17 +1022,11 @@ int __attribute__((used)) main(void) {
     serial_early_init();
     mp_hal_stdout_tx_str(line_clear);
 
-    // Wait briefly to give a reset window where we'll enter safe mode after the reset.
-    if (get_safe_mode() == SAFE_MODE_NONE) {
-        set_safe_mode(wait_for_safe_mode_reset());
-    }
-
     stack_init();
 
     #if CIRCUITPY_STATUS_BAR
     supervisor_status_bar_init();
     #endif
-
 
     #if !INTERNAL_FLASH_FILESYSTEM
     // Set up anything that might need to get done before we try to use SPI flash
@@ -1048,6 +1042,13 @@ int __attribute__((used)) main(void) {
     // since we haven't run user code yet.
     if (!filesystem_init(get_safe_mode() == SAFE_MODE_NONE, false)) {
         set_safe_mode(SAFE_MODE_NO_CIRCUITPY);
+    }
+
+    // Wait briefly to give a reset window where we'll enter safe mode after the reset.
+    // Do this after mounting the filesystem because settings.toml can contain
+    // CIRCUITPY_SAFE_MODE_DELAY to change the default delay.
+    if (get_safe_mode() == SAFE_MODE_NONE) {
+        set_safe_mode(wait_for_safe_mode_reset());
     }
 
     #if CIRCUITPY_BLEIO
