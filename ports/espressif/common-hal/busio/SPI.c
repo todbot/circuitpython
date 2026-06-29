@@ -22,22 +22,70 @@ static bool spi_bus_is_free(spi_host_device_t host_id) {
     return spi_bus_get_attr(host_id) == NULL;
 }
 
+// Add a throwaway device at the given target clock, ask the driver what
+// frequency it would actually produce, then remove it. Returns the actual
+// frequency in Hz, or -1 if a device could not be added at that target.
+static int spi_probe_actual_freq(busio_spi_obj_t *self,
+    spi_device_interface_config_t *device_config, int target_hz) {
+    device_config->clock_speed_hz = target_hz;
+    spi_device_handle_t handle;
+    if (spi_bus_add_device(self->host_id, device_config, &handle) != ESP_OK) {
+        return -1;
+    }
+    int freq_khz = 0;
+    spi_device_get_actual_freq(handle, &freq_khz);
+    spi_bus_remove_device(handle);
+    return freq_khz * 1000;
+}
+
 static void set_spi_config(busio_spi_obj_t *self,
     uint32_t baudrate, uint8_t polarity, uint8_t phase, uint8_t bits) {
-    // 128 is a 50% duty cycle.
-    const int closest_clock = spi_get_actual_clock(APB_CLK_FREQ, baudrate, 128);
-    const spi_device_interface_config_t device_config = {
-        .clock_speed_hz = closest_clock,
+    spi_device_interface_config_t device_config = {
+        .clock_speed_hz = baudrate,
         .mode = phase | (polarity << 1),
         .spics_io_num = -1, // No CS pin
         .queue_size = MAX_SPI_TRANSACTIONS,
         .pre_cb = NULL
     };
+
+    // The ESP-IDF driver rounds clock_speed_hz to the nearest frequency it can
+    // produce, which may be HIGHER than requested. Treat baudrate as a ceiling:
+    // probe candidate targets (each time adding a throwaway device, asking the
+    // driver what it actually produced, and removing it) and keep the highest
+    // target whose actual frequency does not exceed baudrate. We don't inspect
+    // divisor internals -- those vary between Espressif chips -- only the
+    // public add/measure/remove API.
+    int target = baudrate;
+    int actual = spi_probe_actual_freq(self, &device_config, target);
+    if (actual < 0 || actual > (int)baudrate) {
+        // Bisect for the highest target whose actual frequency is <= baudrate.
+        // Stop refining once the interval is within 1 kHz, the resolution that
+        // spi_device_get_actual_freq reports.
+        int lo = 1;
+        int hi = baudrate;
+        while (hi - lo > 1000) {
+            int mid = lo + (hi - lo) / 2;
+            int mid_actual = spi_probe_actual_freq(self, &device_config, mid);
+            if (mid_actual >= 0 && mid_actual <= (int)baudrate) {
+                lo = mid;
+            } else {
+                hi = mid;
+            }
+        }
+        target = lo;
+    }
+
+    device_config.clock_speed_hz = target;
     esp_err_t result = spi_bus_add_device(self->host_id, &device_config, &spi_handle[self->host_id]);
     if (result != ESP_OK) {
         mp_raise_RuntimeError(MP_ERROR_TEXT("SPI configuration failed"));
     }
-    self->baudrate = closest_clock;
+
+    // Report the frequency the driver actually settled on for the real device.
+    int actual_khz = 0;
+    spi_device_get_actual_freq(spi_handle[self->host_id], &actual_khz);
+    self->baudrate = actual_khz * 1000;
+    self->requested_baudrate = baudrate;
     self->polarity = polarity;
     self->phase = phase;
     self->bits = bits;
@@ -146,7 +194,7 @@ void common_hal_busio_spi_deinit(busio_spi_obj_t *self) {
 
 bool common_hal_busio_spi_configure(busio_spi_obj_t *self,
     uint32_t baudrate, uint8_t polarity, uint8_t phase, uint8_t bits) {
-    if (baudrate == self->baudrate &&
+    if (baudrate == self->requested_baudrate &&
         polarity == self->polarity &&
         phase == self->phase &&
         bits == self->bits) {
