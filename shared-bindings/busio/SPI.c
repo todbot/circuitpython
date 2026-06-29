@@ -157,8 +157,10 @@ static void check_for_deinit(busio_spi_obj_t *self) {
 //|     ) -> None:
 //|         """Configures the SPI bus. The SPI object must be locked.
 //|
-//|         :param int baudrate: the desired clock rate in Hertz. The actual clock rate may be higher or lower
-//|           due to the granularity of available clock settings.
+//|         :param int baudrate: the desired clock rate in Hertz. The actual clock rate may be lower
+//|           due to the granularity of available clock settings, but it will not exceed the
+//|           requested rate: the value is treated as a ceiling, so the clock is set to the
+//|           requested rate or the nearest lower available rate.
 //|           Check the `frequency` attribute for the actual clock rate.
 //|         :param int polarity: the base state of the clock line (0 or 1)
 //|         :param int phase: the edge of the clock that data is captured. First (0)
@@ -445,8 +447,8 @@ static mp_obj_t busio_spi_write_readinto(size_t n_args, const mp_obj_t *pos_args
 MP_DEFINE_CONST_FUN_OBJ_KW(busio_spi_write_readinto_obj, 1, busio_spi_write_readinto);
 
 //|     frequency: int
-//|     """The actual SPI bus frequency. This may not match the frequency requested
-//|     due to internal limitations."""
+//|     """The actual SPI bus frequency. This may be lower than the frequency requested
+//|     due to internal limitations, but it will not be higher."""
 //|
 //|
 
