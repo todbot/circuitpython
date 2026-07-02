@@ -36,6 +36,11 @@
 #define DEFAULT_DVI_BUS_BLUE_DN (&pin_GPIO13)
 #define DEFAULT_DVI_BUS_BLUE_DP (&pin_GPIO12)
 
+// These SD pins double as the 4-bit SDIO interface (board.SDIO_*): SCK=CLOCK,
+// MOSI=COMMAND, MISO=DATA0, CS=DATA3. By default the SPI automount claims them
+// and mounts the card over SPI, so sdioio.SDCard() would fail with "<pin> in
+// use". Set CIRCUITPY_SDCARD_USB = false in settings.toml to free the pins for
+// sdioio (this also disables the automatic /sd mount on this board).
 #define DEFAULT_SD_SCK (&pin_GPIO34)
 #define DEFAULT_SD_MOSI (&pin_GPIO35)
 #define DEFAULT_SD_MISO (&pin_GPIO36)

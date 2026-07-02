@@ -717,6 +717,7 @@ msgstr ""
 #: ports/atmel-samd/common-hal/sdioio/SDCard.c
 #: ports/cxd56/common-hal/sdioio/SDCard.c
 #: ports/espressif/common-hal/sdioio/SDCard.c
+#: ports/raspberrypi/common-hal/sdioio/SDCard.c
 #: ports/stm/common-hal/sdioio/SDCard.c shared-bindings/floppyio/__init__.c
 #: shared-module/sdcardio/SDCard.c
 #, c-format
@@ -934,6 +935,10 @@ msgstr ""
 #: ports/espressif/common-hal/_bleio/Adapter.c
 #: ports/nordic/common-hal/_bleio/Adapter.c
 msgid "Data not supported with directed advertising"
+msgstr ""
+
+#: ports/raspberrypi/common-hal/sdioio/SDCard.c
+msgid "Data pins must be consecutive"
 msgstr ""
 
 #: ports/espressif/common-hal/_bleio/Adapter.c
@@ -1705,6 +1710,11 @@ msgstr ""
 msgid "Number of data_pins must be %d or %d, not %d"
 msgstr ""
 
+#: ports/raspberrypi/common-hal/sdioio/SDCard.c
+#, c-format
+msgid "Number of data_pins must be %d, not %d"
+msgstr ""
+
 #: shared-bindings/util.c
 msgid ""
 "Object has been deinitialized and can no longer be used. Create a new object."
@@ -2056,6 +2066,11 @@ msgstr ""
 #: ports/stm/common-hal/sdioio/SDCard.c
 #, c-format
 msgid "SDIO Init Error %x"
+msgstr ""
+
+#: ports/raspberrypi/common-hal/sdioio/SDCard.c
+#, c-format
+msgid "SDIO Init Error 0x%02x"
 msgstr ""
 
 #: ports/espressif/common-hal/busio/SPI.c
