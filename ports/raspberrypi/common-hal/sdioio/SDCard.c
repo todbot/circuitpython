@@ -1,6 +1,6 @@
 // This file is part of the CircuitPython project: https://circuitpython.org
 //
-// SPDX-FileCopyrightText: Copyright (c) 2026 Tim Cocks
+// SPDX-FileCopyrightText: Copyright (c) 2026 Tim Cocks for Adafruit Industries
 //
 // SPDX-License-Identifier: MIT
 
@@ -56,8 +56,7 @@ void common_hal_sdioio_sdcard_construct(sdioio_sdcard_obj_t *self,
     const mcu_pin_obj_t *clock, const mcu_pin_obj_t *command,
     uint8_t num_data, const mcu_pin_obj_t **data, uint32_t frequency) {
     // The vendored PIO driver only supports 4-bit mode and requires the four
-    // data lines to be on consecutive GPIOs (DAT0..DAT3). 1-bit mode is a
-    // documented follow-up.
+    // data lines to be on consecutive GPIOs (DAT0..DAT3).
     if (num_data != 4) {
         mp_raise_ValueError_varg(MP_ERROR_TEXT("Number of data_pins must be %d, not %d"), 4, num_data);
     }
@@ -249,9 +248,7 @@ void common_hal_sdioio_sdcard_never_reset(sdioio_sdcard_obj_t *self) {
 
 void sdioio_reset(void) {
     // Release every live card that isn't protected by never_reset. deinit()
-    // runs pioEnd(), which unclaims the PIO at the SDK level — without this the
-    // claim (static RAM) survives the soft reboot even though the object heap is
-    // wiped, permanently burning a PIO block per successful construct.
+    // runs pioEnd(), which unclaims the PIO at the SDK level.
     for (size_t i = 0; i < MP_ARRAY_SIZE(_active_cards); i++) {
         sdioio_sdcard_obj_t *self = _active_cards[i];
         if (self == NULL || self->never_reset) {
