@@ -75,7 +75,8 @@ Keys that affect CircuitPython behavior
 
 CIRCUITPY_BLE_NAME
 ~~~~~~~~~~~~~~~~~~
-Default BLE name the board advertises as, including for the BLE workflow.
+If supplied, sets the BLE name the board advertises as, including for the BLE workflow.
+Otherwise, defaults to ``CIRCUITPYxxxx``, where ``xxxx`` varies per board.
 
 CIRCUITPY_HEAP_START_SIZE
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -103,16 +104,23 @@ TCP port number used for the Web Workflow HTTP API. Defaults to 80 when omitted.
 
 CIRCUITPY_WEB_INSTANCE_NAME
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Hostname the board advertises as, using mDNS, for the Web Workflow.
-Defaults to a semi-unique name if omitted.
+Human-friendly name the board advertises over mDNS for the Web Workflow.
+Defaults to the human-readable board name if omitted.
+This is not the hostname.
 
 CIRCUITPY_WIFI_SSID
 ~~~~~~~~~~~~~~~~~~~
 CIRCUITPY_WIFI_PASSWORD
 ~~~~~~~~~~~~~~~~~~~~~~~
-If these values are specified,
-CircuitPython will connect automatically to a local WiFi network using the supplied SSID
-and password before ``boot.py`` and/or ``code.py`` are run.
+If these values are supplied, connects automatically to a local WiFi network
+with the specified SSID and password before ``boot.py`` and/or ``code.py`` are run.
+
+CIRCUITPY_WIFI_HOSTNAME
+~~~~~~~~~~~~~~~~~~~~~~~
+If supplied, sets the initial ``wifi.radio.hostname`` to the given value.
+Otherwise, the default value is ``cpy-<board_name>-<mac_address>``,
+with some shortening for length if necessary.
+If the supplied value is an invalid hostname or is too long, it is ignored.
 
 CIRCUITPY_SDCARD_USB
 ^^^^^^^^^^^^^^^^^^^^
@@ -204,6 +212,13 @@ Example: Configure the display to 640x480 black and white (1 bit per pixel):
 
 `Adafruit Feather RP2350 <https://circuitpython.org/board/adafruit_feather_rp2350/>`_
 `Adafruit Metro RP2350 <https://circuitpython.org/board/adafruit_metro_rp2350/>`_
+
+CIRCUITPY_SAFEMODE_DELAY
+~~~~~~~~~~~~~~~~~~~~~~~~
+Wait for the specified amount of time, in seconds (as a float), for the user to press the reset button
+to initiate safe mode after a hard reset.
+The status LED blinks during this time.
+If not specified, use the default delay, which is one second.
 
 CIRCUITPY_TERMINAL_SCALE
 ~~~~~~~~~~~~~~~~~~~~~~~~

@@ -259,6 +259,8 @@ static void _adapter_set_name(bleio_adapter_obj_t *self, mp_obj_str_t *name_obj)
 // Get various values and limits set by the adapter.
 // Set event mask.
 static void bleio_adapter_hci_init(bleio_adapter_obj_t *self) {
+    self->name = NULL;
+
     mp_int_t name_len = 0;
 
     #if CIRCUITPY_SETTINGS_TOML
@@ -950,7 +952,6 @@ void bleio_adapter_reset(bleio_adapter_obj_t *adapter) {
         }
         connection->connection_obj = mp_const_none;
     }
-
 }
 
 void bleio_adapter_background(bleio_adapter_obj_t *adapter) {
