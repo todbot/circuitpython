@@ -17,4 +17,3 @@
 #define DEFAULT_SPI_BUS_SCK         (&pin_GPIO10)
 #define DEFAULT_SPI_BUS_MOSI        (&pin_GPIO6)
 #define DEFAULT_SPI_BUS_MISO        (&pin_GPIO7)
-
