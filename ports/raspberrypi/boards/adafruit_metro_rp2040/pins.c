@@ -4,6 +4,7 @@
 //
 // SPDX-License-Identifier: MIT
 
+#include "py/objtuple.h"
 #include "shared-bindings/board/__init__.h"
 
 // Four consecutive data GPIOs for the 4-bit SDIO interface (sdioio.SDCard).
@@ -11,10 +12,10 @@ static const mp_rom_obj_tuple_t sdio_data_tuple = {
     {&mp_type_tuple},
     4,
     {
-        MP_ROM_PTR(&pin_GPIO36),
-        MP_ROM_PTR(&pin_GPIO37),
-        MP_ROM_PTR(&pin_GPIO38),
-        MP_ROM_PTR(&pin_GPIO39),
+        MP_ROM_PTR(&pin_GPIO20),
+        MP_ROM_PTR(&pin_GPIO21),
+        MP_ROM_PTR(&pin_GPIO22),
+        MP_ROM_PTR(&pin_GPIO23),
     }
 };
 
