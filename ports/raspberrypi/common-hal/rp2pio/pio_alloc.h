@@ -4,13 +4,13 @@
 //
 // SPDX-License-Identifier: MIT
 
-// Bridge declarations that let the vendored (C++) PioSdioCard driver cooperate
-// with CircuitPython's rp2pio PIO allocator instead of seizing whole PIO blocks
-// through the raw SDK. The definitions live in
-// common-hal/rp2pio/StateMachine.c (compiled as C), so they are declared with C
-// linkage here. This header deliberately does NOT include the full rp2pio
-// StateMachine.h, which pulls in MicroPython object headers that are awkward in
-// this C++ translation unit.
+// Shared PIO allocator declarations that let external drivers (including the
+// vendored C++ PioSdioCard driver) cooperate with CircuitPython's rp2pio PIO
+// allocator instead of seizing whole PIO blocks through the raw SDK. The
+// definitions live in common-hal/rp2pio/StateMachine.c. This header
+// deliberately does NOT include the MicroPython object headers pulled in by the
+// full rp2pio StateMachine.h, so it can be included from C++ translation units.
+// The declarations are given C linkage for that reason.
 
 #pragma once
 
@@ -26,7 +26,7 @@ extern "C" {
 uint8_t rp2pio_statemachine_find_pio(int program_size, int sm_count);
 
 // Mark / unmark a state machine as surviving (or not) a soft reset, so
-// rp2pio's reset path keeps its bookkeeping coherent with the SMs this driver
+// rp2pio's reset path keeps its bookkeeping coherent with the SMs a driver
 // claims directly.
 void rp2pio_statemachine_never_reset(PIO pio, int sm);
 void rp2pio_statemachine_reset_ok(PIO pio, int sm);
