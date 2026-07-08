@@ -193,6 +193,10 @@ static void _set_discovery_step_status(int status) {
 }
 
 static void _check_discovery_status(int status) {
+    #if CIRCUITPY_VERBOSE_BLE
+    mp_printf(&mp_plat_print, "discovery step status: %d\n", status);
+    #endif
+
     if (status == BLE_HS_EDONE) {
         return;
     }
@@ -268,6 +272,11 @@ static int _discovered_service_cb(uint16_t conn_handle,
     const struct ble_gatt_svc *svc,
     void *arg) {
     if (error->status != 0) {
+        #if CIRCUITPY_VERBOSE_BLE
+        mp_printf(&mp_plat_print, "_discovered_service_cb error->status: %d, handle: %d\n",
+            error->status, error->att_handle);
+        #endif
+
         // BLE_HS_EDONE or some error has occurred.
         _set_discovery_step_status(error->status);
         return 0;
@@ -285,6 +294,11 @@ static int _discovered_characteristic_cb(uint16_t conn_handle,
     const struct ble_gatt_chr *chr,
     void *arg) {
     if (error->status != 0) {
+        #if CIRCUITPY_VERBOSE_BLE
+        mp_printf(&mp_plat_print, "_discovered_characteristic_cb error->status: %d, handle: %d\n",
+            error->status, error->att_handle);
+        #endif
+
         // BLE_HS_EDONE or some error has occurred.
         _set_discovery_step_status(error->status);
         return 0;
@@ -303,6 +317,11 @@ static int _discovered_descriptor_cb(uint16_t conn_handle,
     const struct ble_gatt_dsc *dsc,
     void *arg) {
     if (error->status != 0) {
+        #if CIRCUITPY_VERBOSE_BLE
+        mp_printf(&mp_plat_print, "_discovered_descriptor_cb error->status: %d, handle: %d\n",
+            error->status, error->att_handle);
+        #endif
+
         // BLE_HS_EDONE or some error has occurred.
         _set_discovery_step_status(error->status);
         return 0;
@@ -412,6 +431,10 @@ static void _build_characteristic(void *ctx, const void *record) {
     // Set def_handle directly since it is only used in discovery.
     characteristic->def_handle = chr->def_handle;
 
+    #if CIRCUITPY_VERBOSE_BLE
+    mp_printf(&mp_plat_print, "_build_characteristic: char handle: %d\n", characteristic->handle);
+    #endif
+
     mp_obj_list_append(MP_OBJ_FROM_PTR(service->characteristic_list),
         MP_OBJ_FROM_PTR(characteristic));
 }
@@ -448,6 +471,11 @@ static void _build_descriptor(void *ctx, const void *record) {
         SECURITY_MODE_OPEN, SECURITY_MODE_OPEN,
         GATT_MAX_DATA_LENGTH, false, mp_const_empty_bytes);
     descriptor->handle = dsc->handle;
+
+    #if CIRCUITPY_VERBOSE_BLE
+    mp_printf(&mp_plat_print, "_build_descriptor: char handle: %d, desc handle: %d, uuid type: %d, u16 value: 0x%x\n",
+        characteristic->handle, descriptor->handle, dsc->uuid.u.type, dsc->uuid.u16.value);
+    #endif
 
     mp_obj_list_append(MP_OBJ_FROM_PTR(characteristic->descriptor_list),
         MP_OBJ_FROM_PTR(descriptor));
