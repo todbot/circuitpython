@@ -31,8 +31,8 @@
 #include "DbgLog.h"
 #include "PioSdioCard.h"
 #include "PioSdioCard.pio.h"
-// CIRCUITPY-CHANGE: cooperate with CircuitPython's rp2pio PIO allocator.
-#include "../../rp2_pio_alloc.h"
+// CIRCUITPY-CHANGE: cooperate with CircuitPython's rp2pio PIO allocator
+#include "common-hal/rp2pio/pio_alloc.h"
 //------------------------------------------------------------------------------
 // USE_DEBUG_MODE 0 - no debug, 1 - print message, 2 - Use scope/analyzer.
 #define USE_DEBUG_MODE 0
