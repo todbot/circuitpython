@@ -157,9 +157,12 @@ static void check_for_deinit(busio_spi_obj_t *self) {
 //|     ) -> None:
 //|         """Configures the SPI bus. The SPI object must be locked.
 //|
-//|         :param int baudrate: the desired clock rate in Hertz. The actual clock rate may be higher or lower
-//|           due to the granularity of available clock settings.
+//|         :param int baudrate: the desired clock rate in Hertz. The value is treated as a ceiling:
+//|           the actual clock rate may be lower due to the granularity of available clock settings,
+//|           but it will not exceed the given value.
 //|           Check the `frequency` attribute for the actual clock rate.
+//|           **Limitations**: On Zephyr, the ceiling behavior may be violated, and
+//|           the `frequency` value does not reflect the actual baudrate.
 //|         :param int polarity: the base state of the clock line (0 or 1)
 //|         :param int phase: the edge of the clock that data is captured. First (0)
 //|           or second (1). Rising or falling depends on clock polarity.
@@ -168,13 +171,7 @@ static void check_for_deinit(busio_spi_obj_t *self) {
 //|         .. note:: On the SAMD21, it is possible to set the baudrate to 24 MHz, but that
 //|            speed is not guaranteed to work. 12 MHz is the next available lower speed, and is
 //|            within spec for the SAMD21.
-//|
-//|         .. note:: On the nRF52840, these baudrates are available: 125kHz, 250kHz, 1MHz, 2MHz, 4MHz,
-//|           and 8MHz.
-//|           If you pick a a baudrate other than one of these, the nearest lower
-//|           baudrate will be chosen, with a minimum of 125kHz.
-//|           Two SPI objects may be created, except on the Circuit Playground Bluefruit,
-//|           which allows only one (to allow for an additional I2C object)."""
+//|         """
 //|         ...
 //|
 
@@ -445,9 +442,14 @@ static mp_obj_t busio_spi_write_readinto(size_t n_args, const mp_obj_t *pos_args
 MP_DEFINE_CONST_FUN_OBJ_KW(busio_spi_write_readinto_obj, 1, busio_spi_write_readinto);
 
 //|     frequency: int
-//|     """The actual SPI bus frequency. This may not match the frequency requested
-//|     due to internal limitations."""
+//|     """The actual SPI bus frequency. This may be lower than the frequency requested
+//|     due to internal limitations, but it will not be higher.
 //|
+//|     **Limitations**: On Zephyr, the returned value does not reflect the actual baudrate,
+//|     because there is `no way to fetch the actual chosen frequency
+//|     <https://github.com/zephyrproject-rtos/zephyr/issues/77922>`_.
+//|     In addition, on Zephyr, the ceiling behavior described in `configure` may be violated.
+//|     """
 //|
 
 static mp_obj_t busio_spi_obj_get_frequency(mp_obj_t self_in) {

@@ -13,6 +13,7 @@
 #include "common-hal/wifi/__init__.h"
 #include "shared/runtime/interrupt_char.h"
 #include "py/gc.h"
+#include "py/mphal.h"
 #include "py/obj.h"
 #include "py/runtime.h"
 #include "shared-bindings/ipaddress/IPv4Address.h"
@@ -269,6 +270,13 @@ void common_hal_wifi_radio_start_ap(wifi_radio_obj_t *self, uint8_t *ssid, size_
     config->ap.max_connection = max_connections;
 
     esp_wifi_set_config(WIFI_IF_AP, config);
+    // Wait a few ms for the AP to start. Empirically, this takes < 3ms on ESP32, and < 1ms on other chips.
+    for (size_t ms = 0; ms < 10; ms++) {
+        if (common_hal_wifi_radio_get_ap_active(self)) {
+            break;
+        }
+        mp_hal_delay_ms(1);
+    }
 }
 
 bool common_hal_wifi_radio_get_ap_active(wifi_radio_obj_t *self) {
