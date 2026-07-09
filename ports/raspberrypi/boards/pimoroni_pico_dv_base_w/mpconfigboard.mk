@@ -20,6 +20,10 @@ CIRCUITPY_WIFI = 1
 
 CIRCUITPY_PICODVI = 1
 
+# No room: this board fills FLASH_FIRMWARE. Frees ~9kB. Not the board's I2S
+# line-out/HDMI audio, which audiobusio still provides.
+CIRCUITPY_USB_AUDIO = 0
+
 CFLAGS += \
     -DCYW43_PIN_WL_DYNAMIC=0 \
 	-DCYW43_DEFAULT_PIN_WL_HOST_WAKE=24 \
