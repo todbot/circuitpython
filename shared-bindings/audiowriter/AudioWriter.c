@@ -1,6 +1,6 @@
 // This file is part of the CircuitPython project: https://circuitpython.org
 //
-// SPDX-FileCopyrightText: Copyright (c) 2026 Adafruit Industries
+// SPDX-FileCopyrightText: Copyright (c) 2026 Tim Cocks for Adafruit Industries
 //
 // SPDX-License-Identifier: MIT
 
@@ -20,13 +20,12 @@
 //|
 //|     ``AudioWriter`` is the inverse of `audiocore.WaveFile`: rather than being
 //|     an audio *source* played by an `audioio.AudioOut`, it is a *sink* that
-//|     drives an audio source (a microphone, or an ``audiofilters``/
+//|     drives an audio source (a microphone, ``synthio``, or an ``audiofilters``/
 //|     ``audiodelays``/``audiofreeverb``/``audiospeed`` effect chain) and writes
 //|     the resulting PCM to a file as a WAV.
 //|
 //|     Recording runs on a background pump paced to the source's real-time rate,
-//|     so it does not block and does not require a Python read loop (which is
-//|     what makes hand-rolled recorders choppy)."""
+//|     so it does not block and does not require a Python read loop."""
 //|
 //|     def __init__(self, file: typing.BinaryIO, *, buffer_size: int = 32768) -> None:
 //|         """Create an ``AudioWriter`` that writes to ``file``.
@@ -42,15 +41,29 @@
 //|         The audio format (sample rate, channel count, bit depth) is taken from
 //|         the source at `play()` time, so there are no format arguments here.
 //|
-//|         Recording a microphone through an effect chain to SD::
+//|         Recording synthio to SD::
 //|
-//|           import audiowriter, board
-//|           # ``amp`` is the top of an effect chain pulling from a mic
-//|           with open("/sd/recording.wav", "wb") as f:
-//|               writer = audiowriter.AudioWriter(f)
-//|               writer.play(amp)
-//|               time.sleep(5)
+//|           import time
+//|           import synthio
+//|           from audiowriter import AudioWriter
+//|           import storage
+//|
+//|           SAMPLE_RATE = 16000
+//|           OUTPUT_PATH = "/sd/demo_file.wav"
+//|
+//|           C_major_scale = [60, 62, 64, 65, 67, 69, 71, 72, 71, 69, 67, 65, 64, 62, 60]
+//|           synth = synthio.Synthesizer(sample_rate=SAMPLE_RATE)
+//|
+//|           with open(OUTPUT_PATH, "wb") as f:
+//|               writer = AudioWriter(f)
+//|               writer.play(synth)
+//|               for note in C_major_scale:
+//|                   synth.press(note)
+//|                   time.sleep(0.1)
+//|                   synth.release(note)
+//|                   time.sleep(0.10)
 //|               writer.stop()
+//|           print("Done ->", OUTPUT_PATH)
 //|         """
 //|         ...
 //|

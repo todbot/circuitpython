@@ -1,6 +1,6 @@
 // This file is part of the CircuitPython project: https://circuitpython.org
 //
-// SPDX-FileCopyrightText: Copyright (c) 2026 Adafruit Industries
+// SPDX-FileCopyrightText: Copyright (c) 2026 Tim Cocks for Adafruit Industries
 //
 // SPDX-License-Identifier: MIT
 
@@ -12,13 +12,7 @@
 #include "shared-bindings/audiowriter/__init__.h"
 #include "shared-bindings/audiowriter/AudioWriter.h"
 
-//| """Support for streaming audio to a WAV file
-//|
-//| The `audiowriter` module contains `AudioWriter`, a *sink* that records an
-//| audio source (a microphone or an effect chain) to a ``.wav`` file in the
-//| background -- the inverse of `audiocore.WaveFile`.
-//|
-//| """
+//| """Support for streaming audio to a WAV file"""
 
 static const mp_rom_map_elem_t audiowriter_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_audiowriter) },

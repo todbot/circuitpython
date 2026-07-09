@@ -1,6 +1,6 @@
 // This file is part of the CircuitPython project: https://circuitpython.org
 //
-// SPDX-FileCopyrightText: Copyright (c) 2026 Adafruit Industries
+// SPDX-FileCopyrightText: Copyright (c) 2026 Tim Cocks for Adafruit Industries
 //
 // SPDX-License-Identifier: MIT
 
@@ -11,10 +11,10 @@
 
 #include "py/obj.h"
 
-// A streaming WAV *sink*: it consumes an audiosample source (a mic or an effect
-// chain) and writes the resulting PCM to a file. Unlike WaveFile it is NOT an
-// audiosample (it has no audiosample_base_t) -- it is the thing that drives a
-// source, playing the role an AudioOut would.
+// A streaming WAV *sink*: it consumes an audiosample source (a mic, synthio,
+// or an effect chain) and writes the resulting PCM to a file. Unlike WaveFile
+// it is NOT an audiosample, it is the thing that drives a source, playing the
+// role an AudioOut would.
 typedef struct _audiowriter_audiowriter_obj_t {
     mp_obj_base_t base;
 
