@@ -13,15 +13,14 @@
 // (to size the IN endpoint) as well as from the descriptor/binding code.
 
 // Actual length, in bytes, of the audio function descriptor emitted for the
-// current direction (mic, speaker, or headset). Declared here -- in the
-// dependency-free header tusb_config.h already includes -- because TinyUSB's
-// audio class driver reads CFG_TUD_AUDIO_FUNC_1_DESC_LEN at enumeration time and
-// returns it to the device core as the number of configuration-descriptor bytes
-// the function owns. That value MUST equal the descriptor we actually emitted:
-// the three directions differ in length, so a compile-time maximum would over-
-// report for the shorter ones and make the core swallow the interfaces that
-// follow audio (CDC/MSC), breaking their enumeration. The full definition lives
-// in __init__.c (also declared in __init__.h for the descriptor builder).
+// current direction (mic, speaker, or headset). usb_desc.c reads this while
+// assembling the configuration descriptor, adding it to total_descriptor_length
+// so wTotalLength covers the exact bytes the audio function emits. That value
+// MUST equal the descriptor we actually emitted: the three directions differ in
+// length, so a compile-time maximum would over-report for the shorter ones and
+// make the host swallow the interfaces that follow audio (CDC/MSC), breaking
+// their enumeration. The full definition lives in __init__.c (also declared in
+// __init__.h for the descriptor builder).
 size_t usb_audio_descriptor_length(void);
 
 // The isochronous IN endpoint's wMaxPacketSize in the USB descriptor is computed
