@@ -14,7 +14,6 @@
 #include "py/objlist.h"
 #include "py/objstr.h"
 #include "py/qstr.h"
-#include "py/ringbuf.h"
 #include "py/runtime.h"
 
 #include "shared/runtime/interrupt_char.h"
@@ -25,13 +24,14 @@
 #include "shared-bindings/_bleio/Characteristic.h"
 #include "shared-bindings/_bleio/Service.h"
 #include "shared-bindings/_bleio/UUID.h"
-#include "shared-bindings/microcontroller/__init__.h"
 #include "shared-bindings/time/__init__.h"
 
-#include "supervisor/port_heap.h"
 #include "supervisor/shared/tick.h"
 
 #include "common-hal/_bleio/ble_events.h"
+
+#include "freertos/FreeRTOS.h"
+#include "freertos/queue.h"
 
 #include "host/ble_att.h"
 
@@ -212,59 +212,43 @@ static void _check_discovery_status(int status) {
 // not allocate from the MicroPython heap: an allocation there can trigger a
 // gc_collect() that scans the wrong task's stack and frees the VM's live
 // objects. Instead the callbacks copy the plain NimBLE result struct into this
-// ring (a non-allocating memcpy), and the VM task drains it and builds the
-// Python objects. See shared-module/_bleio/ScanResults.c for the same pattern.
+// FreeRTOS queue, and the VM task drains it and builds the Python objects.
 //
 // Discovery is serialized (one discover_remote_services() at a time), so a
-// single file-static ring suffices. It must hold one ATT-PDU burst of records:
+// single file-static queue suffices. It must hold one ATT-PDU burst of records:
 // within a response PDU the host task invokes the callback repeatedly without
-// yielding, so the VM task cannot drain until the next PDU's round-trip.
+// yielding, so the VM task cannot drain until the next PDU's round-trip. The
+// largest burst is a find-information response at the maximum ATT MTU we
+// advertise (CONFIG_BT_NIMBLE_ATT_PREFERRED_MTU, 256): about 64 descriptor
+// records. The depth is twice that.
 //
-// The storage is allocated on first use from the port (IDF) heap, not the GC
+// The queue is created on first use from the FreeRTOS (IDF) heap, not the GC
 // heap, so it needs no GC root and survives soft reloads: a stale procedure's
-// pushes always land in live memory. It is never freed. (Same pattern as the
-// port_malloc-backed ringbuf in shared-module/keypad/EventQueue.c.)
-#define DISCOVERY_RING_SIZE (4096)
-static uint8_t *_discovery_ring_buffer;
-static ringbuf_t _discovery_ring;
+// sends always land in live memory. It is never deleted.
 
-// Stage one fixed-size record. Runs on the nimble_host task.
-// ringbuf ops are not atomic and the two tasks preempt each other, so guard
-// with interrupts disabled; the guarded region is a single small record copy.
-static bool _push_record(const void *record, size_t size) {
-    common_hal_mcu_disable_interrupts();
-    bool ok = ringbuf_num_empty(&_discovery_ring) >= size;
-    if (ok) {
-        ringbuf_put_n(&_discovery_ring, (const uint8_t *)record, size);
-    }
-    common_hal_mcu_enable_interrupts();
-    return ok;
-}
+// One queue item, sized to the largest record type, so one queue can serve every
+// discovery step.
+typedef union {
+    struct ble_gatt_svc svc;
+    struct ble_gatt_chr chr;
+    struct ble_gatt_dsc dsc;
+} discovery_record_t;
 
-// Retrieve one fixed-size record. Runs on the VM task.
-static bool _pop_record(void *record, size_t size) {
-    common_hal_mcu_disable_interrupts();
-    bool ok = ringbuf_num_filled(&_discovery_ring) >= size;
-    if (ok) {
-        ringbuf_get_n(&_discovery_ring, (uint8_t *)record, size);
-    }
-    common_hal_mcu_enable_interrupts();
-    return ok;
-}
+#define DISCOVERY_QUEUE_DEPTH (128)
+static QueueHandle_t _discovery_queue;
 
-// Reset the ring before a discovery step. Runs on the VM task. Guarded because
-// a stale procedure from a previous errored, timed-out, or interrupted
-// discovery may still be pushing records on the nimble_host task.
-static void _reset_discovery_ring(void) {
-    if (_discovery_ring_buffer == NULL) {
-        _discovery_ring_buffer = port_malloc(DISCOVERY_RING_SIZE, false);
-        if (_discovery_ring_buffer == NULL) {
-            m_malloc_fail(DISCOVERY_RING_SIZE);
+// Create the queue on first use, and empty it before a discovery step. Runs on
+// the VM task. xQueueReset() is safe against a stale procedure from a previous
+// errored, timed-out, or interrupted discovery that may still be sending
+// records on the nimble_host task.
+static void _reset_discovery_queue(void) {
+    if (_discovery_queue == NULL) {
+        _discovery_queue = xQueueCreate(DISCOVERY_QUEUE_DEPTH, sizeof(discovery_record_t));
+        if (_discovery_queue == NULL) {
+            m_malloc_fail(DISCOVERY_QUEUE_DEPTH * sizeof(discovery_record_t));
         }
     }
-    common_hal_mcu_disable_interrupts();
-    ringbuf_init(&_discovery_ring, _discovery_ring_buffer, DISCOVERY_RING_SIZE);
-    common_hal_mcu_enable_interrupts();
+    xQueueReset(_discovery_queue);
 }
 
 static int _discovered_service_cb(uint16_t conn_handle,
@@ -283,7 +267,8 @@ static int _discovered_service_cb(uint16_t conn_handle,
     }
 
     // Runs on the nimble_host task: stage the raw result only, never allocate.
-    if (!_push_record(svc, sizeof(*svc))) {
+    discovery_record_t record = { .svc = *svc };
+    if (xQueueSend(_discovery_queue, &record, 0) != pdTRUE) {
         _set_discovery_step_status(BLE_HS_ENOMEM);
     }
     return 0;
@@ -305,7 +290,8 @@ static int _discovered_characteristic_cb(uint16_t conn_handle,
     }
 
     // Runs on the nimble_host task: stage the raw result only, never allocate.
-    if (!_push_record(chr, sizeof(*chr))) {
+    discovery_record_t record = { .chr = *chr };
+    if (xQueueSend(_discovery_queue, &record, 0) != pdTRUE) {
         _set_discovery_step_status(BLE_HS_ENOMEM);
     }
     return 0;
@@ -328,7 +314,8 @@ static int _discovered_descriptor_cb(uint16_t conn_handle,
     }
 
     // Runs on the nimble_host task: stage the raw result only, never allocate.
-    if (!_push_record(dsc, sizeof(*dsc))) {
+    discovery_record_t record = { .dsc = *dsc };
+    if (xQueueSend(_discovery_queue, &record, 0) != pdTRUE) {
         _set_discovery_step_status(BLE_HS_ENOMEM);
     }
     return 0;
@@ -359,30 +346,25 @@ static void _build_service(void *ctx, const void *record) {
 }
 
 // Drain and build all staged records on the VM task, until the step completes
-// and the ring is empty. build() is invoked for each raw record with ctx passed
-// through. Returns the discovery step status.
-static int _drain_records(void *ctx, size_t record_size,
+// and the queue is empty. build() is invoked for each raw record with ctx
+// passed through. Returns the discovery step status.
+static int _drain_records(void *ctx,
     void (*build)(void *ctx, const void *record)) {
     const uint64_t timeout_time_ms = common_hal_time_monotonic_ms() + DISCOVERY_TIMEOUT_MS;
-    // Sized to the largest record type so one buffer serves every step.
-    union {
-        struct ble_gatt_svc svc;
-        struct ble_gatt_chr chr;
-        struct ble_gatt_dsc dsc;
-    } record;
+    discovery_record_t record;
     while (true) {
-        if (_pop_record(&record, record_size)) {
+        if (xQueueReceive(_discovery_queue, &record, 0) == pdTRUE) {
             build(ctx, &record);
             continue;
         }
-        // Ring is empty.
+        // Queue is empty.
         if (_last_discovery_status != 0) {
             // On EDONE or a NimBLE error, the terminal callback has already
             // run, so no more records will arrive: drain any that raced in,
-            // then stop. On ENOMEM (our own push failure) the procedure may
+            // then stop. On ENOMEM (our own send failure) the procedure may
             // still be running, but we are raising anyway; any later
-            // discovery resets the ring before reuse.
-            while (_pop_record(&record, record_size)) {
+            // discovery resets the queue before reuse.
+            while (xQueueReceive(_discovery_queue, &record, 0) == pdTRUE) {
                 build(ctx, &record);
             }
             return _last_discovery_status;
@@ -486,14 +468,14 @@ static void discover_remote_services(bleio_connection_internal_t *self, mp_obj_t
     self->remote_service_list = mp_obj_new_list(0, NULL);
 
     if (service_uuids_whitelist == mp_const_none) {
-        // Reset discovery status and staging ring before starting callbacks.
+        // Reset discovery status and staging queue before starting callbacks.
         _set_discovery_step_status(0);
-        _reset_discovery_ring();
+        _reset_discovery_queue();
 
         CHECK_NIMBLE_ERROR(ble_gattc_disc_all_svcs(self->conn_handle, _discovered_service_cb, self));
 
         // Drain staged services and build them on the VM task until done.
-        int status = _drain_records(self, sizeof(struct ble_gatt_svc), _build_service);
+        int status = _drain_records(self, _build_service);
         _check_discovery_status(status);
     } else {
         mp_obj_iter_buf_t iter_buf;
@@ -505,15 +487,15 @@ static void discover_remote_services(bleio_connection_internal_t *self, mp_obj_t
             }
             bleio_uuid_obj_t *uuid = MP_OBJ_TO_PTR(uuid_obj);
 
-            // Reset discovery status and staging ring before starting callbacks.
+            // Reset discovery status and staging queue before starting callbacks.
             _set_discovery_step_status(0);
-            _reset_discovery_ring();
+            _reset_discovery_queue();
 
             CHECK_NIMBLE_ERROR(ble_gattc_disc_svc_by_uuid(self->conn_handle, &uuid->nimble_ble_uuid.u,
                 _discovered_service_cb, self));
 
             // Drain staged services and build them on the VM task until done.
-            int status = _drain_records(self, sizeof(struct ble_gatt_svc), _build_service);
+            int status = _drain_records(self, _build_service);
             _check_discovery_status(status);
         }
     }
@@ -522,9 +504,9 @@ static void discover_remote_services(bleio_connection_internal_t *self, mp_obj_t
     for (size_t i = 0; i < self->remote_service_list->len; i++) {
         bleio_service_obj_t *service = MP_OBJ_TO_PTR(self->remote_service_list->items[i]);
 
-        // Reset discovery status and staging ring before starting callbacks.
+        // Reset discovery status and staging queue before starting callbacks.
         _set_discovery_step_status(0);
-        _reset_discovery_ring();
+        _reset_discovery_queue();
 
         CHECK_NIMBLE_ERROR(ble_gattc_disc_all_chrs(self->conn_handle,
             service->start_handle,
@@ -533,7 +515,7 @@ static void discover_remote_services(bleio_connection_internal_t *self, mp_obj_t
             service));
 
         // Drain staged characteristics and build them on the VM task until done.
-        int status = _drain_records(service, sizeof(struct ble_gatt_chr), _build_characteristic);
+        int status = _drain_records(service, _build_characteristic);
         _check_discovery_status(status);
 
         // Got characteristics for this service. Now discover descriptors for each characteristic.
@@ -558,9 +540,9 @@ static void discover_remote_services(bleio_connection_internal_t *self, mp_obj_t
                 continue;
             }
 
-            // Reset discovery status and staging ring before starting callbacks.
+            // Reset discovery status and staging queue before starting callbacks.
             _set_discovery_step_status(0);
-            _reset_discovery_ring();
+            _reset_discovery_queue();
 
             // The descriptor handle inclusive range is [characteristic->handle + 1, end_handle],
             // but ble_gattc_disc_all_dscs() requires starting with characteristic->handle.
@@ -569,7 +551,7 @@ static void discover_remote_services(bleio_connection_internal_t *self, mp_obj_t
                 _discovered_descriptor_cb, characteristic));
 
             // Drain staged descriptors and build them on the VM task until done.
-            status = _drain_records(characteristic, sizeof(struct ble_gatt_dsc), _build_descriptor);
+            status = _drain_records(characteristic, _build_descriptor);
             _check_discovery_status(status);
         }
     }
