@@ -587,7 +587,7 @@ msgid "Already have all-matches listener"
 msgstr ""
 
 #: ports/espressif/common-hal/_bleio/__init__.c
-#: shared-module/audiowriter/AudioWriter.c
+#: shared-module/audiofilewriter/AudioFileWriter.c
 msgid "Already in progress"
 msgstr ""
 
@@ -1739,7 +1739,7 @@ msgstr ""
 msgid "Only 8 or 16 bit mono with %dx oversampling supported."
 msgstr ""
 
-#: shared-module/audiowriter/AudioWriter.c
+#: shared-module/audiofilewriter/AudioFileWriter.c
 msgid "Only 8/16-bit mono/stereo is supported"
 msgstr ""
 
@@ -2794,7 +2794,7 @@ msgstr ""
 msgid "buffer too small for requested bytes"
 msgstr ""
 
-#: shared-module/audiowriter/AudioWriter.c
+#: shared-module/audiofilewriter/AudioFileWriter.c
 msgid "buffer_size too small for source"
 msgstr ""
 

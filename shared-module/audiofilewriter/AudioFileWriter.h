@@ -15,7 +15,7 @@
 // or an effect chain) and writes the resulting PCM to a file. Unlike WaveFile
 // it is NOT an audiosample, it is the thing that drives a source, playing the
 // role an AudioOut would.
-typedef struct _audiowriter_audiowriter_obj_t {
+typedef struct _audiofilewriter_audiofilewriter_obj_t {
     mp_obj_base_t base;
 
     // Output stream (anything with write + MP_STREAM_SEEK ioctl: a file or a
@@ -24,7 +24,7 @@ typedef struct _audiowriter_audiowriter_obj_t {
     // The source being recorded. Only valid (and referenced) while playing.
     mp_obj_t sample;
 
-    // Format, captured from the source at play() time. AudioWriter is the
+    // Format, captured from the source at play() time. AudioFileWriter is the
     // format authority for the WAV header.
     uint32_t sample_rate;
     uint8_t channel_count;
@@ -56,12 +56,12 @@ typedef struct _audiowriter_audiowriter_obj_t {
     bool source_done;             // source returned DONE/ERROR; drain then finalize
 
     // Intrusive linked list of active writers, walked once per supervisor tick.
-    struct _audiowriter_audiowriter_obj_t *reg_next;
-} audiowriter_audiowriter_obj_t;
+    struct _audiofilewriter_audiofilewriter_obj_t *reg_next;
+} audiofilewriter_audiofilewriter_obj_t;
 
 // Called once per supervisor tick (from supervisor_background_tick), in
 // background-task context. Pumps every active writer.
-void audiowriter_background(void);
+void audiofilewriter_background(void);
 
 // Called during soft reset to abandon any writer left recording.
-void audiowriter_reset(void);
+void audiofilewriter_reset(void);

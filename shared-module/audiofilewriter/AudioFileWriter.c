@@ -4,7 +4,7 @@
 //
 // SPDX-License-Identifier: MIT
 
-#include "shared-bindings/audiowriter/AudioWriter.h"
+#include "shared-bindings/audiofilewriter/AudioFileWriter.h"
 #include "shared-bindings/audiocore/__init__.h"
 #include "shared-module/audiocore/__init__.h"
 
@@ -42,15 +42,15 @@ static void put_u32le(uint8_t *p, uint32_t v) {
 // recreated on soft reset.
 // ---------------------------------------------------------------------------
 
-#define REGISTRY_HEAD ((audiowriter_audiowriter_obj_t *)MP_STATE_VM(audiowriter_linked_list))
+#define REGISTRY_HEAD ((audiofilewriter_audiofilewriter_obj_t *)MP_STATE_VM(audiofilewriter_linked_list))
 
 // Add self to the registry. Called from Python (play()) context, so it must
 // guard against a background tick walking the list mid-mutation.
-static void audiowriter_register(audiowriter_audiowriter_obj_t *self) {
+static void audiofilewriter_register(audiofilewriter_audiofilewriter_obj_t *self) {
     background_callback_prevent();
     // Avoid double-linking if already present.
     bool present = false;
-    for (audiowriter_audiowriter_obj_t *w = REGISTRY_HEAD; w != NULL; w = w->reg_next) {
+    for (audiofilewriter_audiofilewriter_obj_t *w = REGISTRY_HEAD; w != NULL; w = w->reg_next) {
         if (w == self) {
             present = true;
             break;
@@ -58,7 +58,7 @@ static void audiowriter_register(audiowriter_audiowriter_obj_t *self) {
     }
     if (!present) {
         self->reg_next = REGISTRY_HEAD;
-        MP_STATE_VM(audiowriter_linked_list) = self;
+        MP_STATE_VM(audiofilewriter_linked_list) = self;
     }
     background_callback_allow();
 }
@@ -66,8 +66,8 @@ static void audiowriter_register(audiowriter_audiowriter_obj_t *self) {
 // Remove self from the registry. Callers must ensure no background tick is
 // walking the list concurrently: either they are the background tick itself
 // (single-threaded, so safe), or they wrap the call in prevent/allow.
-static void audiowriter_unregister(audiowriter_audiowriter_obj_t *self) {
-    audiowriter_audiowriter_obj_t **pp = (audiowriter_audiowriter_obj_t **)&MP_STATE_VM(audiowriter_linked_list);
+static void audiofilewriter_unregister(audiofilewriter_audiofilewriter_obj_t *self) {
+    audiofilewriter_audiofilewriter_obj_t **pp = (audiofilewriter_audiofilewriter_obj_t **)&MP_STATE_VM(audiofilewriter_linked_list);
     while (*pp != NULL) {
         if (*pp == self) {
             *pp = self->reg_next;
@@ -84,7 +84,7 @@ static void audiowriter_unregister(audiowriter_audiowriter_obj_t *self) {
 
 // Copy len bytes from src into the ring. The caller guarantees there is room.
 // 8-bit signed PCM is flipped to unsigned to match the WAV convention.
-static void audiowriter_ring_write(audiowriter_audiowriter_obj_t *self, const uint8_t *src, uint32_t len) {
+static void audiofilewriter_ring_write(audiofilewriter_audiofilewriter_obj_t *self, const uint8_t *src, uint32_t len) {
     bool flip = (self->bits_per_sample == 8 && self->samples_signed);
     uint32_t i = 0;
     while (i < len) {
@@ -110,7 +110,7 @@ static void audiowriter_ring_write(audiowriter_audiowriter_obj_t *self, const ui
 
 // Drain the ring to the file. Returns false on a write error. Non-raising:
 // safe to call from background-task context.
-static bool audiowriter_flush(audiowriter_audiowriter_obj_t *self) {
+static bool audiofilewriter_flush(audiofilewriter_audiofilewriter_obj_t *self) {
     while (self->ring_count > 0) {
         uint32_t span = self->ring_size - self->ring_tail;
         if (span > self->ring_count) {
@@ -135,7 +135,7 @@ static bool audiowriter_flush(audiowriter_audiowriter_obj_t *self) {
 // Header patching + finalize
 // ---------------------------------------------------------------------------
 
-static void audiowriter_patch_header(audiowriter_audiowriter_obj_t *self) {
+static void audiofilewriter_patch_header(audiofilewriter_audiofilewriter_obj_t *self) {
     uint8_t sz[4];
     int err = 0;
 
@@ -160,18 +160,18 @@ static void audiowriter_patch_header(audiowriter_audiowriter_obj_t *self) {
 
 // Stop pumping, drain, patch the header, and release the source. Idempotent:
 // only the first call (while playing) does work. Non-raising.
-static void audiowriter_finalize(audiowriter_audiowriter_obj_t *self) {
+static void audiofilewriter_finalize(audiofilewriter_audiofilewriter_obj_t *self) {
     if (!self->playing) {
         return;
     }
     // Stop the pump first so a background tick can't re-enter us.
     self->playing = false;
 
-    audiowriter_flush(self);
-    audiowriter_patch_header(self);
+    audiofilewriter_flush(self);
+    audiofilewriter_patch_header(self);
 
     supervisor_disable_tick();
-    audiowriter_unregister(self);
+    audiofilewriter_unregister(self);
     self->sample = MP_OBJ_NULL;
 }
 
@@ -179,7 +179,7 @@ static void audiowriter_finalize(audiowriter_audiowriter_obj_t *self) {
 // The pump: one real-time-paced step per supervisor tick
 // ---------------------------------------------------------------------------
 
-static void audiowriter_pump(audiowriter_audiowriter_obj_t *self) {
+static void audiofilewriter_pump(audiofilewriter_audiofilewriter_obj_t *self) {
     if (!self->playing) {
         return;
     }
@@ -228,7 +228,7 @@ static void audiowriter_pump(audiowriter_audiowriter_obj_t *self) {
                 if (len > self->source_max_buffer) {
                     len = self->source_max_buffer;
                 }
-                audiowriter_ring_write(self, buf, len);
+                audiofilewriter_ring_write(self, buf, len);
                 self->budget_frames -= (int64_t)(len / self->bytes_per_frame);
             }
             if (res == GET_BUFFER_DONE) {
@@ -237,23 +237,23 @@ static void audiowriter_pump(audiowriter_audiowriter_obj_t *self) {
         }
     }
 
-    if (!audiowriter_flush(self)) {
+    if (!audiofilewriter_flush(self)) {
         // File write failed; give up gracefully rather than spin.
         self->source_done = true;
     }
 
     if (self->source_done && self->ring_count == 0) {
-        audiowriter_finalize(self);
+        audiofilewriter_finalize(self);
     }
 }
 
-void audiowriter_background(void) {
-    audiowriter_audiowriter_obj_t *self = REGISTRY_HEAD;
+void audiofilewriter_background(void) {
+    audiofilewriter_audiofilewriter_obj_t *self = REGISTRY_HEAD;
     while (self != NULL) {
         // Capture next before pumping: pump() may finalize self, which unlinks
         // it from the registry (but leaves our saved next pointer valid).
-        audiowriter_audiowriter_obj_t *next = self->reg_next;
-        audiowriter_pump(self);
+        audiofilewriter_audiofilewriter_obj_t *next = self->reg_next;
+        audiofilewriter_pump(self);
         self = next;
     }
 }
@@ -261,10 +261,10 @@ void audiowriter_background(void) {
 // Called during soft reset (VM teardown). Any writer still active is abandoned:
 // we don't try to touch its file (it may already be gone), we just balance the
 // tick-enable count and drop it from the list.
-void audiowriter_reset(void) {
-    audiowriter_audiowriter_obj_t *self = REGISTRY_HEAD;
+void audiofilewriter_reset(void) {
+    audiofilewriter_audiofilewriter_obj_t *self = REGISTRY_HEAD;
     while (self != NULL) {
-        audiowriter_audiowriter_obj_t *next = self->reg_next;
+        audiofilewriter_audiofilewriter_obj_t *next = self->reg_next;
         if (self->playing) {
             self->playing = false;
             supervisor_disable_tick();
@@ -272,14 +272,14 @@ void audiowriter_reset(void) {
         self->reg_next = NULL;
         self = next;
     }
-    MP_STATE_VM(audiowriter_linked_list) = NULL;
+    MP_STATE_VM(audiofilewriter_linked_list) = NULL;
 }
 
 // ---------------------------------------------------------------------------
 // common-hal surface
 // ---------------------------------------------------------------------------
 
-void common_hal_audiowriter_audiowriter_construct(audiowriter_audiowriter_obj_t *self,
+void common_hal_audiofilewriter_audiofilewriter_construct(audiofilewriter_audiofilewriter_obj_t *self,
     mp_obj_t file, uint32_t buffer_size) {
     // The file must be a writable, seekable binary stream (a file or BytesIO).
     mp_get_stream_raise(file, MP_STREAM_OP_WRITE | MP_STREAM_OP_IOCTL);
@@ -296,20 +296,20 @@ void common_hal_audiowriter_audiowriter_construct(audiowriter_audiowriter_obj_t 
     self->reg_next = NULL;
 }
 
-bool common_hal_audiowriter_audiowriter_deinited(audiowriter_audiowriter_obj_t *self) {
+bool common_hal_audiofilewriter_audiofilewriter_deinited(audiofilewriter_audiofilewriter_obj_t *self) {
     return self->ring == NULL;
 }
 
-void common_hal_audiowriter_audiowriter_deinit(audiowriter_audiowriter_obj_t *self) {
+void common_hal_audiofilewriter_audiofilewriter_deinit(audiofilewriter_audiofilewriter_obj_t *self) {
     if (self->playing) {
-        common_hal_audiowriter_audiowriter_stop(self);
+        common_hal_audiofilewriter_audiofilewriter_stop(self);
     }
     self->ring = NULL;
     self->file = MP_OBJ_NULL;
     self->sample = MP_OBJ_NULL;
 }
 
-void common_hal_audiowriter_audiowriter_play(audiowriter_audiowriter_obj_t *self, mp_obj_t sample_obj) {
+void common_hal_audiofilewriter_audiofilewriter_play(audiofilewriter_audiofilewriter_obj_t *self, mp_obj_t sample_obj) {
     if (self->playing) {
         mp_raise_RuntimeError(MP_ERROR_TEXT("Already in progress"));
     }
@@ -382,22 +382,22 @@ void common_hal_audiowriter_audiowriter_play(audiowriter_audiowriter_obj_t *self
     self->last_tick_ms = supervisor_ticks_ms64();
     self->playing = true;
 
-    audiowriter_register(self);
+    audiofilewriter_register(self);
     supervisor_enable_tick();
 }
 
-void common_hal_audiowriter_audiowriter_stop(audiowriter_audiowriter_obj_t *self) {
+void common_hal_audiofilewriter_audiofilewriter_stop(audiofilewriter_audiofilewriter_obj_t *self) {
     if (!self->playing) {
         return;
     }
     // Keep the background pump out while we finalize from Python context.
     background_callback_prevent();
-    audiowriter_finalize(self);
+    audiofilewriter_finalize(self);
     background_callback_allow();
 }
 
-bool common_hal_audiowriter_audiowriter_get_playing(audiowriter_audiowriter_obj_t *self) {
+bool common_hal_audiofilewriter_audiofilewriter_get_playing(audiofilewriter_audiofilewriter_obj_t *self) {
     return self->playing;
 }
 
-MP_REGISTER_ROOT_POINTER(mp_obj_t audiowriter_linked_list);
+MP_REGISTER_ROOT_POINTER(mp_obj_t audiofilewriter_linked_list);
