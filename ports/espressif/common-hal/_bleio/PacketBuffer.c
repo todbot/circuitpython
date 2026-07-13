@@ -15,6 +15,7 @@
 #include "shared-bindings/_bleio/__init__.h"
 #include "shared-bindings/_bleio/Connection.h"
 #include "shared-bindings/_bleio/PacketBuffer.h"
+#include "shared-bindings/microcontroller/__init__.h"
 
 #include "supervisor/shared/tick.h"
 #include "supervisor/shared/bluetooth/serial.h"
@@ -23,6 +24,11 @@
 
 #include "host/ble_att.h"
 
+// The ringbuf and the pending outgoing buffers are shared with the nimble_host
+// task, which preempts the VM task at arbitrary points, and ringbuf operations
+// are not atomic, so guard the shared accesses with interrupts disabled.
+
+// Runs on the nimble_host task.
 void bleio_packet_buffer_extend(bleio_packet_buffer_obj_t *self, uint16_t conn_handle, const uint8_t *data, size_t len) {
     if (self->conn_handle != conn_handle) {
         return;
@@ -33,6 +39,8 @@ void bleio_packet_buffer_extend(bleio_packet_buffer_obj_t *self, uint16_t conn_h
         // the writes the client actually makes.
         return;
     }
+
+    common_hal_mcu_disable_interrupts();
 
     // Make room for the new value by dropping the oldest packets first.
     while (ringbuf_num_empty(&self->ringbuf) < len + sizeof(uint16_t)) {
@@ -45,6 +53,8 @@ void bleio_packet_buffer_extend(bleio_packet_buffer_obj_t *self, uint16_t conn_h
     }
     ringbuf_put_n(&self->ringbuf, (uint8_t *)&len, sizeof(uint16_t));
     ringbuf_put_n(&self->ringbuf, data, len);
+
+    common_hal_mcu_enable_interrupts();
 }
 
 static int packet_buffer_on_ble_client_evt(struct ble_gap_event *event, void *param);
@@ -264,6 +274,8 @@ mp_int_t common_hal_bleio_packet_buffer_readinto(bleio_packet_buffer_obj_t *self
         return 0;
     }
 
+    common_hal_mcu_disable_interrupts();
+
     // Get packet length, which is in first two bytes of packet.
     uint16_t packet_length;
     ringbuf_get_n(&self->ringbuf, (uint8_t *)&packet_length, sizeof(uint16_t));
@@ -281,6 +293,8 @@ mp_int_t common_hal_bleio_packet_buffer_readinto(bleio_packet_buffer_obj_t *self
         ringbuf_get_n(&self->ringbuf, data, packet_length);
         ret = packet_length;
     }
+
+    common_hal_mcu_enable_interrupts();
 
     return ret;
 }
@@ -324,6 +338,10 @@ mp_int_t common_hal_bleio_packet_buffer_write(bleio_packet_buffer_obj_t *self, c
 
     size_t num_bytes_written = 0;
 
+    // The nimble_host task may modify pending_size, pending_index, and
+    // packet_queued via queue_next_write(), so guard the append.
+    common_hal_mcu_disable_interrupts();
+
     uint32_t *pending = self->outgoing[self->pending_index];
 
     if (self->pending_size == 0) {
@@ -334,6 +352,8 @@ mp_int_t common_hal_bleio_packet_buffer_write(bleio_packet_buffer_obj_t *self, c
     memcpy(((uint8_t *)pending) + self->pending_size, data, len);
     self->pending_size += len;
     num_bytes_written += len;
+
+    common_hal_mcu_enable_interrupts();
 
     // If no writes are queued then sneak in this data.
     if (!self->packet_queued) {
