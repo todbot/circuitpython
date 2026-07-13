@@ -84,6 +84,10 @@
 #include "shared-module/keypad/__init__.h"
 #endif
 
+#if CIRCUITPY_AUDIOFILEWRITER
+#include "shared-module/audiofilewriter/AudioFileWriter.h"
+#endif
+
 #if CIRCUITPY_MEMORYMONITOR
 #include "shared-module/memorymonitor/__init__.h"
 #endif
@@ -397,6 +401,10 @@ static void cleanup_after_vm(mp_obj_t exception) {
 
     #if CIRCUITPY_KEYPAD
     keypad_reset();
+    #endif
+
+    #if CIRCUITPY_AUDIOFILEWRITER
+    audiofilewriter_reset();
     #endif
 
     // Close user-initiated sockets.

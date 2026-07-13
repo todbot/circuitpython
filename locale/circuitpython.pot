@@ -1246,6 +1246,7 @@ msgid "Not connected"
 msgstr ""
 
 #: ports/espressif/common-hal/_bleio/__init__.c
+#: shared-module/audiofilewriter/AudioFileWriter.c
 msgid "Already in progress"
 msgstr ""
 
@@ -4250,6 +4251,14 @@ msgstr ""
 
 #: shared-module/audiodelays/MultiTapDelay.c
 msgid "%q in %q must be of type %q or %q, not %q"
+msgstr ""
+
+#: shared-module/audiofilewriter/AudioFileWriter.c
+msgid "Only 8/16-bit mono/stereo is supported"
+msgstr ""
+
+#: shared-module/audiofilewriter/AudioFileWriter.c
+msgid "buffer_size too small for source"
 msgstr ""
 
 #: shared-module/audiomp3/MP3Decoder.c

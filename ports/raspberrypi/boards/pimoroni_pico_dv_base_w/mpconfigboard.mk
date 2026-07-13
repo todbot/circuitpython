@@ -19,6 +19,7 @@ CIRCUITPY_SOCKETPOOL = 1
 CIRCUITPY_WIFI = 1
 
 CIRCUITPY_PICODVI = 1
+CIRCUITPY_AUDIOFILEWRITER = 0
 
 # No room: this board fills FLASH_FIRMWARE. Frees ~9kB. Not the board's I2S
 # line-out/HDMI audio, which audiobusio still provides.
