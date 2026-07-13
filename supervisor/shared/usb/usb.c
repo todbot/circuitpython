@@ -184,7 +184,10 @@ void usb_background(void) {
     }
 }
 
-uint32_t tusb_time_millis_api(void) {
+// Ports may override this with a RAM-resident version when TinyUSB code that
+// calls it must not execute from flash (e.g. raspberrypi polls
+// tuh_task_event_ready(), which calls this, from core1).
+MP_WEAK uint32_t tusb_time_millis_api(void) {
     return supervisor_ticks_ms32();
 }
 
