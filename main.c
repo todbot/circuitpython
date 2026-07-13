@@ -657,7 +657,7 @@ static bool __attribute__((noinline)) run_code_py(safe_mode_t safe_mode, bool *s
         #if CIRCUITPY_ALARM
         if (_exec_result.return_code & PYEXEC_DEEP_SLEEP) {
             const bool awoke_from_true_deep_sleep =
-                common_hal_mcu_processor_get_reset_reason() == RESET_REASON_DEEP_SLEEP_ALARM;
+                common_hal_mcu_processor_get_reset_reason() == MCU_RESET_REASON_DEEP_SLEEP_ALARM;
 
             if (fake_sleeping) {
                 // This waits until a pretend deep sleep alarm occurs. They are set

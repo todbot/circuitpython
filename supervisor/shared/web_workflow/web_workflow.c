@@ -339,11 +339,11 @@ bool supervisor_start_web_workflow(void) {
 
     // Skip starting the workflow if we're not starting from power on or reset.
     const mcu_reset_reason_t reset_reason = common_hal_mcu_processor_get_reset_reason();
-    if (reset_reason != RESET_REASON_POWER_ON &&
-        reset_reason != RESET_REASON_RESET_PIN &&
-        reset_reason != RESET_REASON_DEEP_SLEEP_ALARM &&
-        reset_reason != RESET_REASON_UNKNOWN &&
-        reset_reason != RESET_REASON_SOFTWARE) {
+    if (reset_reason != MCU_RESET_REASON_POWER_ON &&
+        reset_reason != MCU_RESET_REASON_RESET_PIN &&
+        reset_reason != MCU_RESET_REASON_DEEP_SLEEP_ALARM &&
+        reset_reason != MCU_RESET_REASON_UNKNOWN &&
+        reset_reason != MCU_RESET_REASON_SOFTWARE) {
         return false;
     }
 

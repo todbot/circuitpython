@@ -54,10 +54,10 @@ safe_mode_t wait_for_safe_mode_reset(void) {
     }
 
     const mcu_reset_reason_t reset_reason = common_hal_mcu_processor_get_reset_reason();
-    if (reset_reason != RESET_REASON_POWER_ON &&
-        reset_reason != RESET_REASON_RESET_PIN &&
-        reset_reason != RESET_REASON_UNKNOWN &&
-        reset_reason != RESET_REASON_SOFTWARE) {
+    if (reset_reason != MCU_RESET_REASON_POWER_ON &&
+        reset_reason != MCU_RESET_REASON_RESET_PIN &&
+        reset_reason != MCU_RESET_REASON_UNKNOWN &&
+        reset_reason != MCU_RESET_REASON_SOFTWARE) {
         return SAFE_MODE_NONE;
     }
     #if CIRCUITPY_SKIP_SAFE_MODE_WAIT

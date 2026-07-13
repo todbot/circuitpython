@@ -45,6 +45,6 @@ void common_hal_mcu_processor_get_uid(uint8_t raw_id[]) {
 }
 
 mcu_reset_reason_t common_hal_mcu_processor_get_reset_reason(void) {
-    mcu_reset_reason_t r = RESET_REASON_UNKNOWN;
+    mcu_reset_reason_t r = MCU_RESET_REASON_UNKNOWN;
     return r;
 }

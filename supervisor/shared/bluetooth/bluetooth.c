@@ -187,11 +187,11 @@ void supervisor_bluetooth_init(void) {
     }
     const mcu_reset_reason_t reset_reason = common_hal_mcu_processor_get_reset_reason();
     boot_in_discovery_mode = false;
-    if (reset_reason != RESET_REASON_POWER_ON &&
-        reset_reason != RESET_REASON_RESET_PIN &&
-        reset_reason != RESET_REASON_DEEP_SLEEP_ALARM &&
-        reset_reason != RESET_REASON_UNKNOWN &&
-        reset_reason != RESET_REASON_SOFTWARE) {
+    if (reset_reason != MCU_RESET_REASON_POWER_ON &&
+        reset_reason != MCU_RESET_REASON_RESET_PIN &&
+        reset_reason != MCU_RESET_REASON_DEEP_SLEEP_ALARM &&
+        reset_reason != MCU_RESET_REASON_UNKNOWN &&
+        reset_reason != MCU_RESET_REASON_SOFTWARE) {
         return;
     }
 
