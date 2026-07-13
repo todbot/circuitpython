@@ -152,8 +152,8 @@ endif
 ifeq ($(CIRCUITPY_AUDIOSPEED),1)
 SRC_PATTERNS += audiospeed/%
 endif
-ifeq ($(CIRCUITPY_AUDIOWRITER),1)
-SRC_PATTERNS += audiowriter/%
+ifeq ($(CIRCUITPY_AUDIOFILEWRITER),1)
+SRC_PATTERNS += audiofilewriter/%
 endif
 ifeq ($(CIRCUITPY_AURORA_EPAPER),1)
 SRC_PATTERNS += aurora_epaper/%
@@ -713,7 +713,6 @@ SRC_SHARED_MODULE_ALL = \
 	audiodelays/Echo.c \
 	audiodelays/Chorus.c \
 	audiodelays/PitchShift.c \
-	audiodelays/GranularPitchShift.c \
 	audiodelays/MultiTapDelay.c \
 	audiodelays/__init__.c \
 	audiofilters/Distortion.c \
@@ -722,8 +721,6 @@ SRC_SHARED_MODULE_ALL = \
 	audiofilters/__init__.c \
 	audiofreeverb/__init__.c \
 	audiofreeverb/Freeverb.c \
-	audiowriter/AudioWriter.c \
-	audiowriter/__init__.c \
 	audioio/__init__.c \
 	audiomixer/Mixer.c \
 	audiomixer/MixerVoice.c \
