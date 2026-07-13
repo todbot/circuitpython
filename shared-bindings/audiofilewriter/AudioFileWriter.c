@@ -37,6 +37,8 @@
 //|         :param int buffer_size: Size in bytes of the internal RAM ring that
 //|           decouples file-write latency from the source. Larger values tolerate
 //|           longer write stalls (e.g. a slow SD card) at the cost of RAM.
+//|           Minimum valid value, and default, is ``512``. Must be at least the
+//|           size of the source buffer.
 //|
 //|         The audio format (sample rate, channel count, bit depth) is taken from
 //|         the source at `play()` time, so there are no format arguments here.
