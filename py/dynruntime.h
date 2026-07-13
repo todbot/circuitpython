@@ -71,7 +71,7 @@
 #define m_realloc_maybe(ptr, new_num_bytes, allow_move) (m_realloc_maybe_dyn((ptr), (new_num_bytes), (allow_move)))
 
 static MP_NORETURN inline void m_malloc_fail_dyn(size_t num_bytes) {
-    mp_fun_table.raise_msg(
+    mp_fun_table.raise_msg_str(
         mp_fun_table.load_global(MP_QSTR_MemoryError),
         "memory allocation failed");
 }
