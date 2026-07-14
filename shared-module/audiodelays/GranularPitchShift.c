@@ -12,7 +12,7 @@
 
 void common_hal_audiodelays_granular_pitch_shift_construct(audiodelays_granular_pitch_shift_obj_t *self,
     mp_obj_t semitones, mp_obj_t mix, uint32_t grain_size, uint32_t density,
-    uint32_t buffer_size, uint8_t bits_per_sample, bool samples_signed,
+    mp_float_t spread, uint32_t buffer_size, uint8_t bits_per_sample, bool samples_signed,
     uint8_t channel_count, uint32_t sample_rate) {
 
     // Basic settings every effect and audio sample has
@@ -69,6 +69,12 @@ void common_hal_audiodelays_granular_pitch_shift_construct(audiodelays_granular_
         density = GRANULAR_MAX_GRAINS;
     }
     self->density = density;
+
+    // Grain-start jitter amount and the PRNG that drives it. Seeded with a fixed
+    // nonzero constant so xorshift32 never degenerates to the all-zero state and
+    // the jitter sequence is reproducible from run to run.
+    common_hal_audiodelays_granular_pitch_shift_set_spread(self, spread);
+    self->rng_state = 0x1234abcdu;
 
     // Normalization for the overlap-add gain of the grain envelopes. A Hann
     // window overlapped at hop = grain_size / density sums to a constant gain of
@@ -157,6 +163,19 @@ void common_hal_audiodelays_granular_pitch_shift_set_mix(audiodelays_granular_pi
     synthio_block_assign_slot(arg, &self->mix, MP_QSTR_mix);
 }
 
+mp_float_t common_hal_audiodelays_granular_pitch_shift_get_spread(audiodelays_granular_pitch_shift_obj_t *self) {
+    return self->spread;
+}
+
+void common_hal_audiodelays_granular_pitch_shift_set_spread(audiodelays_granular_pitch_shift_obj_t *self, mp_float_t spread) {
+    if (spread < MICROPY_FLOAT_CONST(0.0)) {
+        spread = MICROPY_FLOAT_CONST(0.0);
+    } else if (spread > MICROPY_FLOAT_CONST(1.0)) {
+        spread = MICROPY_FLOAT_CONST(1.0);
+    }
+    self->spread = spread;
+}
+
 void audiodelays_granular_pitch_shift_reset_buffer(audiodelays_granular_pitch_shift_obj_t *self,
     bool single_channel_output,
     uint8_t channel) {
@@ -200,15 +219,39 @@ void common_hal_audiodelays_granular_pitch_shift_stop(audiodelays_granular_pitch
     return;
 }
 
+// xorshift32 PRNG for grain-start jitter. Kept local to this module so the
+// effect doesn't depend on the `random` module being enabled in a build.
+static uint32_t granular_pitch_shift_rand(audiodelays_granular_pitch_shift_obj_t *self) {
+    uint32_t x = self->rng_state;
+    x ^= x << 13;
+    x ^= x >> 17;
+    x ^= x << 5;
+    self->rng_state = x;
+    return x;
+}
+
 // Launch a grain into the first free pool slot, seeded to read from the capture
 // buffer starting grain_size words behind the current write cursor (so it reads
-// already-captured audio) at the current pitch-shift read rate. Grain read
-// state (read_index/phase) is per-frame / channel-independent; the per-channel
-// plane offset is applied at read time.
+// already-captured audio) at the current pitch-shift read rate. When `spread` is
+// nonzero the start is jittered up to a further grain_size words backward, which
+// is what gives granular synthesis its characteristic "cloud" texture. Jitter is
+// always backward (further behind the write cursor), so a grain never reads ahead
+// of captured audio and the capture buffer (capture_len == grain_size * 2) is
+// never overrun. Grain read state (read_index/phase) is per-frame /
+// channel-independent; the per-channel plane offset is applied at read time.
 static void granular_pitch_shift_launch_grain(audiodelays_granular_pitch_shift_obj_t *self) {
     for (uint32_t g = 0; g < GRANULAR_MAX_GRAINS; g++) {
         if (!self->grains[g].active) {
-            uint32_t start = (self->write_index + self->capture_len - self->grain_size) % self->capture_len;
+            // Backward jitter in [0, spread * grain_size]. Capped at grain_size
+            // so grain_size + jitter <= capture_len (== grain_size * 2).
+            uint32_t jitter = 0;
+            if (self->spread > MICROPY_FLOAT_CONST(0.0)) {
+                uint32_t max_jitter = (uint32_t)(self->spread * (mp_float_t)self->grain_size);
+                if (max_jitter > 0) {
+                    jitter = granular_pitch_shift_rand(self) % (max_jitter + 1);
+                }
+            }
+            uint32_t start = (self->write_index + self->capture_len - self->grain_size - jitter) % self->capture_len;
             self->grains[g].active = true;
             self->grains[g].read_index = start << GRANULAR_PITCH_READ_SHIFT;
             self->grains[g].read_rate = self->read_rate;

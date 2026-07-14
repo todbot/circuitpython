@@ -64,6 +64,15 @@ typedef struct {
     uint32_t grain_size; // samples per grain
     uint32_t density;    // number of overlapping grains (<= GRANULAR_MAX_GRAINS)
 
+    // Granular jitter: randomizes each grain's start position within the capture
+    // buffer. 0.0 is fully deterministic (grains always start grain_size words
+    // behind the write cursor); 1.0 spreads the start up to a further grain_size
+    // words backward, giving the classic granular "cloud" texture. Jitter is
+    // always backward (further behind the write cursor) so it never reads ahead
+    // of captured audio.
+    mp_float_t spread;
+    uint32_t rng_state; // xorshift32 state for grain-start jitter
+
     // Q15 (0..32768) normalization applied to the enveloped grain sum so the
     // overlap-add gain of `density` Hann grains stays ~unity (Hann satisfies
     // COLA at these hops with a summed gain of density/2, so the factor is
