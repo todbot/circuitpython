@@ -557,6 +557,12 @@ SRC_C += \
 
 INC += \
 	-isystem lib/Pico-PIO-USB/src
+
+# Core1 posts USB events while core0 may hold the TinyUSB queue mutex. The
+# contended wait path calls these two flash-resident SDK functions, and core1
+# must not execute from flash. Replace them with RAM-resident implementations
+# in common-hal/usb_host/Port.c on USB host builds only. See issue #11116.
+PICO_LDFLAGS += -Wl,--wrap=best_effort_wfe_or_timeout -Wl,--wrap=time_us_64
 endif
 
 ifeq ($(CIRCUITPY_PICODVI),1)

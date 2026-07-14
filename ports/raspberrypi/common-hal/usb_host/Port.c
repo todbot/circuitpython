@@ -34,6 +34,40 @@ usb_host_port_obj_t usb_host_instance;
 
 volatile bool _core1_ready = false;
 
+// Core1 posts TinyUSB events while core0 may hold the queue FIFO mutex. The
+// contended wait path calls best_effort_wfe_or_timeout() and time_us_64(),
+// which normally live in flash, but core1 must not touch flash (see the MPU
+// setup in core1_main below). These RAM-resident replacements are linked in
+// with --wrap on USB host builds only (see the port Makefile). Issue #11116.
+//
+uint64_t __wrap_time_us_64(void);
+bool __wrap_best_effort_wfe_or_timeout(absolute_time_t timeout_timestamp);
+
+// The same hi/lo/hi re-read loop as the SDK's timer_time_us_64, to defeat
+// rollover between the two 32-bit halves.
+uint64_t __not_in_flash_func(__wrap_time_us_64)(void) {
+    uint32_t hi = timer_hw->timerawh;
+    uint32_t lo;
+    do {
+        lo = timer_hw->timerawl;
+        uint32_t next_hi = timer_hw->timerawh;
+        if (hi == next_hi) {
+            break;
+        }
+        hi = next_hi;
+    } while (true);
+    return ((uint64_t)hi << 32) | lo;
+}
+
+// Mirrors the SDK's own PICO_TIME_DEFAULT_ALARM_POOL_DISABLED fallback
+// (a poll of the clock with no __wfe): "best effort" explicitly permits
+// returning early, and every SDK caller re-checks in a loop. Polling honors
+// the timeout exactly and avoids dragging the alarm pool machinery into RAM.
+bool __not_in_flash_func(__wrap_best_effort_wfe_or_timeout)(absolute_time_t timeout_timestamp) {
+    tight_loop_contents();
+    return __wrap_time_us_64() >= to_us_since_boot(timeout_timestamp);
+}
+
 static void __not_in_flash_func(core1_main)(void) {
     // The MPU is reset before this starts.
     SysTick->LOAD = (uint32_t)((common_hal_mcu_processor_get_frequency() / 1000) - 1UL);
