@@ -185,11 +185,12 @@ mcu_reset_reason_t common_hal_mcu_processor_get_reset_reason(void) {
 
         case ESP_RST_DEEPSLEEP: {
             uint32_t wakeup_causes = esp_sleep_get_wakeup_causes();
-            uint32_t alarm_causes = (1 << ESP_SLEEP_WAKEUP_TIMER) |
-                (1 << ESP_SLEEP_WAKEUP_EXT0) |
-                (1 << ESP_SLEEP_WAKEUP_EXT1) |
-                (1 << ESP_SLEEP_WAKEUP_TOUCHPAD) |
-                (1 << ESP_SLEEP_WAKEUP_ULP);
+            uint32_t alarm_causes =
+                BIT(ESP_SLEEP_WAKEUP_TIMER) |
+                BIT(ESP_SLEEP_WAKEUP_EXT0) |
+                BIT(ESP_SLEEP_WAKEUP_EXT1) |
+                BIT(ESP_SLEEP_WAKEUP_TOUCHPAD) |
+                BIT(ESP_SLEEP_WAKEUP_ULP);
             if (wakeup_causes & alarm_causes) {
                 return MCU_RESET_REASON_DEEP_SLEEP_ALARM;
             }

@@ -153,7 +153,10 @@ MP_PROPERTY_GETSET(supervisor_runtime_autoreload_obj,
 
 //|     ble_workflow: bool
 //|     """Enable/Disable ble workflow until a reset. This prevents BLE advertising outside of the VM and
-//|     the services used for it."""
+//|     the services used for it.
+//|     If ``CIRCUITPY_BLE_WORKFLOW=false`` is present in ``settings.toml``, setting `ble_workflow`
+//|     to ``True`` has no effect.
+//|     """
 //|
 static mp_obj_t supervisor_runtime_get_ble_workflow(mp_obj_t self) {
     #if CIRCUITPY_BLE_FILE_SERVICE && CIRCUITPY_SERIAL_BLE
