@@ -42,9 +42,9 @@ Upper and lower case may both be used in the key name.
    CIRCUITPY_SDCARD_USB = false # a boolean
    delay = 0.75                 # a float
    FRENCH="œuvre"               # unicode can be used
-   FRENCH2="\\u0153uvre"        # same unicode string, using a 16-bit escape code
-   FRENCH3="\\U00000153uvre"    # same unicode string, using a 32-bit escape code
-   STRING_WITH_ESCAPE_CODES="supported, including \\r\\n\\"\\\\"
+   FRENCH2="\u0153uvre"        # same unicode string, using a 16-bit escape code
+   FRENCH3="\U00000153uvre"    # same unicode string, using a 32-bit escape code
+   STRING_WITH_ESCAPE_CODES="supported, including \r \n \" \\"
 
 Details of the TOML language subset
 -----------------------------------
