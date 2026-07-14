@@ -116,7 +116,7 @@ void common_hal_audiodelays_granular_pitch_shift_construct(audiodelays_granular_
     for (uint32_t n = 0; n < self->envelope_len; n++) {
         mp_float_t w = MICROPY_FLOAT_CONST(0.5) *
             (MICROPY_FLOAT_CONST(1.0) - MICROPY_FLOAT_C_FUN(cos)(
-                MICROPY_FLOAT_CONST(2.0) * MICROPY_FLOAT_CONST(3.14159265358979323846) * (mp_float_t)n / denom));
+            MICROPY_FLOAT_CONST(2.0) * MICROPY_FLOAT_CONST(3.14159265358979323846) * (mp_float_t)n / denom));
         self->envelope_table[n] = (int16_t)(w * MICROPY_FLOAT_CONST(32767.0));
     }
 
