@@ -1,6 +1,6 @@
 // This file is part of the CircuitPython project: https://circuitpython.org
 //
-// SPDX-FileCopyrightText: Copyright (c) 2025 Cooper Dalrymple
+// SPDX-FileCopyrightText: Copyright (c) 2026 Tim Cocks for Adafruit Industries
 //
 // SPDX-License-Identifier: MIT
 #include "shared-bindings/audiodelays/GranularPitchShift.h"
@@ -18,7 +18,7 @@ void common_hal_audiodelays_granular_pitch_shift_construct(audiodelays_granular_
     // Basic settings every effect and audio sample has
     // These are the effect's values, not the source sample(s)
     self->base.bits_per_sample = bits_per_sample; // Most common is 16, but 8 is also supported in many places
-    self->base.samples_signed = samples_signed; // Are the samples we provide signed (common is true)
+    self->base.samples_signed = samples_signed; // Are the samples we provide signed
     self->base.channel_count = channel_count; // Channels can be 1 for mono or 2 for stereo
     self->base.sample_rate = sample_rate; // Sample rate for the effect, this generally needs to match all audio objects
     self->base.single_buffer = false;
@@ -89,8 +89,7 @@ void common_hal_audiodelays_granular_pitch_shift_construct(audiodelays_granular_
     // Capture buffer (the delay line grains read from), stored as 16-bit,
     // planar per channel. Length is grain_size * 2 words per channel so a grain
     // starting grain_size words behind the write pointer never overruns the live
-    // write cursor even when reading ahead at a raised pitch (see plan sizing
-    // notes).
+    // write cursor even when reading ahead at a raised pitch
     self->capture_len = self->grain_size * 2; // words per channel
     uint32_t capture_bytes = self->capture_len * self->base.channel_count * sizeof(int16_t);
     self->capture_buffer = m_malloc_without_collect(capture_bytes);
@@ -102,9 +101,7 @@ void common_hal_audiodelays_granular_pitch_shift_construct(audiodelays_granular_
     self->write_index = 0;
 
     // Precompute the grain amplitude envelope: a raised-cosine (Hann) window in
-    // Q15 (0..32767), indexed directly by a grain's phase. Computed once here (a
-    // little float math at construction is fine; the inner playback loop stays
-    // integer-only).
+    // Q15 (0..32767), indexed directly by a grain's phase.
     self->envelope_len = self->grain_size;
     uint32_t envelope_bytes = self->envelope_len * sizeof(int16_t);
     self->envelope_table = m_malloc_without_collect(envelope_bytes);
@@ -343,7 +340,7 @@ audioio_get_buffer_result_t audiodelays_granular_pitch_shift_get_buffer(audiodel
             int16_t *sample_src = (int16_t *)self->sample_remaining_buffer; // for 16-bit samples
             int8_t *sample_hsrc = (int8_t *)self->sample_remaining_buffer; // for 8-bit samples
 
-            // get the effect values we need from the BlockInput. These may change at run time so you need to do bounds checking if required
+            // get the effect values we need from the BlockInput.
             shared_bindings_synthio_lfo_tick(self->base.sample_rate, n / self->base.channel_count);
             mp_float_t semitones = synthio_block_slot_get(&self->semitones);
             // Doubled (0.0..2.0) so the crossfade below can hold both dry and wet
@@ -365,7 +362,7 @@ audioio_get_buffer_result_t audiodelays_granular_pitch_shift_get_buffer(audiodel
                     if (self->base.samples_signed) {
                         sample_word = sample_hsrc[i];
                     } else {
-                        // Be careful here changing from an 8 bit unsigned to signed into a 32-bit signed
+                        // Changing from an 8 bit unsigned to signed into a 32-bit signed
                         sample_word = (int8_t)(((uint8_t)sample_hsrc[i]) ^ 0x80);
                     }
                 }
@@ -388,11 +385,11 @@ audioio_get_buffer_result_t audiodelays_granular_pitch_shift_get_buffer(audiodel
                     uint32_t read_index_fp = self->grains[g].read_index;
                     uint32_t ipart = read_index_fp >> GRANULAR_PITCH_READ_SHIFT;
                     uint32_t frac = read_index_fp & ((1 << GRANULAR_PITCH_READ_SHIFT) - 1);
-                    uint32_t i0 = ipart % self->capture_len;
-                    uint32_t i1 = (ipart + 1) % self->capture_len;
-                    int32_t s0 = capture_buffer[i0 + self->capture_len * buf_offset];
-                    int32_t s1 = capture_buffer[i1 + self->capture_len * buf_offset];
-                    int32_t grain_out = s0 + (((s1 - s0) * (int32_t)frac) >> GRANULAR_PITCH_READ_SHIFT);
+                    uint32_t index_lo = ipart % self->capture_len;
+                    uint32_t index_hi = (ipart + 1) % self->capture_len;
+                    int32_t sample_lo = capture_buffer[index_lo + self->capture_len * buf_offset];
+                    int32_t sample_hi = capture_buffer[index_hi + self->capture_len * buf_offset];
+                    int32_t grain_out = sample_lo + (((sample_hi - sample_lo) * (int32_t)frac) >> GRANULAR_PITCH_READ_SHIFT);
                     // Apply the grain envelope (Q15). phase < length == envelope_len.
                     int32_t env = self->envelope_table[self->grains[g].phase];
                     word += (grain_out * env) >> 15;

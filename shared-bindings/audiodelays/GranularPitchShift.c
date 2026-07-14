@@ -1,6 +1,6 @@
 // This file is part of the CircuitPython project: https://circuitpython.org
 //
-// SPDX-FileCopyrightText: Copyright (c) 2025 Cooper Dalrymple
+// SPDX-FileCopyrightText: Copyright (c) 2026 Tim Cocks for Adafruit Industries
 //
 // SPDX-License-Identifier: MIT
 
@@ -63,10 +63,17 @@
 //|           import audiobusio
 //|           import synthio
 //|           import audiodelays
+//|           from pwmio import PWMOut
+//|           import adafruit_tlv320
 //|
-//|           audio = audiobusio.I2SOut(bit_clock=board.GP0, word_select=board.GP1, data=board.GP2)
+//|           mclk_pwm = PWMOut(board.I2S_MCLK, frequency=15_000_000, duty_cycle=2**15)
+//|           i2c = board.I2C()
+//|           dac = adafruit_tlv320.TLV320DAC3100(i2c)
+//|           dac.configure_clocks(sample_rate=44100, bit_depth=16, mclk_freq=15_000_000)
+//|           dac.headphone_output = True
+//|           audio = audiobusio.I2SOut(board.I2S_BCLK, board.I2S_WS, board.I2S_DIN)
 //|           synth = synthio.Synthesizer(channel_count=1, sample_rate=44100)
-//|           pitch_shift = audiodelays.GranularPitchShift(semitones=5.0, mix=0.5, grain_size=2048, density=2, buffer_size=1024, channel_count=1, sample_rate=44100)
+//|           pitch_shift = audiodelays.GranularPitchShift(semitones=5.0, mix=1.0, spread=0.25, grain_size=2048, density=2, buffer_size=1024, channel_count=1, sample_rate=44100)
 //|           pitch_shift.play(synth)
 //|           audio.play(pitch_shift)
 //|
