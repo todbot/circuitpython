@@ -10,6 +10,7 @@ EXTERNAL_FLASH_DEVICES = "W25Q32JVxQ"
 
 CIRCUITPY__EVE = 1
 CIRCUITPY_PICODVI = 1
+CIRCUITPY_BITMAPTOOLS = 0
 
 FROZEN_MPY_DIRS += $(TOP)/frozen/Adafruit_CircuitPython_MPU6050
 FROZEN_MPY_DIRS += $(TOP)/frozen/Adafruit_CircuitPython_Pixel_Framebuf
