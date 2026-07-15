@@ -65,10 +65,9 @@ A second CDC interface is optionally available for binary data transfer (see `us
 
 ## BLE
 
-The BLE workflow can be enabled for BLE-capable boards by setting `CIRCUITPY_BLE_WORKFLOW=true`
-in `settings.toml`. The default is `false`.
-This `settings.toml` key and the default of `false` is new in 10.3.0;
-previously BLE workflow was available by default.
+The BLE workflow provides file transfer and REPL access over BLE.
+It can be controlled by setting `CIRCUITPY_BLE_WORKFLOW` to be `true` or `false`.
+in `settings.toml`. The default is `true`.
 
 To prevent malicious access, even if `CIRCUITPY_BLE_WORKFLOW=true`,
 the user must initiate a bonded connection with the host.

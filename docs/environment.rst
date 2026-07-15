@@ -80,7 +80,7 @@ Otherwise, defaults to ``CIRCUITPYxxxx``, where ``xxxx`` varies per board.
 
 CIRCUITPY_BLE_WORKFLOW (boolean)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-If ``true``, enables the BLE workflow. Defaults to ``false``. If ``false``,
+If ``false``, disable the BLE workflow. Defaults to ``true``. If ``false``,
 changing ``supervisor.runtime.ble_workflow`` has no effect.
 
 

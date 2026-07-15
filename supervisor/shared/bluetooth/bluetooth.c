@@ -77,8 +77,8 @@ static bool ble_started = false;
 #define WORKFLOW_ENABLED 1
 #define WORKFLOW_DISABLED 2
 
-// Value of CIRCUITPY_BLE_WORKFLOW in settings.toml. Defaults to false.
-static bool ble_workflow_setting = false;
+// Value of CIRCUITPY_BLE_WORKFLOW in settings.toml. Defaults to true.
+static bool ble_workflow_setting = true;
 
 // Has BLE workflow been enabled, because it was allow and we've bonded to the workflow host?
 // Also controlled by supervisor.runtime.ble_workflow.
@@ -189,15 +189,12 @@ void supervisor_bluetooth_init(void) {
     #if (CIRCUITPY_BLE_FILE_SERVICE || CIRCUITPY_BLE_SERIAL_SERVICE)
 
     #if CIRCUITPY_SETTINGS_TOML
-    // Check if the user enabled BLE workflow in settings.toml. The default is that it's off.
-    ble_workflow_setting = false;
+    // Check if the user disabled BLE workflow in settings.toml. The default is that it's enabled.
+    ble_workflow_setting = true;
     settings_get_bool("CIRCUITPY_BLE_WORKFLOW", &ble_workflow_setting);
     if (!ble_workflow_setting) {
         return;
     }
-    #else
-    // If settings.toml isn't enabled, turn on CIRCUITPY_BLE_WORKFLOW by default.
-    ble_workflow_setting = true;
     #endif // CIRCUITPY_SETTINGS_TOML
 
     uint32_t reset_state = port_get_saved_word();
