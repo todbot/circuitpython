@@ -18,7 +18,6 @@
 
 #include "supervisor/port.h"
 #include "supervisor/shared/serial.h"
-#include "supervisor/shared/settings.h"
 #include "supervisor/shared/status_leds.h"
 #include "supervisor/shared/tick.h"
 #include "supervisor/shared/translate/translate.h"
@@ -29,7 +28,7 @@
 #include "supervisor/shared/bluetooth/file_transfer.h"
 #endif
 
-#if CIRCUITPY_SERIAL_BLE
+#if CIRCUITPY_BLE_SERIAL_SERVICE
 #include "supervisor/shared/bluetooth/serial.h"
 #endif
 
@@ -37,7 +36,7 @@
 #include "supervisor/shared/status_bar.h"
 #endif
 
-#if CIRCUITPY_WEB_WORKFLOW && CIRCUITPY_WIFI && CIRCUITPY_SETTINGS_TOML
+#if (CIRCUITPY_BLE_FILE_SERVICE || (CIRCUITPY_WEB_WORKFLOW && CIRCUITPY_WIFI)) && CIRCUITPY_SETTINGS_TOML
 #include "supervisor/shared/settings.h"
 #endif
 
@@ -68,7 +67,7 @@ const uint8_t private_advertising_data[] = {
 // This scan response advertises the full device name (if it fits.)
 uint8_t circuitpython_scan_response_data[31];
 
-#if CIRCUITPY_BLE_FILE_SERVICE || CIRCUITPY_SERIAL_BLE
+#if CIRCUITPY_BLE_FILE_SERVICE || CIRCUITPY_BLE_SERIAL_SERVICE
 static bool boot_in_discovery_mode = false;
 static bool advertising = false;
 static bool _private_advertising = false;
@@ -181,20 +180,25 @@ static void supervisor_bluetooth_start_advertising(void) {
     advertising = status == 0;
 }
 
-#endif  // CIRCUITPY_BLE_FILE_SERVICE || CIRCUITPY_SERIAL_BLE
+#endif  // CIRCUITPY_BLE_FILE_SERVICE || CIRCUITPY_BLE_SERIAL_SERVICE
 
 #define BLE_DISCOVERY_DATA_GUARD 0xbb0000bb
 #define BLE_DISCOVERY_DATA_GUARD_MASK 0xff0000ff
 
 void supervisor_bluetooth_init(void) {
-    #if CIRCUITPY_BLE_FILE_SERVICE || CIRCUITPY_SERIAL_BLE
+    #if (CIRCUITPY_BLE_FILE_SERVICE || CIRCUITPY_BLE_SERIAL_SERVICE)
 
+    #if CIRCUITPY_SETTINGS_TOML
     // Check if the user enabled BLE workflow in settings.toml. The default is that it's off.
     ble_workflow_setting = false;
     settings_get_bool("CIRCUITPY_BLE_WORKFLOW", &ble_workflow_setting);
     if (!ble_workflow_setting) {
         return;
     }
+    #else
+    // If settings.toml isn't enabled, turn on CIRCUITPY_BLE_WORKFLOW by default.
+    ble_workflow_setting = true;
+    #endif // CIRCUITPY_SETTINGS_TOML
 
     uint32_t reset_state = port_get_saved_word();
     uint32_t ble_mode = 0;
@@ -286,7 +290,7 @@ void supervisor_bluetooth_init(void) {
 }
 
 void supervisor_bluetooth_background(void) {
-    #if CIRCUITPY_BLE_FILE_SERVICE || CIRCUITPY_SERIAL_BLE
+    #if CIRCUITPY_BLE_FILE_SERVICE || CIRCUITPY_BLE_SERIAL_SERVICE
     if (!ble_started) {
         return;
     }
@@ -318,7 +322,7 @@ void supervisor_bluetooth_background(void) {
 }
 
 void supervisor_start_bluetooth(void) {
-    #if CIRCUITPY_BLE_FILE_SERVICE || CIRCUITPY_SERIAL_BLE
+    #if CIRCUITPY_BLE_FILE_SERVICE || CIRCUITPY_BLE_SERIAL_SERVICE
 
     if (workflow_state != WORKFLOW_ENABLED || ble_started) {
         return;
@@ -330,7 +334,7 @@ void supervisor_start_bluetooth(void) {
     supervisor_start_bluetooth_file_transfer();
     #endif
 
-    #if CIRCUITPY_SERIAL_BLE
+    #if CIRCUITPY_BLE_SERIAL_SERVICE
     supervisor_start_bluetooth_serial();
     #endif
 
@@ -348,7 +352,7 @@ void supervisor_start_bluetooth(void) {
 }
 
 void supervisor_stop_bluetooth(void) {
-    #if CIRCUITPY_BLE_FILE_SERVICE || CIRCUITPY_SERIAL_BLE
+    #if CIRCUITPY_BLE_FILE_SERVICE || CIRCUITPY_BLE_SERIAL_SERVICE
 
     if (!ble_started && workflow_state != WORKFLOW_ENABLED) {
         return;
@@ -360,7 +364,7 @@ void supervisor_stop_bluetooth(void) {
     supervisor_stop_bluetooth_file_transfer();
     #endif
 
-    #if CIRCUITPY_SERIAL_BLE
+    #if CIRCUITPY_BLE_SERIAL_SERVICE
     supervisor_stop_bluetooth_serial();
     #endif
 
@@ -368,7 +372,7 @@ void supervisor_stop_bluetooth(void) {
 }
 
 void supervisor_bluetooth_enable_workflow(void) {
-    #if CIRCUITPY_BLE_FILE_SERVICE || CIRCUITPY_SERIAL_BLE
+    #if CIRCUITPY_BLE_FILE_SERVICE || CIRCUITPY_BLE_SERIAL_SERVICE
     if (!ble_workflow_setting || workflow_state == WORKFLOW_DISABLED) {
         return;
     }
@@ -377,13 +381,13 @@ void supervisor_bluetooth_enable_workflow(void) {
 }
 
 void supervisor_bluetooth_disable_workflow(void) {
-    #if CIRCUITPY_BLE_FILE_SERVICE || CIRCUITPY_SERIAL_BLE
+    #if CIRCUITPY_BLE_FILE_SERVICE || CIRCUITPY_BLE_SERIAL_SERVICE
     workflow_state = WORKFLOW_DISABLED;
     #endif
 }
 
 bool supervisor_bluetooth_workflow_is_enabled(void) {
-    #if CIRCUITPY_BLE_FILE_SERVICE || CIRCUITPY_SERIAL_BLE
+    #if CIRCUITPY_BLE_FILE_SERVICE || CIRCUITPY_BLE_SERIAL_SERVICE
     if (workflow_state == WORKFLOW_ENABLED) {
         return true;
     }

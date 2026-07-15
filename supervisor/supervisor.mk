@@ -51,7 +51,7 @@ ifeq ($(CIRCUITPY_BLEIO),1)
   ifeq ($(CIRCUITPY_BLE_FILE_SERVICE),1)
     SRC_SUPERVISOR += supervisor/shared/bluetooth/file_transfer.c
   endif
-  ifeq ($(CIRCUITPY_SERIAL_BLE),1)
+  ifeq ($(CIRCUITPY_BLE_SERIAL_SERVICE),1)
     SRC_SUPERVISOR += supervisor/shared/bluetooth/serial.c
   endif
 endif

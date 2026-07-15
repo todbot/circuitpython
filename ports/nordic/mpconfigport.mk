@@ -41,6 +41,8 @@ CIRCUITPY_I2CTARGET = 0
 
 CIRCUITPY_RTC ?= 1
 
+CIRCUITPY_SETTINGS_TOML ?= 1
+
 # frequencyio not yet implemented
 CIRCUITPY_FREQUENCYIO = 0
 
@@ -49,11 +51,9 @@ CIRCUITPY_ROTARYIO_SOFTENCODER = 1
 # Sleep and Wakeup
 CIRCUITPY_ALARM ?= 1
 
-# Turn on the BLE file service
+# Turn on the BLE file and serial services for BLE workflow
 CIRCUITPY_BLE_FILE_SERVICE ?= 1
-
-# Turn on the BLE serial service
-CIRCUITPY_SERIAL_BLE ?= 1
+CIRCUITPY_BLE_SERIAL_SERVICE ?= 1
 
 CIRCUITPY_COMPUTED_GOTO_SAVE_SPACE ?= 1
 

@@ -18,7 +18,7 @@
 #if CIRCUITPY_BLEIO
 #include "shared-bindings/_bleio/__init__.h"
 #include "supervisor/shared/bluetooth/bluetooth.h"
-#if CIRCUITPY_SERIAL_BLE
+#if CIRCUITPY_BLE_SERIAL_SERVICE
 #include "supervisor/shared/bluetooth/serial.h"
 #endif
 #endif
@@ -82,7 +82,7 @@ bool supervisor_workflow_active(void) {
         return true;
     }
     #endif
-    #if CIRCUITPY_SERIAL_BLE
+    #if CIRCUITPY_BLE_SERIAL_SERVICE
     if (ble_serial_connected()) {
         return true;
     }

@@ -16,7 +16,7 @@
 #include "py/mpstate.h"
 #include "py/runtime.h"
 
-#if CIRCUITPY_SERIAL_BLE && CIRCUITPY_VERBOSE_BLE
+#if CIRCUITPY_BLE_SERIAL_SERVICE && CIRCUITPY_VERBOSE_BLE
 #include "supervisor/shared/bluetooth/serial.h"
 #endif
 
@@ -85,7 +85,7 @@ void ble_event_remove_handler(ble_gap_event_fn *func, void *param) {
 }
 
 int ble_event_run_handlers(struct ble_gap_event *event) {
-    #if CIRCUITPY_SERIAL_BLE && CIRCUITPY_VERBOSE_BLE
+    #if CIRCUITPY_BLE_SERIAL_SERVICE && CIRCUITPY_VERBOSE_BLE
     ble_serial_disable();
     #endif
 
@@ -101,7 +101,7 @@ int ble_event_run_handlers(struct ble_gap_event *event) {
         done = it->func(event, it->param) || done;
         it = next;
     }
-    #if CIRCUITPY_SERIAL_BLE && CIRCUITPY_VERBOSE_BLE
+    #if CIRCUITPY_BLE_SERIAL_SERVICE && CIRCUITPY_VERBOSE_BLE
     ble_serial_enable();
     #endif
     return 0;
