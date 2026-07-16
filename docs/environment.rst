@@ -73,13 +73,19 @@ You can also include any other key/value pairs in the file for use with your own
 Keys that affect CircuitPython behavior
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-CIRCUITPY_BLE_NAME
-~~~~~~~~~~~~~~~~~~
+CIRCUITPY_BLE_NAME (string)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 If supplied, sets the BLE name the board advertises as, including for the BLE workflow.
 Otherwise, defaults to ``CIRCUITPYxxxx``, where ``xxxx`` varies per board.
 
-CIRCUITPY_HEAP_START_SIZE
-~~~~~~~~~~~~~~~~~~~~~~~~~
+CIRCUITPY_BLE_WORKFLOW (boolean)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+If ``false``, disable the BLE workflow. Defaults to ``true``. If ``false``,
+changing ``supervisor.runtime.ble_workflow`` has no effect.
+
+
+CIRCUITPY_HEAP_START_SIZE (integer)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Sets the initial size of the python heap, allocated from the outer heap. Must be a multiple of 4.
 The default is currently 8192.
 The python heap will grow by doubling and redoubling this initial size until it cannot fit in the outer heap.
@@ -87,43 +93,44 @@ Larger values will reserve more RAM for python use and prevent the supervisor an
 from large allocations of their own.
 Smaller values will likely grow sooner than large start sizes.
 
-CIRCUITPY_PYSTACK_SIZE
-~~~~~~~~~~~~~~~~~~~~~~
+CIRCUITPY_PYSTACK_SIZE (integer)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Sets the size of the python stack. Must be a multiple of 4. The default value is currently 1536.
 Increasing the stack reduces the size of the heap available to python code.
 Used to avoid "Pystack exhausted" errors when the code can't be reworked to avoid it.
 
-CIRCUITPY_WEB_API_PASSWORD
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+CIRCUITPY_WEB_API_PASSWORD (string)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Password required to make modifications to the board from the Web Workflow.
 If the password is not specified, the Web Workflow is not enabled.
 
-CIRCUITPY_WEB_API_PORT
-~~~~~~~~~~~~~~~~~~~~~~
+CIRCUITPY_WEB_API_PORT (integer)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 TCP port number used for the Web Workflow HTTP API. Defaults to 80 when omitted.
 
-CIRCUITPY_WEB_INSTANCE_NAME
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+CIRCUITPY_WEB_INSTANCE_NAME (string)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Human-friendly name the board advertises over mDNS for the Web Workflow.
 Defaults to the human-readable board name if omitted.
 This is not the hostname.
 
-CIRCUITPY_WIFI_SSID
-~~~~~~~~~~~~~~~~~~~
-CIRCUITPY_WIFI_PASSWORD
-~~~~~~~~~~~~~~~~~~~~~~~
+CIRCUITPY_WIFI_SSID (string)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+CIRCUITPY_WIFI_PASSWORD (string)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 If these values are supplied, connects automatically to a local WiFi network
 with the specified SSID and password before ``boot.py`` and/or ``code.py`` are run.
 
-CIRCUITPY_WIFI_HOSTNAME
-~~~~~~~~~~~~~~~~~~~~~~~
+CIRCUITPY_WIFI_HOSTNAME (string)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 If supplied, sets the initial ``wifi.radio.hostname`` to the given value.
 Otherwise, the default value is ``cpy-<board_name>-<mac_address>``,
 with some shortening for length if necessary.
 If the supplied value is an invalid hostname or is too long, it is ignored.
 
-CIRCUITPY_SDCARD_USB
-^^^^^^^^^^^^^^^^^^^^
+CIRCUITPY_SDCARD_USB (boolean)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Present a mounted SD card as a USB MSC device. If the board has default pins for an SD card socket,
 the card is mounted automatically on startup.
 Only one card can be presented.
@@ -135,8 +142,10 @@ so set this to ``false`` if you don't need this feature.
 Additional board-specific keys
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-CIRCUITPY_DISPLAY_WIDTH (Sunton, MaTouch)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+CIRCUITPY_DISPLAY_WIDTH (integer)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+(Sunton, MaTouch boards)
+
 Selects the correct screen resolution (1024x600 or 800x640) for the particular board variant.
 If the CIRCUITPY_DISPLAY_WIDTH parameter is set to a value of 1024 the display is initialized
 during power up at 1024x600 otherwise the display will be initialized at a resolution
@@ -146,8 +155,8 @@ of 800x480.
 `Sunton ESP32-2432S028 <https://circuitpython.org/board/sunton_esp32_2432S028/>`_
 `Sunton ESP32-2432S024C <https://circuitpython.org/board/sunton_esp32_2432S024C/>`_
 
-CIRCUITPY_DISPLAY_ROTATION
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+CIRCUITPY_DISPLAY_ROTATION (integer)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Selects the correct screen rotation (0, 90, 180 or 270) for the particular board variant.
 If the CIRCUITPY_DISPLAY_ROTATION parameter is set the display will be initialized
 during power up with the selected rotation, otherwise the display will be initialized with
@@ -158,8 +167,8 @@ a rotation of 0. Attempting to initialize the screen with a rotation other than 
 `Adafruit Feather RP2350 <https://circuitpython.org/board/adafruit_feather_rp2350/>`_
 `Adafruit Metro RP2350 <https://circuitpython.org/board/adafruit_metro_rp2350/>`_
 
-CIRCUITPY_DISPLAY_FREQUENCY
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+CIRCUITPY_DISPLAY_FREQUENCY (integer)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Allows the entry of a display frequency used during the "dotclock" framebuffer construction.
 If a valid frequency is not defined the board will initialize the framebuffer with a
 frequency of 12500000hz (12.5Mhz). The value should be entered as an integer in hertz
@@ -169,8 +178,8 @@ display frequency.
 `Sunton ESP32-8048S050 <https://circuitpython.org/board/sunton_esp32_8048S050/>`_
 
 
-CIRCUITPY_PICODVI_ENABLE
-~~~~~~~~~~~~~~~~~~~~~~~~
+CIRCUITPY_PICODVI_ENABLE (string)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Whether to configure the display at board initialization time, one of the following:
 
 .. code-block::
@@ -186,8 +195,16 @@ until it is released by ``displayio.release_displays()``. It does not appear at
 `Adafruit Feather RP2350 <https://circuitpython.org/board/adafruit_feather_rp2350/>`_
 `Adafruit Metro RP2350 <https://circuitpython.org/board/adafruit_metro_rp2350/>`_
 
-CIRCUITPY_DISPLAY_WIDTH, CIRCUITPY_DISPLAY_HEIGHT, and CIRCUITPY_DISPLAY_COLOR_DEPTH (RP2350 boards with DVI or HSTX connector)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+CIRCUITPY_DISPLAY_WIDTH (integer)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+CIRCUITPY_DISPLAY_HEIGHT (integer)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+CIRCUITPY_DISPLAY_COLOR_DEPTH (integer)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+(RP2350 boards with DVI or HSTX connector)
+
 Selects the desired resolution and color depth.
 
 Supported resolutions are:
@@ -213,15 +230,15 @@ Example: Configure the display to 640x480 black and white (1 bit per pixel):
 `Adafruit Feather RP2350 <https://circuitpython.org/board/adafruit_feather_rp2350/>`_
 `Adafruit Metro RP2350 <https://circuitpython.org/board/adafruit_metro_rp2350/>`_
 
-CIRCUITPY_SAFEMODE_DELAY
-~~~~~~~~~~~~~~~~~~~~~~~~
-Wait for the specified amount of time, in seconds (as a float), for the user to press the reset button
+CIRCUITPY_SAFEMODE_DELAY (float)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Wait for the specified amount of time, in seconds, for the user to press the reset button
 to initiate safe mode after a hard reset.
 The status LED blinks during this time.
 If not specified, use the default delay, which is one second.
 
-CIRCUITPY_TERMINAL_SCALE
-~~~~~~~~~~~~~~~~~~~~~~~~
+CIRCUITPY_TERMINAL_SCALE (integer)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Allows the entry of a display scaling factor used during the terminalio console construction.
 The entered scaling factor only affects the terminalio console and has no impact on
 the UART, Web Workflow, BLE Workflow, etc consoles.
@@ -230,8 +247,8 @@ This feature is not enabled on boards that the CIRCUITPY_SETTINGS_TOML (or CIRCU
 flag has been set to 0. Currently this is primarily boards with limited flash including some
 of the Atmel_samd boards based on the SAMD21/M0 microprocessor.
 
-CIRCUITPY_TERMINAL_FONT
-~~~~~~~~~~~~~~~~~~~~~~~
+CIRCUITPY_TERMINAL_FONT (string)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Specifies a custom font file path to use for the terminalio console instead of the default
 ``/fonts/terminal.lvfontbin``. This allows users to create and use custom fonts for the
 CircuitPython console.

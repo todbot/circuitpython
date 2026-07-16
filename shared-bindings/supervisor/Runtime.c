@@ -153,10 +153,13 @@ MP_PROPERTY_GETSET(supervisor_runtime_autoreload_obj,
 
 //|     ble_workflow: bool
 //|     """Enable/Disable ble workflow until a reset. This prevents BLE advertising outside of the VM and
-//|     the services used for it."""
+//|     the services used for it.
+//|     If ``CIRCUITPY_BLE_WORKFLOW=false`` is present in ``settings.toml``, setting `ble_workflow`
+//|     to ``True`` has no effect.
+//|     """
 //|
 static mp_obj_t supervisor_runtime_get_ble_workflow(mp_obj_t self) {
-    #if CIRCUITPY_BLE_FILE_SERVICE && CIRCUITPY_SERIAL_BLE
+    #if CIRCUITPY_BLE_FILE_SERVICE && CIRCUITPY_BLE_SERIAL_SERVICE
     return mp_obj_new_bool(supervisor_bluetooth_workflow_is_enabled());
     #else
     return mp_const_false;
@@ -165,7 +168,7 @@ static mp_obj_t supervisor_runtime_get_ble_workflow(mp_obj_t self) {
 MP_DEFINE_CONST_FUN_OBJ_1(supervisor_runtime_get_ble_workflow_obj, supervisor_runtime_get_ble_workflow);
 
 static mp_obj_t supervisor_runtime_set_ble_workflow(mp_obj_t self, mp_obj_t state_in) {
-    #if CIRCUITPY_BLE_FILE_SERVICE && CIRCUITPY_SERIAL_BLE
+    #if CIRCUITPY_BLE_FILE_SERVICE && CIRCUITPY_BLE_SERIAL_SERVICE
     if (mp_obj_is_true(state_in)) {
         supervisor_bluetooth_enable_workflow();
     } else {

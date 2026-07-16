@@ -165,40 +165,41 @@ void common_hal_mcu_processor_get_uid(uint8_t raw_id[]) {
 mcu_reset_reason_t common_hal_mcu_processor_get_reset_reason(void) {
     switch (esp_reset_reason()) {
         case ESP_RST_POWERON:
-            return RESET_REASON_POWER_ON;
+            return MCU_RESET_REASON_POWER_ON;
 
         case ESP_RST_SW:
         case ESP_RST_PANIC:
-            return RESET_REASON_SOFTWARE;
+            return MCU_RESET_REASON_SOFTWARE;
 
         case ESP_RST_INT_WDT:
         case ESP_RST_TASK_WDT:
         case ESP_RST_WDT:
-            return RESET_REASON_WATCHDOG;
+            return MCU_RESET_REASON_WATCHDOG;
 
         case ESP_RST_BROWNOUT:
-            return RESET_REASON_BROWNOUT;
+            return MCU_RESET_REASON_BROWNOUT;
 
         case ESP_RST_SDIO:
         case ESP_RST_EXT:
-            return RESET_REASON_RESET_PIN;
+            return MCU_RESET_REASON_RESET_PIN;
 
         case ESP_RST_DEEPSLEEP: {
             uint32_t wakeup_causes = esp_sleep_get_wakeup_causes();
-            uint32_t alarm_causes = (1 << ESP_SLEEP_WAKEUP_TIMER) |
-                (1 << ESP_SLEEP_WAKEUP_EXT0) |
-                (1 << ESP_SLEEP_WAKEUP_EXT1) |
-                (1 << ESP_SLEEP_WAKEUP_TOUCHPAD) |
-                (1 << ESP_SLEEP_WAKEUP_ULP);
+            uint32_t alarm_causes =
+                BIT(ESP_SLEEP_WAKEUP_TIMER) |
+                BIT(ESP_SLEEP_WAKEUP_EXT0) |
+                BIT(ESP_SLEEP_WAKEUP_EXT1) |
+                BIT(ESP_SLEEP_WAKEUP_TOUCHPAD) |
+                BIT(ESP_SLEEP_WAKEUP_ULP);
             if (wakeup_causes & alarm_causes) {
-                return RESET_REASON_DEEP_SLEEP_ALARM;
+                return MCU_RESET_REASON_DEEP_SLEEP_ALARM;
             }
-            return RESET_REASON_UNKNOWN;
+            return MCU_RESET_REASON_UNKNOWN;
         }
 
         case ESP_RST_UNKNOWN:
         default:
-            return RESET_REASON_UNKNOWN;
+            return MCU_RESET_REASON_UNKNOWN;
 
     }
 }

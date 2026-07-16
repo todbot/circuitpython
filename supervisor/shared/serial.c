@@ -17,7 +17,7 @@
 #include "supervisor/shared/serial.h"
 #include "shared-bindings/microcontroller/Pin.h"
 
-#if CIRCUITPY_SERIAL_BLE
+#if CIRCUITPY_BLE_SERIAL_SERVICE
 #include "supervisor/shared/bluetooth/serial.h"
 #endif
 
@@ -229,7 +229,7 @@ bool serial_connected(void) {
     return true;
     #endif
 
-    #if CIRCUITPY_SERIAL_BLE
+    #if CIRCUITPY_BLE_SERIAL_SERVICE
     if (ble_serial_connected()) {
         return true;
     }
@@ -290,7 +290,7 @@ char serial_read(void) {
     }
     #endif
 
-    #if CIRCUITPY_SERIAL_BLE
+    #if CIRCUITPY_BLE_SERIAL_SERVICE
     if (ble_serial_available() > 0) {
         return ble_serial_read_char();
     }
@@ -348,7 +348,7 @@ uint32_t serial_bytes_available(void) {
     count += common_hal_busio_uart_rx_characters_available(&console_uart);
     #endif
 
-    #if CIRCUITPY_SERIAL_BLE
+    #if CIRCUITPY_BLE_SERIAL_SERVICE
     count += ble_serial_available();
     #endif
 
@@ -409,7 +409,7 @@ uint32_t serial_write_substring(const char *text, uint32_t length) {
     length_sent = console_uart_write(text, length);
     #endif
 
-    #if CIRCUITPY_SERIAL_BLE
+    #if CIRCUITPY_BLE_SERIAL_SERVICE
     ble_serial_write(text, length);
     #endif
 

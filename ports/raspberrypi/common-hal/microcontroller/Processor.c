@@ -78,41 +78,41 @@ void common_hal_mcu_processor_get_uid(uint8_t raw_id[]) {
 }
 
 mcu_reset_reason_t common_hal_mcu_processor_get_reset_reason(void) {
-    mcu_reset_reason_t reason = RESET_REASON_UNKNOWN;
+    mcu_reset_reason_t reason = MCU_RESET_REASON_UNKNOWN;
 
     #if PICO_RP2040
     uint32_t chip_reset_reg = vreg_and_chip_reset_hw->chip_reset;
 
     if (chip_reset_reg & VREG_AND_CHIP_RESET_CHIP_RESET_HAD_PSM_RESTART_BITS) {
-        reason = RESET_REASON_RESCUE_DEBUG;
+        reason = MCU_RESET_REASON_RESCUE_DEBUG;
     }
 
     if (chip_reset_reg & VREG_AND_CHIP_RESET_CHIP_RESET_HAD_RUN_BITS) {
-        reason = RESET_REASON_RESET_PIN;
+        reason = MCU_RESET_REASON_RESET_PIN;
     }
 
     if (chip_reset_reg & VREG_AND_CHIP_RESET_CHIP_RESET_HAD_POR_BITS) {
         // NOTE: This register is also used for brownout, but there is no way to differentiate between power on and brown out
-        reason = RESET_REASON_POWER_ON;
+        reason = MCU_RESET_REASON_POWER_ON;
     }
     #endif
     #if PICO_RP2350
     uint32_t chip_reset_reg = powman_hw->chip_reset;
 
     if (chip_reset_reg & POWMAN_CHIP_RESET_HAD_RESCUE_BITS) {
-        reason = RESET_REASON_RESCUE_DEBUG;
+        reason = MCU_RESET_REASON_RESCUE_DEBUG;
     }
 
     if (chip_reset_reg & POWMAN_CHIP_RESET_HAD_RUN_LOW_BITS) {
-        reason = RESET_REASON_RESET_PIN;
+        reason = MCU_RESET_REASON_RESET_PIN;
     }
 
     if (chip_reset_reg & POWMAN_CHIP_RESET_HAD_BOR_BITS) {
-        reason = RESET_REASON_BROWNOUT;
+        reason = MCU_RESET_REASON_BROWNOUT;
     }
 
     if (chip_reset_reg & POWMAN_CHIP_RESET_HAD_POR_BITS) {
-        reason = RESET_REASON_POWER_ON;
+        reason = MCU_RESET_REASON_POWER_ON;
     }
     #endif
 
@@ -120,12 +120,12 @@ mcu_reset_reason_t common_hal_mcu_processor_get_reset_reason(void) {
 
     // The watchdog is used for software reboots such as resetting after copying a UF2 via the bootloader.
     if (watchdog_caused_reboot()) {
-        reason = RESET_REASON_SOFTWARE;
+        reason = MCU_RESET_REASON_SOFTWARE;
     }
 
     // Actual watchdog usage will set a special value that this function detects.
     if (watchdog_enable_caused_reboot()) {
-        reason = RESET_REASON_WATCHDOG;
+        reason = MCU_RESET_REASON_WATCHDOG;
     }
 
     return reason;

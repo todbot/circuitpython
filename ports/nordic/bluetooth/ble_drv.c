@@ -20,7 +20,7 @@
 #include "py/mpstate.h"
 #include "mpconfigport.h"
 
-#if CIRCUITPY_SERIAL_BLE && CIRCUITPY_VERBOSE_BLE
+#if CIRCUITPY_BLE_SERIAL_SERVICE && CIRCUITPY_VERBOSE_BLE
 #include "supervisor/shared/bluetooth/serial.h"
 #endif
 
@@ -229,7 +229,7 @@ void SD_EVT_IRQHandler(void) {
         }
     }
 
-    #if CIRCUITPY_SERIAL_BLE && CIRCUITPY_VERBOSE_BLE
+    #if CIRCUITPY_BLE_SERIAL_SERVICE && CIRCUITPY_VERBOSE_BLE
     ble_serial_disable();
     #endif
     while (1) {
@@ -270,7 +270,7 @@ void SD_EVT_IRQHandler(void) {
         }
         #endif
     }
-    #if CIRCUITPY_SERIAL_BLE && CIRCUITPY_VERBOSE_BLE
+    #if CIRCUITPY_BLE_SERIAL_SERVICE && CIRCUITPY_VERBOSE_BLE
     ble_serial_enable();
     #endif
 }
